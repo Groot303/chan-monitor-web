@@ -1,25 +1,242 @@
 <!doctype html>
-<html lang="zh-CN"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>缠论信号监控</title><link rel="stylesheet" href="style.css"></head><body>
-<header>
-<h1>缠论信号监控</h1>
-<div id="meta">加载中…</div>
-<div class="warn">启发式规则,未回测,不构成投资建议,未确认信号可能重绘。</div>
+<html lang="zh-CN" data-theme="dark" data-color="cn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>缠论信号看板 · Chan Signal Monitor</title>
+<meta name="description" content="缠论周线/日线/30分钟信号的静态看板。启发式规则,未回测,不构成投资建议。">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0b0f17">
+<script>
+/* 在首帧前应用主题与配色偏好,避免闪烁 */
+(function(){try{var t=localStorage.getItem("chan.theme"),c=localStorage.getItem("chan.color"),r=document.documentElement;
+if(t==="light"||t==="dark")r.setAttribute("data-theme",t);if(c==="us"||c==="cn")r.setAttribute("data-color",c);}catch(e){}})();
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%235b8cff%22/%3E%3Cpath d=%22M4 16l4-5 4 3 4-6 4 4%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222.2%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">跳到主要内容</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 17l5-6 4 4 4-7 5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <div class="brand-text">
+        <h1>缠论信号看板</h1>
+        <p class="brand-sub" id="meta-sub"><span class="dot pulse" aria-hidden="true"></span><span id="meta-short">加载中…</span></p>
+      </div>
+    </div>
+    <nav class="tabs tabs-top" aria-label="主导航">
+      <button class="tab" data-view="signals" aria-current="page">信号</button>
+      <button class="tab" data-view="symbols">标的总览</button>
+      <button class="tab" data-view="about">说明</button>
+    </nav>
+    <div class="top-actions">
+      <button class="icon-btn" id="btn-color" type="button" aria-label="切换涨跌配色" title="切换涨跌配色">
+        <span class="color-swatch" aria-hidden="true"><i class="sw-buy"></i><i class="sw-sell"></i></span>
+        <span class="btn-label" id="color-label">红买绿卖</span>
+      </button>
+      <button class="icon-btn" id="btn-theme" type="button" aria-label="切换浅色/深色主题" title="切换浅色/深色主题">
+        <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="currentColor"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>
+      </button>
+    </div>
+  </div>
 </header>
-<section class="filters">
-<label>标的 <select id="f-sym"><option value="">全部</option></select></label>
-<label>级别 <select id="f-lv"><option value="">全部</option><option value="weekly">周线</option><option value="daily">日线</option><option value="30m">30分钟</option></select></label>
-<label>类型 <select id="f-type"><option value="">全部</option>
-<option>1B</option><option>2B</option><option>3B</option><option>1S</option><option>2S</option><option>3S</option></select></label>
-<label>确认 <select id="f-conf"><option value="">全部</option><option value="1">已确认</option><option value="0">未确认</option></select></label>
-<label>范围 <select id="f-recent"><option value="1">仅近期</option><option value="">含过期</option></select></label>
-<label>排序 <select id="f-sort"><option value="desc">分数从高到低</option><option value="asc">分数从低到高</option></select></label>
-</section>
-<main>
-<div class="tablewrap"><table id="tbl"><thead><tr><th>分数</th><th>标的</th><th>级别</th><th>类型</th><th>时间</th><th>价格</th><th>确认</th></tr></thead><tbody></tbody></table></div>
-<div id="empty" hidden>没有符合条件的信号</div>
-<section id="detail" hidden><h2 id="d-title"></h2><div id="d-info"></div><img id="d-img" alt="K线图"></section>
+
+<main id="main" tabindex="-1">
+  <div class="banner" role="note">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3l10 18H2L12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v5M12 18v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <div class="banner-txt"><span>启发式规则,<b>未回测</b>,不构成投资建议;<b>未确认信号可能重绘</b>。分数(0–10)不是胜率。</span>
+    <span class="color-note" id="color-note"></span></div>
+  </div>
+
+  <!-- 概览卡片 -->
+  <section class="kpis" id="kpis" aria-label="概览">
+    <div class="kpi skeleton"></div><div class="kpi skeleton"></div><div class="kpi skeleton"></div><div class="kpi skeleton"></div>
+  </section>
+
+  <!-- 信号视图 -->
+  <section class="view" id="view-signals" aria-labelledby="h-signals">
+    <div class="section-head">
+      <h2 id="h-signals">信号列表 <span class="count" id="sig-count"></span></h2>
+      <div class="head-right">
+        <div class="seg" role="group" aria-label="视图模式">
+          <button type="button" class="seg-btn" data-mode="cards" aria-pressed="true">
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="currentColor"/></svg>卡片</button>
+          <button type="button" class="seg-btn" data-mode="table" aria-pressed="false">
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 5h18v3H3zM3 10.5h18v3H3zM3 16h18v3H3z" fill="currentColor"/></svg>表格</button>
+        </div>
+        <button type="button" class="btn ghost filter-toggle" id="btn-filters" aria-expanded="false" aria-controls="filters">
+          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4-2v-4z" fill="currentColor"/></svg>
+          筛选<span class="badge" id="filter-badge" hidden></span>
+        </button>
+      </div>
+    </div>
+
+    <form class="filters" id="filters" role="search" aria-label="信号筛选" onsubmit="return false">
+      <div class="f-field f-search">
+        <label for="f-q">标的</label>
+        <div class="input-icon">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="f-q" type="search" placeholder="搜索代码,如 NVDA" autocomplete="off" spellcheck="false" list="sym-list">
+          <datalist id="sym-list"></datalist>
+        </div>
+      </div>
+      <div class="f-field">
+        <span class="f-label" id="lb-lv">级别</span>
+        <div class="chips-group" role="group" aria-labelledby="lb-lv" data-filter="level">
+          <button type="button" class="fchip" data-v="" aria-pressed="true">全部</button>
+          <button type="button" class="fchip" data-v="weekly" aria-pressed="false">周线</button>
+          <button type="button" class="fchip" data-v="daily" aria-pressed="false">日线</button>
+          <button type="button" class="fchip" data-v="30m" aria-pressed="false">30分钟</button>
+        </div>
+      </div>
+      <div class="f-field">
+        <label for="f-type">类型</label>
+        <select id="f-type">
+          <option value="">全部类型</option>
+          <option value="B">全部买点</option>
+          <option value="S">全部卖点</option>
+          <option value="1B">一买 1B</option><option value="2B">二买 2B</option><option value="3B">三买 3B</option>
+          <option value="1S">一卖 1S</option><option value="2S">二卖 2S</option><option value="3S">三卖 3S</option>
+        </select>
+      </div>
+      <div class="f-field">
+        <span class="f-label" id="lb-cf">确认状态</span>
+        <div class="chips-group" role="group" aria-labelledby="lb-cf" data-filter="conf">
+          <button type="button" class="fchip" data-v="" aria-pressed="true">全部</button>
+          <button type="button" class="fchip" data-v="1" aria-pressed="false">已确认</button>
+          <button type="button" class="fchip" data-v="0" aria-pressed="false">未确认</button>
+        </div>
+      </div>
+      <div class="f-field f-range">
+        <label for="f-min">分数下限 <output id="f-min-out" for="f-min">0.0</output></label>
+        <input id="f-min" type="range" min="0" max="10" step="0.5" value="0">
+      </div>
+      <div class="f-field f-switch">
+        <span class="f-label" id="lb-recent">时间范围</span>
+        <label class="switch">
+          <input id="f-recent" type="checkbox" role="switch" aria-labelledby="lb-recent" aria-describedby="recent-hint">
+          <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+          <span class="switch-text">仅近期</span>
+        </label>
+        <small id="recent-hint" class="hint">近期 = 周线≤4 / 日线≤10 / 30分钟≤40 根K线</small>
+      </div>
+      <div class="f-field">
+        <label for="f-sort">排序</label>
+        <div class="sort-row">
+          <select id="f-sort">
+            <option value="score">分数</option>
+            <option value="time">信号时间</option>
+            <option value="bars_ago">距今K线数</option>
+            <option value="symbol">标的代码</option>
+            <option value="margin">离中枢幅度</option>
+          </select>
+          <button type="button" class="icon-btn sm" id="f-dir" aria-label="排序方向:降序" title="切换排序方向" data-dir="desc">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 4v16M7 20l-3-3M7 20l3-3M14 6h7M14 11h5M14 16h3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="f-field f-actions">
+        <button type="button" class="btn ghost" id="f-reset">重置筛选</button>
+      </div>
+    </form>
+
+    <div id="sig-results" aria-live="polite"></div>
+  </section>
+
+  <!-- 标的总览 -->
+  <section class="view" id="view-symbols" aria-labelledby="h-symbols" hidden>
+    <div class="section-head">
+      <h2 id="h-symbols">标的总览 <span class="count" id="sym-count"></span></h2>
+      <p class="muted small">各标的最新信号与最高分(含过期信号)。方向 = 收盘价相对最近中枢。点击卡片查看详情。</p>
+    </div>
+    <div class="sym-grid" id="sym-grid"></div>
+  </section>
+
+  <!-- 说明 -->
+  <section class="view" id="view-about" aria-labelledby="h-about" hidden>
+    <div class="section-head"><h2 id="h-about">说明</h2></div>
+    <div class="about-grid">
+      <article class="panel">
+        <h3>评分(0–10)</h3>
+        <p>分数 = 基础分 + 背驰 + 共振 + 确认 + 新鲜度 + 中枢质量,截断到 0–10。由人工设定权重的透明启发式规则计算,<b>未经回测或校准,不是胜率或概率</b>。</p>
+        <ul class="legend">
+          <li><span class="lgd lgd-hi"></span>高分 ≥ 5.0</li>
+          <li><span class="lgd lgd-mid"></span>中分 2.5 – 4.9</li>
+          <li><span class="lgd lgd-lo"></span>低分 &lt; 2.5(过期信号通常落在此区间)</li>
+        </ul>
+        <p class="muted small">三买/二买的理论上限约 7.5,一买/一卖约 9.5,不同类型分数仅可粗略比较。</p>
+      </article>
+      <article class="panel">
+        <h3>配色约定</h3>
+        <p>默认采用中文用户习惯:<b class="t-buy">红色 = 买点</b>,<b class="t-sell">绿色 = 卖点</b>。可点击右上角按钮切换为美股习惯(绿买红卖),偏好会保存在本地浏览器。</p>
+        <h3>确认状态</h3>
+        <p><span class="chip chip-un">未确认</span> 表示最后一段尚未被特征序列分型确认,信号<b>可能重绘或消失</b>。<span class="chip chip-ok">已确认</span> 表示所在线段已确认。</p>
+      </article>
+      <article class="panel">
+        <h3>数据</h3>
+        <p>行情来自 Yahoo Finance(非官方接口,可能延迟、缺失或限流),价格未复权。信号时间为极值K线时间(美东时间),确认会滞后若干根K线。周线最后一根为当周未完成K线。</p>
+        <div id="failures"></div>
+      </article>
+    </div>
+  </section>
 </main>
-<footer>分数为透明启发式规则(0-10),不是胜率。数据源 Yahoo Finance,可能延迟或缺失。</footer>
-<script src="app.js"></script></body></html>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <p class="disclaimer"><b>免责声明:</b>本页信号基于启发式规则,<b>未回测</b>,<b>不构成投资建议</b>;<b>未确认信号可能重绘</b>。数据源 Yahoo Finance,可能延迟或缺失。</p>
+    <p class="muted small" id="foot-meta"></p>
+  </div>
+</footer>
+
+<!-- 移动端底部导航 -->
+<nav class="tabs tabs-bottom" aria-label="主导航(底部)">
+  <button class="tab" data-view="signals" aria-current="page">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 17l5-6 4 4 4-7 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>信号</span></button>
+  <button class="tab" data-view="symbols">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>标的</span></button>
+  <button class="tab" data-view="about">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span>说明</span></button>
+</nav>
+
+<!-- 详情抽屉 -->
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dr-title" hidden>
+  <div class="drawer-grip" aria-hidden="true"></div>
+  <header class="drawer-head">
+    <div id="dr-headline"><h2 id="dr-title">详情</h2></div>
+    <button type="button" class="icon-btn" id="dr-close" aria-label="关闭详情">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+  <div class="drawer-body" id="dr-body"></div>
+</aside>
+
+<!-- 图片全屏 -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="缠论图全屏查看" hidden>
+  <div class="lb-bar">
+    <span class="lb-title" id="lb-title"></span>
+    <div class="lb-tools">
+      <button type="button" class="icon-btn" id="lb-out" aria-label="缩小">−</button>
+      <span class="lb-zoom" id="lb-zoom" aria-live="polite">100%</span>
+      <button type="button" class="icon-btn" id="lb-in" aria-label="放大">+</button>
+      <button type="button" class="icon-btn" id="lb-fit" aria-label="适应屏幕">适应</button>
+      <a class="icon-btn" id="lb-open" target="_blank" rel="noopener" aria-label="在新标签页打开原图">原图</a>
+      <button type="button" class="icon-btn" id="lb-close" aria-label="关闭全屏">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="lb-stage" id="lb-stage" tabindex="0" aria-label="图片区域,可用方向键平移"><img id="lb-img" alt=""></div>
+  <p class="lb-hint">滚轮/按钮缩放 · 拖动平移 · 双击切换 · Esc 关闭</p>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -4,3 +4,4 @@ out/
 data2_*.csv
 data_*.csv
 *.pyc
+preview/
