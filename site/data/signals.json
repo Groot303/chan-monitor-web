@@ -1,0 +1,1932 @@
+{
+ "generated": "2026-10-10T05:11:59.059682Z",
+ "failures": {
+  "SPCX/weekly": "[Errno 2] No such file or directory: 'data2_SPCX_weekly.csv'",
+  "SKHY/weekly": "[Errno 2] No such file or directory: 'data2_SKHY_weekly.csv'"
+ },
+ "symbols": {
+  "MU": {
+   "image": "img/MU_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 1029.0,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 98.4499969482422,
+      "zd": 61.540000915527344,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2025-04-07",
+      "end": "2026-06-22",
+      "end_price": 1255.0,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 1029.0,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 455.5,
+      "zd": 357.6700134277344,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-06-25",
+      "end": "2026-07-29",
+      "end_price": 737.8800048828125,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 1028.135009765625,
+     "state": {
+      "direction": "down",
+      "pivot_pos": "below",
+      "zg": 1083.5,
+      "zd": 1032.0,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-02 09:30",
+      "end": "2026-10-07 09:30",
+      "end_price": 1011.4199829101562,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "SNDK": {
+   "image": "img/SNDK_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 87,
+     "first": "2025-02-10",
+     "last": "2026-10-05",
+     "last_close": 1581.8199462890625,
+     "state": {
+      "direction": "down",
+      "pivot_pos": "none",
+      "zg": null,
+      "zd": null,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-06-22",
+      "end": "2026-07-27",
+      "end_price": 998.1900024414062,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 416,
+     "first": "2025-02-13",
+     "last": "2026-10-09",
+     "last_close": 1581.8199462890625,
+     "state": {
+      "direction": "down",
+      "pivot_pos": "none",
+      "zg": null,
+      "zd": null,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-06-22",
+      "end": "2026-07-29",
+      "end_price": 998.1900024414062,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 1582.0,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 1446.62255859375,
+      "zd": 1163.0899658203125,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-09-15 14:30",
+      "end": "2026-09-22 09:30",
+      "end_price": 1909.47998046875,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "SPCX": {
+   "image": "img/SPCX_chan2.png",
+   "levels": {
+    "daily": {
+     "bars": 83,
+     "first": "2026-06-12",
+     "last": "2026-10-09",
+     "last_close": 162.57000732421875,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "none",
+      "zg": null,
+      "zd": null,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-08-03",
+      "end": "2026-10-06",
+      "end_price": 176.4199981689453,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 162.58999633789062,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 144.13499450683594,
+      "zd": 130.38999938964844,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-06 09:30",
+      "end": "2026-10-08 15:30",
+      "end_price": 160.2899932861328,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "SKHY": {
+   "image": "img/SKHY_chan2.png",
+   "levels": {
+    "daily": {
+     "bars": 65,
+     "first": "2026-07-10",
+     "last": "2026-10-09",
+     "last_close": 169.02999877929688,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "none",
+      "zg": null,
+      "zd": null,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-07-29",
+      "end": "2026-09-09",
+      "end_price": 199.8699951171875,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 169.0500030517578,
+     "state": {
+      "direction": "down",
+      "pivot_pos": "below",
+      "zg": 196.4799041748047,
+      "zd": 179.30999755859375,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-05 13:30",
+      "end": "2026-10-08 13:00",
+      "end_price": 167.2100067138672,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "INTC": {
+   "image": "img/INTC_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 104.6999969482422,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 51.27999877929688,
+      "zd": 24.59000015258789,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2024-09-09",
+      "end": "2026-06-29",
+      "end_price": 142.35000610351562,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 104.6999969482422,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 26.43000030517578,
+      "zd": 18.729999542236328,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-03-30",
+      "end": "2026-06-30",
+      "end_price": 142.35000610351562,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 104.6999969482422,
+     "state": {
+      "direction": "down",
+      "pivot_pos": "below",
+      "zg": 124.72699737548828,
+      "zd": 119.70999908447266,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-02 10:00",
+      "end": "2026-10-08 13:30",
+      "end_price": 105.23999786376952,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "NVDA": {
+   "image": "img/NVDA_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 229.27999877929688,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 212.19000244140625,
+      "zd": 164.27000427246094,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-03-30",
+      "end": "2026-05-11",
+      "end_price": 236.5399932861328,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 229.27999877929688,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 197.6300048828125,
+      "zd": 170.30999755859375,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-06-29",
+      "end": "2026-10-06",
+      "end_price": 243.3699951171875,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 229.32000732421875,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 224.75999450683597,
+      "zd": 216.3000030517578,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-06 09:30",
+      "end": "2026-10-09 14:30",
+      "end_price": 229.30999755859372,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "TSLA": {
+   "image": "img/TSLA_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 382.7000122070313,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 299.2900085449219,
+      "zd": 138.8000030517578,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2025-12-22",
+      "end": "2026-07-27",
+      "end_price": 297.3800048828125,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 382.7000122070313,
+     "state": {
+      "direction": "range",
+      "pivot_pos": "inside",
+      "zg": 474.0700073242188,
+      "zd": 214.25,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-07-29",
+      "end": "2026-09-23",
+      "end_price": 386.7000122070313,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 382.7099914550781,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 351.260009765625,
+      "zd": 331.1199951171875,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-10-08 13:00",
+      "end": "2026-10-09 09:30",
+      "end_price": 388.55999755859375,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "LITE": {
+   "image": "img/LITE_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 1103.3499755859375,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "none",
+      "zg": null,
+      "zd": null,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2023-10-23",
+      "end": "2026-05-11",
+      "end_price": 1085.6800537109375,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 1103.35498046875,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 1085.6800537109375,
+      "zd": 594.8400268554688,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-07-29",
+      "end": "2026-10-06",
+      "end_price": 1137.2049560546875,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 1103.199951171875,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 859.8800048828125,
+      "zd": 793.0001220703125,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-06 14:00",
+      "end": "2026-10-08 13:00",
+      "end_price": 1027.000244140625,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "AAOI": {
+   "image": "img/AAOI_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 109.63999938964844,
+     "state": {
+      "direction": "down",
+      "pivot_pos": "none",
+      "zg": null,
+      "zd": null,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-05-11",
+      "end": "2026-07-27",
+      "end_price": 76.01000213623047,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 109.63999938964844,
+     "state": {
+      "direction": "down",
+      "pivot_pos": "none",
+      "zg": null,
+      "zd": null,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-05-13",
+      "end": "2026-07-29",
+      "end_price": 76.01000213623047,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 109.62999725341795,
+     "state": {
+      "direction": "range",
+      "pivot_pos": "inside",
+      "zg": 116.89990234375,
+      "zd": 102.0999984741211,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-06 14:00",
+      "end": "2026-10-08 15:30",
+      "end_price": 104.87999725341795,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "MRVL": {
+   "image": "img/MRVL_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 275.2799987792969,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 85.76000213623047,
+      "zd": 53.18999862670898,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2025-04-07",
+      "end": "2026-06-15",
+      "end_price": 329.8800048828125,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 275.2799987792969,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 85.2699966430664,
+      "zd": 66.13999938964844,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-06-18",
+      "end": "2026-07-29",
+      "end_price": 162.89999389648438,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 275.3299865722656,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 214.5500030517578,
+      "zd": 201.7400054931641,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-06 09:30",
+      "end": "2026-10-08 13:00",
+      "end_price": 265.7900085449219,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "AMD": {
+   "image": "img/AMD_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 608.0999755859375,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 164.4600067138672,
+      "zd": 76.4800033569336,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2025-04-07",
+      "end": "2026-06-29",
+      "end_price": 584.72998046875,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 608.0999755859375,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 186.6499938964844,
+      "zd": 149.22000122070312,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-03-03",
+      "end": "2026-07-06",
+      "end_price": 572.5,
+      "confirmed": true
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 608.1199951171875,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 530.1300048828125,
+      "zd": 451.1799926757813,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-06 12:30",
+      "end": "2026-10-09 13:00",
+      "end_price": 608.9000244140625,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "META": {
+   "image": "img/META_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 718.6699829101562,
+     "state": {
+      "direction": "range",
+      "pivot_pos": "inside",
+      "zg": 779.8200073242188,
+      "zd": 520.260009765625,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-03-23",
+      "end": "2026-09-21",
+      "end_price": 779.8200073242188,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 718.6699829101562,
+     "state": {
+      "direction": "range",
+      "pivot_pos": "inside",
+      "zg": 744.0,
+      "zd": 581.25,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-03-27",
+      "end": "2026-09-24",
+      "end_price": 779.8200073242188,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 718.5999755859375,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 608.2100219726562,
+      "zd": 539.3099975585938,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-05 12:30",
+      "end": "2026-10-08 13:00",
+      "end_price": 711.6832275390625,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "MRNA": {
+   "image": "img/MRNA_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 225.0,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 170.47000122070312,
+      "zd": 74.5,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2025-11-17",
+      "end": "2026-07-06",
+      "end_price": 85.5999984741211,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 225.0,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 34.70000076293945,
+      "zd": 23.149999618530277,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-04-29",
+      "end": "2026-10-06",
+      "end_price": 212.22000122070312,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 224.9799041748047,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 208.9031982421875,
+      "zd": 182.51199340820312,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-10-07 09:30",
+      "end": "2026-10-09 10:00",
+      "end_price": 216.9499969482422,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "TSM": {
+   "image": "img/TSM_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 453.30999755859375,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "none",
+      "zg": null,
+      "zd": null,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2022-10-31",
+      "end": "2026-06-29",
+      "end_price": 479.0,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 453.30999755859375,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 390.2099914550781,
+      "zd": 326.79998779296875,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-07-29",
+      "end": "2026-10-05",
+      "end_price": 487.4700012207031,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 453.260009765625,
+     "state": {
+      "direction": "range",
+      "pivot_pos": "inside",
+      "zg": 455.0299987792969,
+      "zd": 449.75,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-05 14:30",
+      "end": "2026-10-09 12:00",
+      "end_price": 449.75,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "ORCL": {
+   "image": "img/ORCL_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 141.39999389648438,
+     "state": {
+      "direction": "range",
+      "pivot_pos": "inside",
+      "zg": 196.0399932861328,
+      "zd": 118.86000061035156,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2025-10-13",
+      "end": "2026-07-27",
+      "end_price": 114.5,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 141.39999389648438,
+     "state": {
+      "direction": "down",
+      "pivot_pos": "below",
+      "zg": 198.30999755859372,
+      "zd": 168.72999572753906,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-05-14",
+      "end": "2026-07-28",
+      "end_price": 114.5,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 141.47999572753906,
+     "state": {
+      "direction": "down",
+      "pivot_pos": "below",
+      "zg": 148.6999969482422,
+      "zd": 142.33999633789062,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-06 12:30",
+      "end": "2026-10-08 15:00",
+      "end_price": 134.7899932861328,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "AVGO": {
+   "image": "img/AVGO_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 361.5400085449219,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "none",
+      "zg": null,
+      "zd": null,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2022-10-10",
+      "end": "2026-06-01",
+      "end_price": 495.0,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 361.5400085449219,
+     "state": {
+      "direction": "range",
+      "pivot_pos": "inside",
+      "zg": 414.6099853515625,
+      "zd": 289.9599914550781,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-03-30",
+      "end": "2026-06-03",
+      "end_price": 495.0,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 361.6300048828125,
+     "state": {
+      "direction": "range",
+      "pivot_pos": "inside",
+      "zg": 366.5400085449219,
+      "zd": 343.2900085449219,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-06 13:30",
+      "end": "2026-10-08 15:30",
+      "end_price": 357.4100952148437,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "AAPL": {
+   "image": "img/AAPL_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 336.6400146484375,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "none",
+      "zg": null,
+      "zd": null,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2023-01-02",
+      "end": "2024-12-23",
+      "end_price": 260.1000061035156,
+      "confirmed": true
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 336.6400146484375,
+     "state": {
+      "direction": "down",
+      "pivot_pos": "none",
+      "zg": null,
+      "zd": null,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-09-22",
+      "end": "2026-10-01",
+      "end_price": 325.8099975585937,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 336.6300048828125,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 316.2893981933594,
+      "zd": 300.57000732421875,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-10-01 11:30",
+      "end": "2026-10-08 14:30",
+      "end_price": 341.57000732421875,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "PLTR": {
+   "image": "img/PLTR_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 209.0500030517578,
+     "state": {
+      "direction": "down",
+      "pivot_pos": "none",
+      "zg": null,
+      "zd": null,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2025-08-11",
+      "end": "2026-07-27",
+      "end_price": 117.88999938964844,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 209.0500030517578,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 163.6999969482422,
+      "zd": 122.68000030517578,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-04-10",
+      "end": "2026-06-01",
+      "end_price": 163.6999969482422,
+      "confirmed": true
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 209.06500244140625,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 179.60000610351562,
+      "zd": 170.20010375976562,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-09-29 09:30",
+      "end": "2026-10-09 12:30",
+      "end_price": 206.32989501953125,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "NOK": {
+   "image": "img/NOK_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 10.359999656677246,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 5.480000019073486,
+      "zd": 4.0,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2025-07-28",
+      "end": "2026-06-01",
+      "end_price": 17.450000762939453,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 10.359999656677246,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 5.480000019073486,
+      "zd": 4.0,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2025-08-01",
+      "end": "2026-06-03",
+      "end_price": 17.450000762939453,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 10.375,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 10.170000076293944,
+      "zd": 9.1850004196167,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-06 15:30",
+      "end": "2026-10-08 13:00",
+      "end_price": 9.899999618530272,
+      "confirmed": false
+     }
+    }
+   }
+  },
+  "GOOG": {
+   "image": "img/GOOG_chan2.png",
+   "levels": {
+    "weekly": {
+     "bars": 261,
+     "first": "2021-10-11",
+     "last": "2026-10-05",
+     "last_close": 347.8599853515625,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "none",
+      "zg": null,
+      "zd": null,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2022-10-31",
+      "end": "2026-05-18",
+      "end_price": 404.4700012207031,
+      "confirmed": false
+     }
+    },
+    "daily": {
+     "bars": 501,
+     "first": "2024-10-10",
+     "last": "2026-10-09",
+     "last_close": 347.8599853515625,
+     "state": {
+      "direction": "range",
+      "pivot_pos": "inside",
+      "zg": 350.1499938964844,
+      "zd": 271.5350036621094,
+      "last_seg": "up"
+     },
+     "last_segment": {
+      "up": true,
+      "start": "2026-03-30",
+      "end": "2026-05-18",
+      "end_price": 404.4700012207031,
+      "confirmed": false
+     }
+    },
+    "30m": {
+     "bars": 780,
+     "first": "2026-07-17 09:30",
+     "last": "2026-10-09 15:30",
+     "last_close": 347.8900146484375,
+     "state": {
+      "direction": "up",
+      "pivot_pos": "above",
+      "zg": 340.20001220703125,
+      "zd": 336.1700134277344,
+      "last_seg": "down"
+     },
+     "last_segment": {
+      "up": false,
+      "start": "2026-10-08 09:30",
+      "end": "2026-10-08 14:00",
+      "end_price": 343.510009765625,
+      "confirmed": false
+     }
+    }
+   }
+  }
+ },
+ "signals": [
+  {
+   "symbol": "TSLA",
+   "level": "30m",
+   "type": "3B",
+   "price": 368.0300903320313,
+   "zg": 351.260009765625,
+   "zd": 331.1199951171875,
+   "margin_pct": 4.774264106408244,
+   "time": "2026-10-08 13:00",
+   "bars_ago": 18,
+   "recent": true,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "partial",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 6.2,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 0.75,
+    "confirmed": 0.0,
+    "freshness": 0.5,
+    "quality": 1.46,
+    "raw_total": 6.21,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "AMD",
+   "level": "30m",
+   "type": "3B",
+   "price": 608.9000244140625,
+   "zg": 530.1300048828125,
+   "zd": 451.1799926757813,
+   "margin_pct": 14.85862313125672,
+   "time": "2026-10-09 13:00",
+   "bars_ago": 5,
+   "recent": true,
+   "confirmed": false,
+   "repaint_warning": "unconfirmed: last segment not yet confirmed by feature-sequence fractal; may repaint",
+   "resonance": "strong",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 6.0,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 1.5,
+    "confirmed": -1.5,
+    "freshness": 1.0,
+    "quality": 1.5,
+    "raw_total": 6.0,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "MRVL",
+   "level": "30m",
+   "type": "3B",
+   "price": 265.7900085449219,
+   "zg": 214.5500030517578,
+   "zd": 201.7400054931641,
+   "margin_pct": 23.882547081951323,
+   "time": "2026-10-08 13:00",
+   "bars_ago": 18,
+   "recent": true,
+   "confirmed": false,
+   "repaint_warning": "unconfirmed: last segment not yet confirmed by feature-sequence fractal; may repaint",
+   "resonance": "strong",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 5.4,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 1.5,
+    "confirmed": -1.5,
+    "freshness": 0.5,
+    "quality": 1.4,
+    "raw_total": 5.4,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "NVDA",
+   "level": "30m",
+   "type": "3B",
+   "price": 229.30999755859372,
+   "zg": 224.75999450683597,
+   "zd": 216.3000030517578,
+   "margin_pct": 2.0243829698168847,
+   "time": "2026-10-09 14:30",
+   "bars_ago": 2,
+   "recent": true,
+   "confirmed": false,
+   "repaint_warning": "unconfirmed: last segment not yet confirmed by feature-sequence fractal; may repaint",
+   "resonance": "strong",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 5.3,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 1.5,
+    "confirmed": -1.5,
+    "freshness": 1.0,
+    "quality": 0.81,
+    "raw_total": 5.31,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "META",
+   "level": "30m",
+   "type": "3B",
+   "price": 711.6832275390625,
+   "zg": 608.2100219726562,
+   "zd": 539.3099975585938,
+   "margin_pct": 17.0127426099957,
+   "time": "2026-10-08 13:00",
+   "bars_ago": 18,
+   "recent": true,
+   "confirmed": false,
+   "repaint_warning": "unconfirmed: last segment not yet confirmed by feature-sequence fractal; may repaint",
+   "resonance": "neutral",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 4.0,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 0.0,
+    "confirmed": -1.5,
+    "freshness": 0.5,
+    "quality": 1.5,
+    "raw_total": 4.0,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "INTC",
+   "level": "daily",
+   "type": "3B",
+   "price": 40.630001068115234,
+   "zg": 26.43000030517578,
+   "zd": 18.729999542236328,
+   "margin_pct": 53.72682784327729,
+   "time": "2026-03-30",
+   "bars_ago": 134,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "strong",
+   "resonance_vs": [
+    "weekly"
+   ],
+   "score": 2.5,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 1.5,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 1.5,
+    "raw_total": 2.5,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "AAOI",
+   "level": "30m",
+   "type": "3S",
+   "price": 118.8949966430664,
+   "zg": 149.35000610351562,
+   "zd": 130.17010498046875,
+   "margin_pct": 8.661826261178874,
+   "time": "2026-08-27 09:30",
+   "bars_ago": 402,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "strong",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 2.5,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 1.5,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 1.5,
+    "raw_total": 2.5,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "AAOI",
+   "level": "30m",
+   "type": "2B",
+   "price": 104.87999725341795,
+   "ref_low": 93.62000274658205,
+   "margin_pct": 12.02733836412646,
+   "time": "2026-10-08 15:30",
+   "bars_ago": 13,
+   "recent": true,
+   "confirmed": false,
+   "repaint_warning": "unconfirmed: last segment not yet confirmed by feature-sequence fractal; may repaint",
+   "resonance": "conflict",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 2.5,
+   "score_breakdown": {
+    "base": 4.0,
+    "divergence": 0.0,
+    "resonance": -1.5,
+    "confirmed": -1.5,
+    "freshness": 0.5,
+    "quality": 1.0,
+    "raw_total": 2.5,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "MRNA",
+   "level": "daily",
+   "type": "3B",
+   "price": 44.619998931884766,
+   "zg": 34.70000076293945,
+   "zd": 23.149999618530277,
+   "margin_pct": 28.58789034823348,
+   "time": "2026-04-29",
+   "bars_ago": 113,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "strong",
+   "resonance_vs": [
+    "weekly"
+   ],
+   "score": 2.5,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 1.5,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 1.5,
+    "raw_total": 2.5,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "TSM",
+   "level": "daily",
+   "type": "3B",
+   "price": 225.6300048828125,
+   "zg": 212.6000061035156,
+   "zd": 183.4900054931641,
+   "margin_pct": 6.128879776679108,
+   "time": "2025-09-02",
+   "bars_ago": 278,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "strong",
+   "resonance_vs": [
+    "weekly"
+   ],
+   "score": 2.5,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 1.5,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 1.5,
+    "raw_total": 2.5,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "INTC",
+   "level": "30m",
+   "type": "3B",
+   "price": 95.88999938964844,
+   "zg": 92.9499969482422,
+   "zd": 85.72000122070312,
+   "margin_pct": 3.162993585726892,
+   "time": "2026-09-14 10:30",
+   "bars_ago": 257,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "strong",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 2.3,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 1.5,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 1.29,
+    "raw_total": 2.29,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "TSM",
+   "level": "30m",
+   "type": "3B",
+   "price": 443.1099853515625,
+   "zg": 425.3999938964844,
+   "zd": 407.8800048828125,
+   "margin_pct": 4.163138624629981,
+   "time": "2026-09-28 10:30",
+   "bars_ago": 127,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "strong",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 2.3,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 1.5,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 1.33,
+    "raw_total": 2.33,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "SKHY",
+   "level": "30m",
+   "type": "3B",
+   "price": 172.22999572753906,
+   "zg": 167.3699951171875,
+   "zd": 149.74000549316406,
+   "margin_pct": 2.903746640458893,
+   "time": "2026-09-15 12:00",
+   "bars_ago": 241,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "strong",
+   "resonance_vs": [
+    "daily"
+   ],
+   "score": 2.2,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 1.5,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 1.23,
+    "raw_total": 2.23,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "LITE",
+   "level": "30m",
+   "type": "3B",
+   "price": 881.22998046875,
+   "zg": 859.8800048828125,
+   "zd": 793.0001220703125,
+   "margin_pct": 2.4829017379985663,
+   "time": "2026-09-28 11:00",
+   "bars_ago": 126,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "strong",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 2.1,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 1.5,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 1.12,
+    "raw_total": 2.12,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "MU",
+   "level": "30m",
+   "type": "3B",
+   "price": 1032.0,
+   "zg": 1011.77001953125,
+   "zd": 906.8900146484376,
+   "margin_pct": 1.9994643128605993,
+   "time": "2026-09-28 10:30",
+   "bars_ago": 127,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "strong",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 2.0,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 1.5,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 1.0,
+    "raw_total": 2.0,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "SPCX",
+   "level": "30m",
+   "type": "3B",
+   "price": 145.36000061035156,
+   "zg": 144.13499450683594,
+   "zd": 130.38999938964844,
+   "margin_pct": 0.8499019323565671,
+   "time": "2026-09-28 15:30",
+   "bars_ago": 117,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "strong",
+   "resonance_vs": [
+    "daily"
+   ],
+   "score": 1.7,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 1.5,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 0.71,
+    "raw_total": 1.71,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "MRVL",
+   "level": "daily",
+   "type": "3B",
+   "price": 162.89999389648438,
+   "zg": 85.2699966430664,
+   "zd": 66.13999938964844,
+   "margin_pct": 91.04022553017226,
+   "time": "2026-07-29",
+   "bars_ago": 51,
+   "recent": false,
+   "confirmed": false,
+   "repaint_warning": "unconfirmed: last segment not yet confirmed by feature-sequence fractal; may repaint",
+   "resonance": "strong",
+   "resonance_vs": [
+    "weekly"
+   ],
+   "score": 1.0,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 1.5,
+    "confirmed": -1.5,
+    "freshness": -4.0,
+    "quality": 1.5,
+    "raw_total": 1.0,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "AAOI",
+   "level": "30m",
+   "type": "1B",
+   "price": 93.62000274658205,
+   "area_enter": 39.12872226459832,
+   "area_leave": 15.999332532054854,
+   "ratio": 0.4088897261674766,
+   "dif_enter": -5.352909629438983,
+   "dif_leave": -1.5331623757611084,
+   "zd": 102.0999984741211,
+   "zg": 116.89990234375,
+   "time": "2026-09-28 11:00",
+   "bars_ago": 126,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "conflict",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 0.5,
+   "score_breakdown": {
+    "base": 3.0,
+    "divergence": 1.48,
+    "resonance": -1.5,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 1.5,
+    "raw_total": 0.48,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "AVGO",
+   "level": "30m",
+   "type": "3S",
+   "price": 366.5400085449219,
+   "zg": 398.5849914550781,
+   "zd": 369.5101013183594,
+   "margin_pct": 0.8037920378470398,
+   "time": "2026-09-22 15:30",
+   "bars_ago": 169,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "neutral",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 0.2,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": 0.0,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 0.7,
+    "raw_total": 0.2,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "AAOI",
+   "level": "30m",
+   "type": "1B",
+   "price": 94.0,
+   "area_enter": 39.12872226459832,
+   "area_leave": 22.351616543105212,
+   "ratio": 0.5712329779632958,
+   "dif_enter": -5.352909629438983,
+   "dif_leave": -2.4538310970913386,
+   "zd": 102.0999984741211,
+   "zg": 116.89990234375,
+   "time": "2026-09-16 15:00",
+   "bars_ago": 222,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "conflict",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 0.1,
+   "score_breakdown": {
+    "base": 3.0,
+    "divergence": 1.07,
+    "resonance": -1.5,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 1.5,
+    "raw_total": 0.07,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "AAPL",
+   "level": "30m",
+   "type": "3B",
+   "price": 325.8099975585937,
+   "zg": 316.2893981933594,
+   "zd": 300.57000732421875,
+   "margin_pct": 3.010091207487786,
+   "time": "2026-10-01 11:30",
+   "bars_ago": 86,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "mixed",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 0.1,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": -0.5,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 1.15,
+    "raw_total": 0.15,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "SNDK",
+   "level": "30m",
+   "type": "3B",
+   "price": 1509.14013671875,
+   "zg": 1446.62255859375,
+   "zd": 1163.0899658203125,
+   "margin_pct": 4.321623339385283,
+   "time": "2026-09-15 14:30",
+   "bars_ago": 236,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "conflict",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 0.0,
+   "score_breakdown": {
+    "base": 3.5,
+    "divergence": 0.0,
+    "resonance": -1.5,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 1.5,
+    "raw_total": -0.5,
+    "capped": true
+   }
+  }
+ ]
+}

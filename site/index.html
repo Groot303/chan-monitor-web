@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>缠论信号监控</title><link rel="stylesheet" href="style.css"></head><body>
+<header>
+<h1>缠论信号监控</h1>
+<div id="meta">加载中…</div>
+<div class="warn">启发式规则,未回测,不构成投资建议,未确认信号可能重绘。</div>
+</header>
+<section class="filters">
+<label>标的 <select id="f-sym"><option value="">全部</option></select></label>
+<label>级别 <select id="f-lv"><option value="">全部</option><option value="weekly">周线</option><option value="daily">日线</option><option value="30m">30分钟</option></select></label>
+<label>类型 <select id="f-type"><option value="">全部</option>
+<option>1B</option><option>2B</option><option>3B</option><option>1S</option><option>2S</option><option>3S</option></select></label>
+<label>确认 <select id="f-conf"><option value="">全部</option><option value="1">已确认</option><option value="0">未确认</option></select></label>
+<label>范围 <select id="f-recent"><option value="1">仅近期</option><option value="">含过期</option></select></label>
+<label>排序 <select id="f-sort"><option value="desc">分数从高到低</option><option value="asc">分数从低到高</option></select></label>
+</section>
+<main>
+<div class="tablewrap"><table id="tbl"><thead><tr><th>分数</th><th>标的</th><th>级别</th><th>类型</th><th>时间</th><th>价格</th><th>确认</th></tr></thead><tbody></tbody></table></div>
+<div id="empty" hidden>没有符合条件的信号</div>
+<section id="detail" hidden><h2 id="d-title"></h2><div id="d-info"></div><img id="d-img" alt="K线图"></section>
+</main>
+<footer>分数为透明启发式规则(0-10),不是胜率。数据源 Yahoo Finance,可能延迟或缺失。</footer>
+<script src="app.js"></script></body></html>

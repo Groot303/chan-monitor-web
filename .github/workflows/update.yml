@@ -1,0 +1,37 @@
+name: update-signals
+on:
+  schedule:
+    # UTC, hourly at :35, Mon-Fri 14:00-21:59 UTC -> covers US market hours in both EDT (13:30-20:00) and EST (14:30-21:00).
+    - cron: "35 14-21 * * 1-5"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: update-signals
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run analysis
+        run: |
+          mkdir -p out
+          python run2.py
+      - name: Build site data
+        run: python scripts/build_data.py out
+      - name: Commit updated site
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site
+          if git diff --cached --quiet; then echo "no changes"; else
+            git commit -m "chore: update signals $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+          fi

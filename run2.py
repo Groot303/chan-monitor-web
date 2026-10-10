@@ -1,0 +1,114 @@
+import json, datetime, warnings
+warnings.filterwarnings("ignore")
+import pandas as pd
+try:
+    import yfinance as yf
+except ImportError:
+    yf=None  # only needed when not CACHED
+import matplotlib; matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+import os
+from chan2 import analyze_level, resonance, score_signal
+CACHED=os.environ.get('CACHED')=='1'  # re-use data2_*.csv instead of re-downloading
+SYMS="MU SNDK SPCX SKHY INTC NVDA TSLA LITE AAOI MRVL AMD META MRNA TSM ORCL AVGO AAPL PLTR NOK GOOG".split()
+LEVELS=[("weekly","1wk","5y"),("daily","1d","2y"),("30m","30m","60d")]
+def fmt(ts): 
+    return str(ts)[:16] if hasattr(ts,'hour') and ts.hour else str(ts)[:10]
+def plot(sym, res, dfs):
+    fig, axes = plt.subplots(3,1,figsize=(15,15))
+    for ax,(lv,_,_) in zip(axes,LEVELS):
+        if lv not in res: ax.set_title(f"{sym} {lv}: NO DATA"); continue
+        df=dfs[lv]; r=res[lv]
+        for i,(d,x) in enumerate(df.iterrows()):
+            c="g" if x.Close>=x.Open else "r"
+            ax.plot([i,i],[x.Low,x.High],color=c,lw=0.7); ax.plot([i,i],[x.Open,x.Close],color=c,lw=2)
+        ax.plot([p[0] for p in r['pts']],[p[2] for p in r['pts']],color="gray",lw=0.8,label="strokes")
+        for sg in r['segs']:
+            ax.plot([sg.s_i,sg.e_i],[sg.s_p,sg.e_p],color="blue",lw=2.2,ls="-" if sg.confirmed else "--")
+        ax.plot([],[],color="blue",lw=2,label="segments (dashed=unconfirmed)")
+        for P in r['pivots']:
+            x0=r['segs'][P['first']].s_i; x1=r['segs'][P['last']].e_i
+            ax.add_patch(Rectangle((x0,P['zd']),max(x1-x0,1),P['zg']-P['zd'],alpha=0.25,color="orange"))
+        for s in r['signals']:
+            buy=s['type'].endswith('B')
+            ax.scatter([s['idx']],[s['price']],marker="^" if buy else "v",s=110,color="lime" if buy else "magenta",edgecolor="k",zorder=5)
+            ax.annotate(s['type']+("" if s['confirmed'] else "?")+(f" {s['score']:.1f}" if 'score' in s else ""),(s['idx'],s['price']),textcoords="offset points",xytext=(0,-16 if buy else 8),ha="center",fontsize=9,weight="bold")
+        n=len(df); step=max(n//10,1)
+        ax.set_xticks(range(0,n,step)); ax.set_xticklabels([fmt(df.index[i]) for i in range(0,n,step)],rotation=25,fontsize=8)
+        st=r['state']
+        ax.set_title(f"{sym} {lv}  bars={n} segs={len(r['segs'])} pivots={len(r['pivots'])} state={st['direction']}  (? = unconfirmed, may repaint; not advice)",fontsize=10)
+        ax.legend(loc="upper left",fontsize=8)
+    fig.tight_layout(); fig.savefig(f"out/{sym}_chan2.png",dpi=80); plt.close(fig)
+out={"generated":datetime.datetime.utcnow().isoformat()+"Z","symbols":{},"failures":{}}
+for s in SYMS:
+    res={}; dfs={}; ent={"levels":{}}
+    for lv,iv,per in LEVELS:
+        try:
+            if CACHED:
+                df=pd.read_csv(f"data2_{s}_{lv}.csv",index_col=0)
+                df.index=pd.to_datetime(df.index,utc=True).tz_convert("America/New_York")
+            else:
+                df=yf.Ticker(s).history(period=per,interval=iv,auto_adjust=False)
+            df=df.dropna(subset=["High","Low","Open","Close"])
+            if len(df)<40: raise ValueError(f"too few bars: {len(df)}")
+            if not CACHED: df.to_csv(f"data2_{s}_{lv}.csv")
+            dfs[lv]=df; res[lv]=analyze_level(df)
+        except Exception as e:
+            out["failures"][f"{s}/{lv}"]=str(e)[:200]; continue
+    for lv,_,_ in LEVELS:
+        if lv not in res: continue
+        r=res[lv]; df=dfs[lv]
+        ent["levels"][lv]=dict(bars=len(df),first=fmt(df.index[0]),last=fmt(df.index[-1]),last_close=float(df.Close.iloc[-1]),
+            n_segments=len(r['segs']),n_pivots=len(r['pivots']),state=r['state'],
+            last_segment=dict(up=r['segs'][-1].up,start=fmt(df.index[r['segs'][-1].s_i]),end=fmt(df.index[r['segs'][-1].e_i]),end_price=r['segs'][-1].e_p,confirmed=r['segs'][-1].confirmed) if r['segs'] else None,
+            signals=[dict(symbol=s,level=lv,**{k:(float(v) if isinstance(v,(int,float)) and not isinstance(v,bool) else v) for k,v in sg.items() if k not in('idx','seg','confirmed')},time=fmt(df.index[sg['idx']]),bars_ago=len(df)-1-sg['idx'],recent=(len(df)-1-sg['idx'])<={'weekly':4,'daily':10,'30m':40}[lv],
+                          confirmed=bool(sg['confirmed']),repaint_warning=None if sg['confirmed'] else "unconfirmed: last segment not yet confirmed by feature-sequence fractal; may repaint") for sg in r['signals']])
+    # resonance
+    for lv,bigs in (("30m",["daily","weekly"]),("daily",["weekly"])):
+        if lv in ent["levels"]:
+            bs=[ent["levels"][b]["state"] for b in bigs if b in ent["levels"]]
+            for sg in ent["levels"][lv]["signals"]:
+                sg["resonance"]=resonance(sg["type"],bs); sg["resonance_vs"]=[b for b in bigs if b in ent["levels"]]
+    for lv in ent["levels"]:
+        for sg,raw in zip(ent["levels"][lv]["signals"],res[lv]['signals']):
+            sg["score"],sg["score_breakdown"]=score_signal(sg,lv); raw["score"]=sg["score"]
+    out["symbols"][s]=ent
+    if res: plot(s,res,dfs)
+    print(s,{lv:(len(r['segs']),len(r['pivots']),len(r['signals'])) for lv,r in res.items()})
+json.dump(out,open("out/signals.json","w"),indent=1,default=str)
+# summary md
+L=["# Chan v2 signals summary","",f"Generated {out['generated']} (UTC). Prototype, read-only analysis. NOT investment advice.",
+"'?'/unconfirmed = last segment not yet confirmed, signal may repaint or vanish. Last-close data may include today's incomplete bar.",""]
+if out["failures"]:
+    L+=["## Data failures",*[f"- {k}: {v}" for k,v in out["failures"].items()],""]
+rec=[g for e in out["symbols"].values() for d in e["levels"].values() for g in d["signals"] if g["recent"]]
+rec.sort(key=lambda g:-g["score"])
+L+=["## Recent signals ranked by heuristic strength score (0-10, higher = stronger)","",
+"Score is a transparent heuristic (see DOCS_chan2.md), NOT backtested, NOT a win rate, NOT investment advice.","",
+"| # | Score | Symbol | Level | Type | Time | Price | Breakdown (base/div/reson/conf/fresh/quality) |","|---|---|---|---|---|---|---|---|"]
+for i,g in enumerate(rec,1):
+    b=g["score_breakdown"]
+    L.append(f"| {i} | **{g['score']:.1f}** | {g['symbol']} | {g['level']} | {g['type']}{'' if g['confirmed'] else '?'} | {g['time']} | {g['price']:.2f} | base {b['base']:+.2f}, div {b['divergence']:+.2f}, reson {b['resonance']:+.2f} ({g.get('resonance','n/a')}), conf {b['confirmed']:+.2f}, fresh {b['freshness']:+.2f} (age {g['bars_ago']}), quality {b['quality']:+.2f} = raw {b['raw_total']:.2f}{' (capped)' if b['capped'] else ''} |")
+if not rec: L.append("| - | - | no recent signals | | | | | |")
+L+=[""]
+L+=["## Per symbol (latest signal per level, plus higher-level state)",""]
+for s,e in out["symbols"].items():
+    L.append(f"### {s}")
+    for lv in ("weekly","daily","30m"):
+        d=e["levels"].get(lv)
+        if not d: L.append(f"- {lv}: NO DATA"); continue
+        st=d["state"]; z="" if st["zg"] is None else f" last pivot ZD={st['zd']:.2f}-ZG={st['zg']:.2f} ({st['pivot_pos']})"
+        ls=d["last_segment"]; lsd="" if not ls else f"; last seg {'up' if ls['up'] else 'down'} to {ls['end_price']:.2f} on {ls['end']} ({'confirmed' if ls['confirmed'] else 'UNCONFIRMED'})"
+        L.append(f"- {lv} [{d['first']}..{d['last']}, close {d['last_close']:.2f}]: dir={st['direction']}{z}{lsd}; segs={d['n_segments']} pivots={d['n_pivots']}")
+        if d["signals"]:
+            g=d["signals"][-1]
+            ev=[f"SCORE {g['score']:.1f}/10"]
+            if "ratio" in g and g["ratio"] is not None: ev.append(f"MACD area leave/enter={g['ratio']:.2f}")
+            if "margin_pct" in g: ev.append(f"margin vs ref={g['margin_pct']:.1f}%")
+            if "zg" in g and g.get("zg") is not None: ev.append(f"ZD={g['zd']:.2f} ZG={g['zg']:.2f}")
+            L.append(f"  - latest signal: **{g['type']}** at {g['time']} price {g['price']:.2f}; {'; '.join(ev)}; {'confirmed' if g['confirmed'] else 'UNCONFIRMED (may repaint)'}; {g['bars_ago']} bars ago{'' if g['recent'] else ' -> STALE, not a current signal'}"+(f"; resonance vs {'/'.join(g['resonance_vs'])}: {g['resonance']}" if 'resonance' in g else ""))
+            if len(d["signals"])>1: L.append(f"  - ({len(d['signals'])} signals in window; see signals.json)")
+        else: L.append("  - no signal in window")
+    L.append("")
+open("out/signals_summary.md","w").write("\n".join(L))

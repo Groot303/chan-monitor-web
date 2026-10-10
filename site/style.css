@@ -1,0 +1,13 @@
+*{box-sizing:border-box}body{margin:0;font:14px/1.5 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f6f8;color:#222}
+header{background:#1f2937;color:#fff;padding:12px 14px}h1{margin:0 0 4px;font-size:20px}
+#meta{font-size:12px;opacity:.85}.warn{margin-top:6px;background:#fff3cd;color:#664d03;padding:6px 8px;border-radius:4px;font-size:13px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:#fff;border-bottom:1px solid #ddd}
+.filters label{font-size:12px;display:flex;flex-direction:column}select{font-size:14px;padding:4px}
+main{padding:10px 14px}.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;background:#fff}
+th,td{padding:7px 8px;border-bottom:1px solid #eee;text-align:left;white-space:nowrap}th{background:#fafafa;font-size:12px}
+tr.sig{cursor:pointer}tr.sig:hover{background:#f0f7ff}.buy{color:#0a8a3a;font-weight:600}.sell{color:#c0262d;font-weight:600}
+.score{font-weight:700}.un{color:#b45309}tr.bd td{background:#fafafa;white-space:normal;font-size:13px}
+.bar{display:inline-block;height:8px;background:#3b82f6;border-radius:3px;vertical-align:middle;margin-right:4px}
+#detail{margin-top:14px;background:#fff;padding:10px;border-radius:6px}#detail img{width:100%;height:auto}
+#empty{padding:20px;text-align:center;color:#666}footer{padding:14px;font-size:12px;color:#666}
+.bk{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:4px}
