@@ -1,0 +1,90 @@
+{
+ "AAOI|30m|1B|2026-09-16 15:00": {
+  "confirmed": true,
+  "score": 0.1
+ },
+ "AAOI|30m|1B|2026-09-28 11:00": {
+  "confirmed": true,
+  "score": 0.5
+ },
+ "AAOI|30m|2B|2026-10-08 15:30": {
+  "confirmed": false,
+  "score": 2.5
+ },
+ "AAOI|30m|3S|2026-08-27 09:30": {
+  "confirmed": true,
+  "score": 2.5
+ },
+ "AAPL|30m|3B|2026-10-01 11:30": {
+  "confirmed": true,
+  "score": 0.1
+ },
+ "AMD|30m|3B|2026-10-09 13:00": {
+  "confirmed": false,
+  "score": 6.0
+ },
+ "AVGO|30m|3S|2026-09-22 15:30": {
+  "confirmed": true,
+  "score": 0.2
+ },
+ "INTC|30m|3B|2026-09-14 10:30": {
+  "confirmed": true,
+  "score": 2.3
+ },
+ "INTC|daily|3B|2026-03-30": {
+  "confirmed": true,
+  "score": 2.5
+ },
+ "LITE|30m|3B|2026-09-28 11:00": {
+  "confirmed": true,
+  "score": 2.1
+ },
+ "META|30m|3B|2026-10-08 13:00": {
+  "confirmed": false,
+  "score": 4.0
+ },
+ "MRNA|daily|3B|2026-04-29": {
+  "confirmed": true,
+  "score": 2.5
+ },
+ "MRVL|30m|3B|2026-10-08 13:00": {
+  "confirmed": false,
+  "score": 5.4
+ },
+ "MRVL|daily|3B|2026-07-29": {
+  "confirmed": false,
+  "score": 1.0
+ },
+ "MU|30m|3B|2026-09-28 10:30": {
+  "confirmed": true,
+  "score": 2.0
+ },
+ "NVDA|30m|3B|2026-10-09 14:30": {
+  "confirmed": false,
+  "score": 5.3
+ },
+ "SKHY|30m|3B|2026-09-15 12:00": {
+  "confirmed": true,
+  "score": 2.2
+ },
+ "SNDK|30m|3B|2026-09-15 14:30": {
+  "confirmed": true,
+  "score": 0.0
+ },
+ "SPCX|30m|3B|2026-09-28 15:30": {
+  "confirmed": true,
+  "score": 1.7
+ },
+ "TSLA|30m|3B|2026-10-08 13:00": {
+  "confirmed": true,
+  "score": 6.2
+ },
+ "TSM|30m|3B|2026-09-28 10:30": {
+  "confirmed": true,
+  "score": 2.3
+ },
+ "TSM|daily|3B|2025-09-02": {
+  "confirmed": true,
+  "score": 2.5
+ }
+}
