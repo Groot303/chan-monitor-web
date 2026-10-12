@@ -1,4 +1,5 @@
-yfinance
+alpaca-py
+exchange_calendars
 pandas
 numpy
 matplotlib
