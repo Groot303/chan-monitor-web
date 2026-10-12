@@ -15,8 +15,11 @@
   var DIR = { up: "向上", down: "向下", range: "震荡", inside: "震荡" };
   var POS = { above: "中枢上方", below: "中枢下方", inside: "中枢内", none: "无中枢" };
   var TIER = [[5, "hi", "高"], [2.5, "mid", "中"], [-Infinity, "lo", "低"]];
-  var DEFAULT_F = { q: "", level: "", type: "", conf: "", min: 0, recent: true, sort: "score", dir: "desc" };
-  var LS = { theme: "chan.theme", color: "chan.color", mode: "chan.mode", filters: "chan.filters" };
+  // 监控清单:即使 signals.json 缺少某标的,筛选与总览仍展示全部 20 个
+  var WATCHLIST = ["AAOI","AAPL","AMD","AVGO","GOOG","INTC","LITE","META","MRNA","MRVL","MU","NOK","NVDA","ORCL","PLTR","SKHY","SNDK","SPCX","TSLA","TSM"];
+  var DEFAULT_F = { q: "", level: "", type: "", conf: "", min: 0, recent: false, sort: "score", dir: "desc" };
+  // filters.v2:旧版默认 recent=true 已写入 localStorage,换键后首次加载回落到新默认(显示全部信号)
+  var LS = { theme: "chan.theme", color: "chan.color", mode: "chan.mode", filters: "chan.filters.v2" };
 
   // ---------- 工具 ----------
   var $ = function (id) { return document.getElementById(id); };
@@ -94,6 +97,12 @@
     return f;
   }
   function saveFilters() { lsSet(LS.filters, JSON.stringify(F)); }
+  function allSymbols() {
+    var set = {}, i, s, keys;
+    for (i = 0; i < WATCHLIST.length; i++) set[WATCHLIST[i]] = true;
+    if (D && D.symbols) { keys = Object.keys(D.symbols); for (i = 0; i < keys.length; i++) set[keys[i]] = true; }
+    return Object.keys(set).sort();
+  }
 
   // ---------- 主题/配色 ----------
   var root = document.documentElement;
@@ -187,7 +196,6 @@
   });
   function resetFilters() {
     for (var k in DEFAULT_F) F[k] = DEFAULT_F[k];
-    F.recent = false; // 重置后显示全部,便于从空状态恢复
     onFilter();
   }
 
@@ -231,9 +239,10 @@
     var ageH = ok ? (Date.now() - gen.getTime()) / 36e5 : 999;
     $("meta-short").textContent = ok ? "更新于 " + relTime(gen) + " · " + gen.toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "更新时间未知";
     qsa("#meta-sub .dot").forEach(function (x) { x.className = "dot" + (ageH > 72 ? " stale" : " pulse"); });
-    $("foot-meta").textContent = "数据生成时间(UTC):" + (D.generated || "").slice(0, 19).replace("T", " ") + " · 标的 " + Object.keys(D.symbols).length + " 个 · 信号 " + SIGS.length + " 条 · 分数为启发式 0–10,不是胜率。";
+    var symsAll = allSymbols();
+    $("foot-meta").textContent = "数据生成时间(UTC):" + (D.generated || "").slice(0, 19).replace("T", " ") + " · 标的 " + symsAll.length + " 个 · 信号 " + SIGS.length + " 条 · 分数为启发式 0–10,不是胜率。";
     var dl = $("sym-list");
-    dl.innerHTML = Object.keys(D.symbols).sort().map(function (s) { return '<option value="' + esc(s) + '">'; }).join("");
+    dl.innerHTML = symsAll.map(function (s) { return '<option value="' + esc(s) + '">'; }).join("");
     renderKPIs(gen, ok, ageH);
     renderFailures();
     syncControls();
@@ -269,7 +278,7 @@
     h += '<div class="kpi" style="--k1:var(--green);--k2:var(--accent)"><div class="kpi-label"><span class="dot' + (ageH > 72 ? " stale" : "") + '" aria-hidden="true"></span>数据更新</div>' +
       '<div class="kpi-value" style="font-size:21px">' + (ok ? relTime(gen) : "—") + '</div>' +
       '<div class="kpi-foot"><span class="num" title="本地时间">' + (ok ? gen.toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "") + '</span><span class="hide-sm">本地时间</span></div>' +
-      '<div class="kpi-foot">' + Object.keys(D.symbols).length + ' 个标的' + (fails ? ' · <span style="color:var(--warn)">' + fails + ' 项失败</span>' : '') + '<span class="hide-sm">· Yahoo 可能延迟</span></div></div>';
+      '<div class="kpi-foot">' + allSymbols().length + ' 个标的' + (fails ? ' · <span style="color:var(--warn)">' + fails + ' 项失败</span>' : '') + '<span class="hide-sm">· Yahoo 可能延迟</span></div></div>';
     $("kpis").innerHTML = h;
     var kr = $("k-recent"); if (kr) kr.addEventListener("click", function () { F.recent = true; onFilter(); setView("signals"); $("h-signals").scrollIntoView({ behavior: "smooth", block: "start" }); });
     var kt = $("k-top"); if (kt) kt.addEventListener("click", function () { openDrawer(top.symbol, top, kt); });
@@ -402,11 +411,11 @@
   }
   function renderSymbols() {
     if (!D) return;
-    var syms = Object.keys(D.symbols).sort();
+    var syms = allSymbols();
     $("sym-count").textContent = syms.length;
     if (!syms.length) { $("sym-grid").innerHTML = stateHTML("empty", "暂无标的", "数据中没有任何标的。"); return; }
     $("sym-grid").innerHTML = syms.map(function (sym, i) {
-      var s = D.symbols[sym], info = symInfo(sym), lc = lastClose(s);
+      var s = (D.symbols && D.symbols[sym]) || {}, info = symInfo(sym), lc = lastClose(s);
       var dirs = LV_ORDER.map(function (l) {
         var x = (s.levels || {})[l];
         if (!x) return '<span class="dir na" title="' + esc(LV[l]) + ' 无数据">' + esc(LV[l]) + '</span>';
@@ -422,9 +431,9 @@
           '<div class="row"><span class="muted">最高分</span><span class="mini-score tier-' + tb.k + '"><span class="mini-bar"><i style="width:' + B.score * 10 + '%"></i></span><b class="num" style="color:var(--t1)">' + B.score.toFixed(1) + '</b></span></div>' +
           '<div class="row"><span class="muted">信号数</span><span>' + info.list.length + ' 条 · 近期 ' + info.list.filter(function (g) { return g.recent; }).length + '</span></div></div>';
       } else {
-        body = '<div class="sym-empty">暂无信号</div>';
+        body = '<div class="sym-empty" role="status">暂无信号<span class="muted"> · 仍可打开查看多级别状态</span></div>';
       }
-      return '<button type="button" class="sym-card" data-sym="' + esc(sym) + '" style="animation-delay:' + Math.min(i * 25, 400) + 'ms" aria-label="' + esc(sym + ",查看详情") + '">' +
+      return '<button type="button" class="sym-card' + (info.latest ? "" : " is-empty") + '" data-sym="' + esc(sym) + '" style="animation-delay:' + Math.min(i * 25, 400) + 'ms" aria-label="' + esc(sym + (info.latest ? ",查看详情" : ",暂无信号,查看状态")) + '">' +
         '<div class="sym-head"><span class="sym">' + esc(sym) + '</span><span class="sym-close">' + (lc ? '<span class="num">' + fmtPrice(lc.last_close) + '</span>' : "—") + '</span></div>' +
         '<div class="dirs">' + dirs + '</div>' + body + '</button>';
     }).join("");

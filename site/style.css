@@ -242,6 +242,9 @@ td.r,th.r{text-align:right} th.r .th-btn{justify-content:flex-end}
 .sym-latest{display:flex;flex-direction:column;gap:6px;padding-top:11px;border-top:1px dashed var(--border);font-size:12.5px}
 .sym-latest .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .sym-empty{color:var(--text-3);font-size:12.5px;padding-top:11px;border-top:1px dashed var(--border)}
+.sym-empty .muted{color:var(--text-3);opacity:.85;font-weight:400}
+.sym-card.is-empty{border-style:dashed;opacity:.92}
+.sym-card.is-empty:hover{opacity:1}
 .mini-score{display:inline-flex;align-items:center;gap:6px}
 .mini-bar{width:56px;height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden}
 .mini-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--t1),var(--t2));border-radius:99px}
