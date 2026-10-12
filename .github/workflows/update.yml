@@ -5,6 +5,7 @@ on:
     # EDT (13:30-20:00 UTC) and EST (14:30-21:00 UTC); run2.py itself skips
     # outside 9:30-16:05 America/New_York (weekends + exchange holidays),
     # so no cron change is needed at DST transitions.
+    # re-pushed 2026-10-13 to force GitHub to re-register the schedule trigger
     - cron: "*/15 13-21 * * 1-5"
   workflow_dispatch:
 permissions:
