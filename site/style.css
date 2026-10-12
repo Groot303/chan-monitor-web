@@ -173,6 +173,19 @@ select option{background:var(--surface);color:var(--text)}
 .chip-lv{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);background:var(--accent-bg)}
 .chip-buy{color:var(--buy);border-color:var(--buy-bd);background:var(--buy-bg)}
 .chip-sell{color:var(--sell);border-color:var(--sell-bd);background:var(--sell-bg)}
+/* 中枢沿信号:与缠论 1/2/3 买卖点明显区分 */
+.chip-edge-buy{color:#0891b2;border-color:rgba(34,211,238,.45);background:rgba(34,211,238,.14);font-weight:650}
+.chip-edge-sell{color:#b45309;border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.14);font-weight:650}
+[data-theme="dark"] .chip-edge-buy{color:#67e8f9}
+[data-theme="dark"] .chip-edge-sell{color:#fbbf24}
+.side-tag.edge-buy{background:rgba(34,211,238,.16);color:#0891b2;border:1px solid rgba(34,211,238,.35)}
+.side-tag.edge-sell{background:rgba(245,158,11,.16);color:#b45309;border:1px solid rgba(245,158,11,.35)}
+[data-theme="dark"] .side-tag.edge-buy{color:#67e8f9}
+[data-theme="dark"] .side-tag.edge-sell{color:#fbbf24}
+.card.is-edge-buy{border-left:3px solid #22d3ee}
+.card.is-edge-sell{border-left:3px solid #f59e0b}
+.t-edge-buy{color:#0891b2}[data-theme="dark"] .t-edge-buy{color:#67e8f9}
+.t-edge-sell{color:#b45309}[data-theme="dark"] .t-edge-sell{color:#fbbf24}
 .chip-ok{color:var(--text-2)}
 .chip-ok::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
 .chip-un{color:var(--warn);border-color:var(--warn-bd);background:var(--warn-bg);border-style:dashed}

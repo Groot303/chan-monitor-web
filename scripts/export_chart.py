@@ -97,6 +97,7 @@ def export_level(df: pd.DataFrame, lv: str, sym: str, big_states: list | None = 
     for raw in r["signals"]:
         sg = {
             "type": raw["type"],
+            "kind": raw.get("kind", "chan"),
             "time": idx_time(df, raw["idx"], lv),
             "price": float(raw["price"]),
             "confirmed": bool(raw["confirmed"]),
@@ -105,9 +106,10 @@ def export_level(df: pd.DataFrame, lv: str, sym: str, big_states: list | None = 
             "recent": (len(df) - 1 - raw["idx"]) < RECENT[lv],
         }
         for k in ("ratio", "margin_pct", "zd", "zg", "area_enter", "area_leave",
-                  "dif_enter", "dif_leave", "ref_low", "ref_high"):
+                  "dif_enter", "dif_leave", "ref_low", "ref_high", "dist_pct", "edge"):
             if k in raw and raw[k] is not None:
-                sg[k] = float(raw[k]) if not isinstance(raw[k], bool) else raw[k]
+                v = raw[k]
+                sg[k] = float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else v
         if big_states is not None:
             sg["resonance"] = resonance(sg["type"], big_states)
         score, bd = score_signal(sg, lv)

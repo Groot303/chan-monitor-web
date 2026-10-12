@@ -35,7 +35,7 @@ try:
     charts_dir = os.path.join(site, "data", "charts")
     os.makedirs(charts_dir, exist_ok=True)
     data_dirs = [root, os.path.join(root, "..", "chan-monitor")]
-    for _sym in ("NVDA",):
+    for _sym in sorted(d["symbols"].keys()):
         try:
             payload = export_symbol(_sym, data_dirs)
             with open(os.path.join(charts_dir, f"{_sym}.json"), "w", encoding="utf-8") as _f:

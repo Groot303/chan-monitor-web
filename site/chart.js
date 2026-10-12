@@ -1,10 +1,10 @@
-/* Interactive Chan chart (Lightweight Charts, local vendor). Currently NVDA sample. */
+/* Interactive Chan chart (Lightweight Charts, local vendor). All watchlist symbols. */
 (function (global) {
   "use strict";
-  var SUPPORTED = { NVDA: true };
+  var SUPPORTED = null; // null = try any symbol via data/charts/{SYM}.json
   var LV_LABEL = { weekly: "周线", daily: "日线", "30m": "30分钟" };
   var LV_ORDER = ["weekly", "daily", "30m"];
-  var TYPE_NAME = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖" };
+  var TYPE_NAME = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_B": "上沿买", "ZD_S": "下沿卖" };
 
   var state = {
     root: null,
@@ -40,6 +40,8 @@
       seg: css("--hi") || "#5b8cff",
       pivot: "rgba(245,177,76,.22)",
       pivotStroke: "rgba(245,177,76,.55)",
+      edgeBuy: "#22d3ee",
+      edgeSell: "#f59e0b",
     };
   }
 
@@ -237,12 +239,13 @@
     if (state.show.signals && lv.signals && lv.signals.length && candle.setMarkers) {
       var markers = lv.signals.map(function (s) {
         var buy = isBuy(s.type);
+        var edge = s.kind === "pivot_edge" || s.type === "ZG_B" || s.type === "ZD_S";
         var label = (TYPE_NAME[s.type] || s.type) + (s.confirmed ? "" : "?") + (s.score != null ? " " + Number(s.score).toFixed(1) : "");
         return {
           time: s.time,
           position: buy ? "belowBar" : "aboveBar",
-          color: buy ? th.up : th.down,
-          shape: buy ? "arrowUp" : "arrowDown",
+          color: edge ? (buy ? th.edgeBuy : th.edgeSell) : (buy ? th.up : th.down),
+          shape: edge ? "circle" : (buy ? "arrowUp" : "arrowDown"),
           text: label,
         };
       });
@@ -272,7 +275,7 @@
   function mount(root, symbol, opts) {
     opts = opts || {};
     destroy();
-    if (!SUPPORTED[symbol]) return Promise.resolve(false);
+    if (SUPPORTED && !SUPPORTED[symbol]) return Promise.resolve(false);
     if (!global.LightweightCharts) {
       root.innerHTML = '<div class="state" style="padding:16px"><p>交互图库未加载</p></div>';
       return Promise.resolve(false);
@@ -295,7 +298,7 @@
         root.innerHTML = "";
         var note = document.createElement("p");
         note.className = "ichart-note muted small";
-        note.textContent = "交互图样例 · 可缩放拖动 · 灰线=笔 · 蓝线=线段(虚线未确认) · 橙块=中枢 · 箭头=买卖点。其他标的仍用静态 PNG。";
+        note.textContent = "可缩放拖动 · 灰线=笔 · 蓝线=线段(虚线未确认) · 橙块=中枢 · 箭头=缠论买卖点 · 圆点=中枢沿(青/橙)。";
         root.appendChild(note);
         buildToolbar(root, data.levels);
         var host = document.createElement("div");
@@ -323,8 +326,8 @@
   }
 
   global.ChanInteractive = {
-    isSupported: function (sym) { return !!SUPPORTED[sym]; },
-    supportedList: function () { return Object.keys(SUPPORTED); },
+    isSupported: function (sym) { return !SUPPORTED || !!SUPPORTED[sym]; },
+    supportedList: function () { return SUPPORTED ? Object.keys(SUPPORTED) : []; },
     mount: mount,
     destroy: destroy,
     refreshTheme: refreshTheme,

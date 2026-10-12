@@ -31,9 +31,14 @@ def plot(sym, res, dfs):
             x0=r['segs'][P['first']].s_i; x1=r['segs'][P['last']].e_i
             ax.add_patch(Rectangle((x0,P['zd']),max(x1-x0,1),P['zg']-P['zd'],alpha=0.25,color="orange"))
         for s in r['signals']:
-            buy=s['type'].endswith('B')
-            ax.scatter([s['idx']],[s['price']],marker="^" if buy else "v",s=110,color="lime" if buy else "magenta",edgecolor="k",zorder=5)
-            ax.annotate(s['type']+("" if s['confirmed'] else "?")+(f" {s['score']:.1f}" if 'score' in s else ""),(s['idx'],s['price']),textcoords="offset points",xytext=(0,-16 if buy else 8),ha="center",fontsize=9,weight="bold")
+            buy=s['type'].endswith('B'); edge=s.get('kind')=='pivot_edge'
+            if edge:
+                ax.scatter([s['idx']],[s['price']],marker="D" if buy else "D",s=90,color="cyan" if buy else "orange",edgecolor="k",zorder=5)
+                label=("上沿买" if buy else "下沿卖")
+            else:
+                ax.scatter([s['idx']],[s['price']],marker="^" if buy else "v",s=110,color="lime" if buy else "magenta",edgecolor="k",zorder=5)
+                label=s['type']
+            ax.annotate(label+("" if s['confirmed'] else "?")+(f" {s['score']:.1f}" if 'score' in s else ""),(s['idx'],s['price']),textcoords="offset points",xytext=(0,-16 if buy else 8),ha="center",fontsize=8 if edge else 9,weight="bold")
         n=len(df); step=max(n//10,1)
         ax.set_xticks(range(0,n,step)); ax.set_xticklabels([fmt(df.index[i]) for i in range(0,n,step)],rotation=25,fontsize=8)
         st=r['state']
@@ -78,7 +83,7 @@ for s in SYMS:
     print(s,{lv:(len(r['segs']),len(r['pivots']),len(r['signals'])) for lv,r in res.items()})
 json.dump(out,open("out/signals.json","w"),indent=1,default=str)
 # summary md
-L=["# Chan v2 signals summary","",f"Generated {out['generated']} (UTC). Prototype, read-only analysis. NOT investment advice.",
+L=["# Chan v2 signals summary (含中枢沿 ZG_B/ZD_S)","",f"Generated {out['generated']} (UTC). Prototype, read-only analysis. NOT investment advice.",
 "'?'/unconfirmed = last segment not yet confirmed, signal may repaint or vanish. Last-close data may include today's incomplete bar.",""]
 if out["failures"]:
     L+=["## Data failures",*[f"- {k}: {v}" for k,v in out["failures"].items()],""]

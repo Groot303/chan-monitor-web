@@ -207,6 +207,46 @@ def resonance(sig_type, big_states):
     if all(d == opp for d in ds): return 'conflict'
     return 'mixed' if any(d == want for d in ds) else 'neutral'
 
+EDGE_TOL = 0.003  # 0.3%: treat high/low crossing ZG/ZD within this band as a touch
+
+def find_pivot_edge_signals(segs, pivots, highs, lows, closes):
+    """中枢上沿买 (ZG_B) / 中枢下沿卖 (ZD_S).
+    For each segment-pivot, scan bars in its active window; keep the *latest* touch
+    of ZG and of ZD. A touch = bar range intersects [level*(1-tol), level*(1+tol)].
+    These are heuristic edge alerts, NOT classic Chan 1/2/3 points. kind=pivot_edge."""
+    out = []
+    n = len(closes)
+    if n == 0 or not pivots or not segs:
+        return out
+    for P in pivots:
+        zg, zd = float(P["zg"]), float(P["zd"])
+        if zg <= zd:
+            continue
+        i0 = int(segs[P["first"]].s_i)
+        i1 = int(segs[P["last"]].e_i)
+        if P.get("leave") is not None:
+            i1 = max(i1, int(segs[P["leave"]].e_i))
+        i0 = max(0, i0); i1 = min(n - 1, i1)
+        last_zg = last_zd = None
+        for i in range(i0, i1 + 1):
+            hi, lo, cl = float(highs[i]), float(lows[i]), float(closes[i])
+            if hi >= zg * (1 - EDGE_TOL) and lo <= zg * (1 + EDGE_TOL):
+                last_zg = (i, cl, abs(cl - zg) / zg if zg else 0.0)
+            if lo <= zd * (1 + EDGE_TOL) and hi >= zd * (1 - EDGE_TOL):
+                last_zd = (i, cl, abs(cl - zd) / zd if zd else 0.0)
+        if last_zg is not None:
+            i, px, dist = last_zg
+            out.append(dict(type="ZG_B", idx=i, price=px, confirmed=True, seg=None,
+                            zg=zg, zd=zd, edge="ZG", kind="pivot_edge",
+                            dist_pct=100.0 * dist, margin_pct=100.0 * (px / zg - 1.0)))
+        if last_zd is not None:
+            i, px, dist = last_zd
+            out.append(dict(type="ZD_S", idx=i, price=px, confirmed=True, seg=None,
+                            zg=zg, zd=zd, edge="ZD", kind="pivot_edge",
+                            dist_pct=100.0 * dist, margin_pct=100.0 * (1.0 - px / zd)))
+    out.sort(key=lambda d: d["idx"])
+    return out
+
 def analyze_level(df):
     """df: DataFrame with High, Low, Close. Returns dict with all structures."""
     raw = [(d, float(r.High), float(r.Low)) for d, r in df.iterrows()]
@@ -222,6 +262,11 @@ def analyze_level(df):
     pivots = build_pivots(segs)
     dif, dea, hist = macd(df['Close'].values)
     sigs = find_signals(segs, pivots, make_area_fn(hist, dif))
+    for s in sigs:
+        s.setdefault("kind", "chan")
+    edge = find_pivot_edge_signals(segs, pivots, df["High"].values, df["Low"].values, df["Close"].values)
+    sigs = sigs + edge
+    sigs.sort(key=lambda d: d["idx"])
     return dict(pts=pts, segs=segs, pivots=pivots, signals=sigs,
                 state=level_state(segs, pivots, float(df['Close'].iloc[-1])))
 
@@ -238,10 +283,38 @@ STALE_PENALTY = -4.0
 
 def _clip(x, lo, hi): return max(lo, min(hi, x))
 
+def score_pivot_edge(sig, level):
+    """Simplified 0-10 score for ZG_B / ZD_S (kind=pivot_edge). Not backtested."""
+    bd = {"base": 3.0, "divergence": 0.0}
+    bd["resonance"] = RESONANCE_PTS.get(sig.get("resonance"), 0.0)
+    bd["confirmed"] = 0.0 if sig.get("confirmed") else UNCONFIRMED_PENALTY
+    R = RECENT_BARS[level]; age = sig.get("bars_ago", 0)
+    if age > R:
+        bd["freshness"] = STALE_PENALTY
+    else:
+        f = age / R
+        bd["freshness"] = 1.0 if f <= 0.25 else 0.5 if f <= 0.5 else 0.0
+    dist = sig.get("dist_pct")
+    q = 0.0
+    if dist is not None:
+        q += 2.0 * (1.0 - _clip(float(dist) / 0.5, 0.0, 1.0))  # within 0.5% -> full +2
+    zg, zd, px = sig.get("zg"), sig.get("zd"), sig.get("price")
+    if zg is not None and zd is not None and px:
+        q += 0.5 * _clip(((zg - zd) / px * 100) / 6.0, 0.0, 1.0)
+    bd["quality"] = round(q, 2)
+    raw = sum(bd.values())
+    score = round(_clip(raw, 0.0, 10.0), 1)
+    bd = {k: round(v, 2) for k, v in bd.items()}
+    bd["raw_total"] = round(raw, 2); bd["capped"] = raw > 10 or raw < 0
+    return score, bd
+
 def score_signal(sig, level):
     """sig: signal dict as written to signals.json (type, price, confirmed, bars_ago, resonance,
     ratio, dif_enter, dif_leave, zd, zg, margin_pct). Returns (score 0-10 float, breakdown dict).
-    Components (points): base, divergence, resonance, confirmed, freshness, quality."""
+    Components (points): base, divergence, resonance, confirmed, freshness, quality.
+    Pivot-edge signals (ZG_B/ZD_S, kind=pivot_edge) use score_pivot_edge()."""
+    if sig.get("kind") == "pivot_edge" or sig.get("type") in ("ZG_B", "ZD_S"):
+        return score_pivot_edge(sig, level)
     kind = sig['type'][0]
     bd = {'base': BASE_SCORE[kind]}
     # divergence: MACD area ratio leave/enter, smaller = stronger. Only 1B/1S carry it. 0..2.5

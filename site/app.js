@@ -6,7 +6,7 @@
   var LV = { weekly: "周线", daily: "日线", "30m": "30分钟" };
   var LV_ORDER = ["weekly", "daily", "30m"];
   var RECENT_WIN = { weekly: 4, daily: 10, "30m": 40 };
-  var TY = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖" };
+  var TY = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_B": "中枢上沿买", "ZD_S": "中枢下沿卖" };
   var BK = [
     ["base", "基础分"], ["divergence", "背驰"], ["resonance", "共振"],
     ["confirmed", "确认"], ["freshness", "新鲜度"], ["quality", "中枢质量"]
@@ -31,7 +31,8 @@
   function fmtPrice(v) { v = num(v); return v == null ? "—" : v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function fmtSigned(v, n) { v = num(v, 0); var s = v.toFixed(n == null ? 2 : n); return v > 0 ? "+" + s : (v < 0 ? "−" + s.slice(1) : s); }
   function fmtPct(v) { v = num(v); return v == null ? "—" : v.toFixed(2) + "%"; }
-  function isBuy(g) { return /B$/.test(g.type || ""); }
+  function isBuy(g) { return /B$/.test((g && g.type) || g || ""); }
+  function isEdge(g) { return (g && g.kind === "pivot_edge") || g.type === "ZG_B" || g.type === "ZD_S"; }
   function tier(score) { for (var i = 0; i < TIER.length; i++) if (score >= TIER[i][0]) return { k: TIER[i][1], label: TIER[i][2] }; return { k: "lo", label: "低" }; }
   function typeName(t) { return TY[t] || t; }
   function fmtTime(t, level) { if (!t) return "—"; return level === "30m" ? t + " ET" : t; }
@@ -75,9 +76,14 @@
 
   function chipsHTML(g, opts) {
     opts = opts || {};
-    var buy = isBuy(g), out = [];
+    var buy = isBuy(g), edge = isEdge(g), out = [];
     out.push('<span class="chip chip-lv">' + esc(LV[g.level] || g.level) + '</span>');
-    out.push('<span class="chip ' + (buy ? "chip-buy" : "chip-sell") + '">' + esc(typeName(g.type)) + ' · ' + esc(g.type) + '</span>');
+    if (edge) {
+      out.push('<span class="chip ' + (buy ? "chip-edge-buy" : "chip-edge-sell") + '">' + esc(typeName(g.type)) + ' · ' + esc(g.type) + '</span>');
+      out.push('<span class="chip chip-lv" title="中枢沿启发式,非经典一二三类买卖点">中枢沿</span>');
+    } else {
+      out.push('<span class="chip ' + (buy ? "chip-buy" : "chip-sell") + '">' + esc(typeName(g.type)) + ' · ' + esc(g.type) + '</span>');
+    }
     out.push(g.confirmed
       ? '<span class="chip chip-ok">已确认</span>'
       : '<span class="chip chip-un" title="最后一段尚未被特征序列分型确认,信号可能重绘或消失">未确认 · 可能重绘</span>');
@@ -213,7 +219,9 @@
         if (!d || !Array.isArray(d.signals) || !d.symbols) throw new Error("数据格式不正确");
         D = d;
         SIGS = d.signals.filter(function (g) { return g && g.symbol && g.type; }).map(function (g, i) {
-          g._id = i; g.score = num(g.score, 0); return g;
+          g._id = i; g.score = num(g.score, 0);
+          if (!g.kind) g.kind = (g.type === "ZG_B" || g.type === "ZD_S") ? "pivot_edge" : "chan";
+          return g;
         });
         init();
       })
@@ -297,7 +305,12 @@
     var a = SIGS.filter(function (g) {
       if (q && g.symbol.toUpperCase().indexOf(q) < 0) return false;
       if (F.level && g.level !== F.level) return false;
-      if (F.type) { if (F.type.length === 1) { if (g.type.slice(-1) !== F.type) return false; } else if (g.type !== F.type) return false; }
+      if (F.type) {
+        if (F.type === "edge") { if (!isEdge(g)) return false; }
+        else if (F.type === "chan") { if (isEdge(g)) return false; }
+        else if (F.type.length === 1) { if (g.type.slice(-1) !== F.type) return false; }
+        else if (g.type !== F.type) return false;
+      }
       if (F.conf !== "" && String(+!!g.confirmed) !== F.conf) return false;
       if (g.score < +F.min) return false;
       if (F.recent && !g.recent) return false;
@@ -354,11 +367,13 @@
 
   function cardsHTML(a) {
     return '<div class="cards">' + a.map(function (g, i) {
-      var buy = isBuy(g);
-      return '<button type="button" class="card ' + (buy ? "is-buy" : "is-sell") + (g.recent ? "" : " stale") + '" data-sig="' + g._id + '" style="animation-delay:' + Math.min(i * 35, 400) + 'ms" ' +
+      var buy = isBuy(g), edge = isEdge(g);
+      var sideCls = edge ? (buy ? "edge-buy" : "edge-sell") : (buy ? "buy" : "sell");
+      var cardCls = edge ? (buy ? "is-edge-buy" : "is-edge-sell") : (buy ? "is-buy" : "is-sell");
+      return '<button type="button" class="card ' + cardCls + (g.recent ? "" : " stale") + '" data-sig="' + g._id + '" style="animation-delay:' + Math.min(i * 35, 400) + 'ms" ' +
         'aria-label="' + esc(g.symbol + " " + (LV[g.level] || g.level) + " " + typeName(g.type) + ",分数 " + g.score.toFixed(1) + "," + (g.confirmed ? "已确认" : "未确认,可能重绘")) + '">' +
         '<div class="card-top">' + ringHTML(g.score) +
-        '<div class="card-id"><div class="sym">' + esc(g.symbol) + '<span class="side-tag ' + (buy ? "buy" : "sell") + '">' + (buy ? "买" : "卖") + ' · ' + esc(typeName(g.type)) + '</span></div>' +
+        '<div class="card-id"><div class="sym">' + esc(g.symbol) + '<span class="side-tag ' + sideCls + '">' + (edge ? (buy ? "上沿买" : "下沿卖") : ((buy ? "买" : "卖") + " · " + typeName(g.type))) + '</span></div>' +
         '<div class="card-price">信号价 <span class="num">' + fmtPrice(g.price) + '</span></div></div></div>' +
         chipsHTML(g) +
         '<div class="card-meta">' +
@@ -385,7 +400,7 @@
       return '<tr tabindex="0" data-sig="' + g._id + '" aria-label="' + esc(g.symbol + " " + typeName(g.type) + " 分数 " + g.score.toFixed(1) + ",按回车查看详情") + '">' +
         '<td>' + sbarHTML(g.score) + '</td>' +
         '<td class="t-sym">' + esc(g.symbol) + '</td>' +
-        '<td><span class="chip ' + (buy ? "chip-buy" : "chip-sell") + '">' + (buy ? "买" : "卖") + ' · ' + esc(typeName(g.type)) + '</span></td>' +
+        '<td><span class="chip ' + (isEdge(g) ? (buy ? "chip-edge-buy" : "chip-edge-sell") : (buy ? "chip-buy" : "chip-sell")) + '">' + esc(typeName(g.type)) + '</span></td>' +
         '<td><span class="chip chip-lv">' + esc(LV[g.level] || g.level) + '</span></td>' +
         '<td>' + (g.confirmed ? '<span class="chip chip-ok">已确认</span>' : '<span class="chip chip-un" title="可能重绘">未确认</span>') + (g.recent ? "" : ' <span class="chip chip-stale">过期</span>') + '</td>' +
         '<td class="num">' + esc(fmtTime(g.time, g.level)) + '</td>' +
@@ -445,10 +460,14 @@
   // ---------- 详情抽屉 ----------
   function explain(g) {
     var b = g.score_breakdown || {}, out = [], t = g.type, buy = isBuy(g);
+    if (isEdge(g)) {
+      out.push(["base", typeName(t) + "为中枢沿启发式信号(非经典一二三类买卖点):价格接近/触及中枢" + (buy ? "上沿 ZG" : "下沿 ZD") + ",基础分 " + fmtSigned(b.base, 1) + "。" + (g.dist_pct != null ? "距沿 " + num(g.dist_pct, 0).toFixed(3) + "%。" : "")]);
+    } else {
     var kind = t.charAt(0);
     if (kind === "1") out.push(["base", typeName(t) + "为逆势信号(趋势背驰),基础分 " + fmtSigned(b.base, 1) + ",主要依赖背驰证据。"]);
     else if (kind === "2") out.push(["base", typeName(t) + ":一" + (buy ? "买" : "卖") + "之后的回抽未" + (buy ? "跌破前低" : "突破前高") + ",反转已部分确认,基础分 " + fmtSigned(b.base, 1) + "。" + (g.ref_low != null ? "参考低点 " + fmtPrice(g.ref_low) + "。" : "")]);
     else if (kind === "3") out.push(["base", typeName(t) + ":离开中枢后回抽未重新进入中枢,属趋势延续,基础分 " + fmtSigned(b.base, 1) + "。"]);
+    }
     if (g.ratio != null) out.push(["divergence", "MACD 面积比(离开段/进入段)= " + num(g.ratio, 0).toFixed(2) + ",越小背驰越明显,背驰项 " + fmtSigned(b.divergence) + "。"]);
     else out.push(["divergence", "该类型不计背驰项(仅一买/一卖计算)。"]);
     var vs = (g.resonance_vs || []).map(function (l) { return LV[l] || l; }).join("、");
@@ -499,7 +518,7 @@
     var s = D.symbols[sym] || {};
     current = { sym: sym, g: g };
     if (opener && !$("drawer").contains(opener)) lastFocus = opener;
-    var head = '<h2 id="dr-title">' + esc(sym) + (g ? ' <span class="side-tag ' + (isBuy(g) ? "buy" : "sell") + '">' + (isBuy(g) ? "买" : "卖") + ' · ' + esc(typeName(g.type)) + '</span>' : ' <span class="chip">暂无信号</span>') + '</h2>' + (g ? chipsHTML(g, { res: true }) : "");
+    var head = '<h2 id="dr-title">' + esc(sym) + (g ? ' <span class="side-tag ' + (isEdge(g) ? (isBuy(g) ? "edge-buy" : "edge-sell") : (isBuy(g) ? "buy" : "sell")) + '">' + (isEdge(g) ? esc(typeName(g.type)) : ((isBuy(g) ? "买" : "卖") + " · " + typeName(g.type))) + '</span>' : ' <span class="chip">暂无信号</span>') + '</h2>' + (g ? chipsHTML(g, { res: true }) : "");
     $("dr-headline").innerHTML = head;
     var h = "";
     if (g) {
@@ -518,29 +537,23 @@
       h += '<div class="d-warn" role="note" style="border-style:solid"><div>该标的当前数据中没有检测到信号。</div></div>';
     }
     h += '<section class="d-block"><h3>多级别状态</h3>' + levelsHTML(sym) + '</section>';
-    var interactive = window.ChanInteractive && ChanInteractive.isSupported(sym);
-    if (interactive) {
-      h += '<section class="d-block"><h3>交互缠论图 <span class="chip chip-hi">样例 · NVDA</span><span class="muted small">可缩放拖动</span></h3>' +
-        '<div id="ichart-root" class="ichart-root"></div></section>';
+    var interactive = !!(window.ChanInteractive && ChanInteractive.isSupported(sym));
+    h += '<section class="d-block"><h3>交互缠论图 <span class="muted small">可缩放拖动 · Lightweight Charts</span></h3>' +
+      '<div id="ichart-root" class="ichart-root"></div></section>';
+    if (s.image) {
+      h += '<section class="d-block"><h3>静态对照图(可选)<span class="muted small">周 / 日 / 30分钟 PNG</span></h3>';
+      h += '<details class="png-details"><summary class="muted small">展开静态 PNG</summary>';
+      h += '<button type="button" class="chart-box" id="chart-btn" aria-label="全屏查看 ' + esc(sym) + ' 缠论图"><div class="chart-skel skeleton" id="chart-skel"></div><img id="chart-img" alt="' + esc(sym) + ' 缠论图:周线、日线、30分钟" hidden>' +
+        '<span class="zoom-hint" aria-hidden="true">⤢ 全屏</span></button></details></section>';
     }
-    h += '<section class="d-block"><h3>' + (interactive ? '静态对照图' : '缠论图') + '(周 / 日 / 30分钟)<span class="muted small">' + (interactive ? '可选对照' : '点击放大') + '</span></h3>';
-    if (interactive) {
-      h += '<details class="png-details"><summary class="muted small">展开静态 PNG(三级别合图)</summary>';
-    }
-    h += (s.image ? '<button type="button" class="chart-box" id="chart-btn" aria-label="全屏查看 ' + esc(sym) + ' 缠论图"><div class="chart-skel skeleton" id="chart-skel"></div><img id="chart-img" alt="' + esc(sym) + ' 缠论图:周线、日线、30分钟" hidden>' +
-        '<span class="zoom-hint" aria-hidden="true">⤢ 全屏</span></button>' : '<div class="state" style="padding:24px"><p>暂无图片</p></div>');
-    if (interactive) h += '</details>';
-    if (!interactive) {
-      h += '<p class="muted small" style="margin-top:8px">交互图先支持 NVDA;该标的暂用静态图。</p>';
-    }
-    h += '</section>';
+
     var others = SIGS.filter(function (x) { return x.symbol === sym; }).sort(function (a, b) { return b.score - a.score; });
     if (others.length > 1 || (others.length && !g)) {
       h += '<section class="d-block"><h3>该标的全部信号 <span class="count">' + others.length + '</span></h3><div class="other-sigs">' + others.map(function (x) {
         var t = tier(x.score);
         return '<button type="button" class="other" data-other="' + x._id + '"' + (g && x._id === g._id ? ' aria-current="true"' : "") + '>' +
           '<span class="mini-score tier-' + t.k + '"><b class="num" style="color:var(--t1);width:28px">' + x.score.toFixed(1) + '</b></span>' +
-          '<span class="' + (isBuy(x) ? "t-buy" : "t-sell") + '" style="font-weight:650">' + esc(typeName(x.type)) + '</span>' +
+          '<span class="' + (isEdge(x) ? (isBuy(x) ? "t-edge-buy" : "t-edge-sell") : (isBuy(x) ? "t-buy" : "t-sell")) + '" style="font-weight:650">' + esc(typeName(x.type)) + '</span>' +
           '<span class="grow">' + esc(LV[x.level] || x.level) + ' · ' + esc(fmtTime(x.time, x.level)) + '</span>' +
           (x.confirmed ? "" : '<span class="chip chip-un">未确认</span>') + (x.recent ? "" : '<span class="chip chip-stale">过期</span>') + '</button>';
       }).join("") + '</div></section>';
@@ -549,13 +562,9 @@
     $("dr-body").innerHTML = h;
     $("dr-body").scrollTop = 0;
 
-    if (window.ChanInteractive) {
-      if (ChanInteractive.isSupported(sym)) {
-        var preferred = (g && g.level) || "daily";
-        ChanInteractive.mount($("ichart-root"), sym, { level: preferred });
-      } else {
-        ChanInteractive.destroy();
-      }
+    if (window.ChanInteractive && $("ichart-root")) {
+      var preferred = (g && g.level) || "daily";
+      ChanInteractive.mount($("ichart-root"), sym, { level: preferred });
     }
     if (s.image && $("chart-img")) {
       var img = $("chart-img");

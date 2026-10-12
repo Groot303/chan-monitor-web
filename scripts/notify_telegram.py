@@ -7,7 +7,7 @@ SCORE_MIN = float(os.environ.get("SCORE_MIN", "6.0"))
 SIGNALS = os.environ.get("SIGNALS_FILE", "site/data/signals.json")
 STATE = os.environ.get("STATE_FILE", "state/notified.json")
 URL = "https://chan-monitor-web.pages.dev"
-TYPES = {"1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖"}
+TYPES = {"1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_B": "中枢上沿买", "ZD_S": "中枢下沿卖"}
 LEVELS = {"weekly": "周线", "daily": "日线", "30m": "30分钟"}
 
 

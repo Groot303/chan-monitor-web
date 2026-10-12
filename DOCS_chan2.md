@@ -39,3 +39,24 @@ Files: chan.py (v1, unchanged; backup chan_v1.py), chan2.py, run2.py, tests/test
 Notes: a stale signal is almost always driven to ~0-2. Theoretical max ~9.5 (1B/1S) and ~7.5 (3B), so 3B/2B signals rarely score high by design; scores are only comparable roughly, not across signal types as equal probabilities. The cap at 10 and floor at 0 are applied after summing. Quality uses only fields the detector exposes; it does not measure segment amplitude vs. ATR. Tests: `tests/test_score.py` (hand-made data: range, cap/floor, direction of each component).
 
 Re-run with cached data (no download): `CACHED=1 .venv/bin/python run2.py` (the existing `.venv` has pandas/matplotlib).
+
+
+## Pivot-edge signals (中枢上沿买 / 下沿卖) — `kind=pivot_edge`
+
+**Disclaimer:** heuristic edge alerts, not classic Chan 1/2/3 points, not backtested, not investment advice.
+
+| Type | Label | Rule |
+|---|---|---|
+| `ZG_B` | 中枢上沿买 | Within a segment-pivot's active bar window, the latest bar whose range intersects ZG ± 0.3% (`EDGE_TOL`). Price near/at upper edge → buy hint. |
+| `ZD_S` | 中枢下沿卖 | Same window; latest bar intersecting ZD ± 0.3% → sell hint. |
+
+- Emitted alongside classic 1B/2B/3B/1S/2S/3S; each signal has `kind` (`chan` or `pivot_edge`), plus `edge` (`ZG`/`ZD`) and `dist_pct` (close vs edge, %).
+- At most one `ZG_B` and one `ZD_S` **per pivot** (latest touch kept).
+- Score uses `score_pivot_edge()`: base 3.0 + resonance + confirmed + freshness + quality (proximity up to +2, pivot width up to +0.5). Cap 0–10. No MACD divergence term.
+- Web UI styles them with cyan/amber chips (`chip-edge-buy` / `chip-edge-sell`), distinct from red/green Chan chips. Interactive chart markers use circles (Chan uses arrows).
+
+### Limitations
+- Tolerance 0.3% is arbitrary; noisy markets may spam touches on large pivots.
+- Uses high/low range intersection, not order-book / wick filters; incomplete last bar may trigger.
+- Does not require price to reverse after the edge; it is a proximity alert only.
+- Still approximate pivots from the simplified segment algorithm.
