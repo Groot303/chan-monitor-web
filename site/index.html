@@ -189,6 +189,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);if(c==="us"||c==="cn")
 
 <footer class="footer">
   <div class="footer-inner">
+    <p class="muted small">交互 K 线图目前先支持 <b>NVDA</b> 样例(可缩放拖动并叠加笔/线段/中枢/买卖点);其他标的仍展示静态 PNG。</p>
     <p class="disclaimer"><b>免责声明:</b>本页信号基于启发式规则,<b>未回测</b>,<b>不构成投资建议</b>;<b>未确认信号可能重绘</b>。数据源 Yahoo Finance,可能延迟或缺失。</p>
     <p class="muted small" id="foot-meta"></p>
   </div>
@@ -237,6 +238,8 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);if(c==="us"||c==="cn")
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script src="vendor/lightweight-charts.min.js"></script>
+<script src="chart.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

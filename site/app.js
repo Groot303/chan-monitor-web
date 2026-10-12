@@ -1,4 +1,4 @@
-/* 缠论信号看板 — 纯原生 JS,无依赖。数据: data/signals.json, 图片: img/*_chan2.png */
+/* 缠论信号看板 — 纯原生 JS。数据: data/signals.json, 图片: img/*_chan2.png, 交互图: data/charts/*.json + Lightweight Charts(本地) */
 (function () {
   "use strict";
 
@@ -111,11 +111,13 @@
   $("btn-theme").addEventListener("click", function () {
     var t = root.getAttribute("data-theme") === "light" ? "dark" : "light";
     root.setAttribute("data-theme", t); lsSet(LS.theme, t); applyThemeMeta();
+    if (window.ChanInteractive) ChanInteractive.refreshTheme();
     toast(t === "light" ? "已切换为浅色主题" : "已切换为深色主题");
   });
   $("btn-color").addEventListener("click", function () {
     var c = root.getAttribute("data-color") === "us" ? "cn" : "us";
     root.setAttribute("data-color", c); lsSet(LS.color, c); applyColorLabel();
+    if (window.ChanInteractive) ChanInteractive.refreshTheme();
     toast(c === "cn" ? "配色:红色 = 买点,绿色 = 卖点(中文习惯)" : "配色:绿色 = 买点,红色 = 卖点(美股习惯)");
   });
   applyColorLabel(); applyThemeMeta();
@@ -507,9 +509,22 @@
       h += '<div class="d-warn" role="note" style="border-style:solid"><div>该标的当前数据中没有检测到信号。</div></div>';
     }
     h += '<section class="d-block"><h3>多级别状态</h3>' + levelsHTML(sym) + '</section>';
-    h += '<section class="d-block"><h3>缠论图(周 / 日 / 30分钟)<span class="muted small">点击放大</span></h3>' +
-      (s.image ? '<button type="button" class="chart-box" id="chart-btn" aria-label="全屏查看 ' + esc(sym) + ' 缠论图"><div class="chart-skel skeleton" id="chart-skel"></div><img id="chart-img" alt="' + esc(sym) + ' 缠论图:周线、日线、30分钟" hidden>' +
-        '<span class="zoom-hint" aria-hidden="true">⤢ 全屏</span></button>' : '<div class="state" style="padding:24px"><p>暂无图片</p></div>') + '</section>';
+    var interactive = window.ChanInteractive && ChanInteractive.isSupported(sym);
+    if (interactive) {
+      h += '<section class="d-block"><h3>交互缠论图 <span class="chip chip-hi">样例 · NVDA</span><span class="muted small">可缩放拖动</span></h3>' +
+        '<div id="ichart-root" class="ichart-root"></div></section>';
+    }
+    h += '<section class="d-block"><h3>' + (interactive ? '静态对照图' : '缠论图') + '(周 / 日 / 30分钟)<span class="muted small">' + (interactive ? '可选对照' : '点击放大') + '</span></h3>';
+    if (interactive) {
+      h += '<details class="png-details"><summary class="muted small">展开静态 PNG(三级别合图)</summary>';
+    }
+    h += (s.image ? '<button type="button" class="chart-box" id="chart-btn" aria-label="全屏查看 ' + esc(sym) + ' 缠论图"><div class="chart-skel skeleton" id="chart-skel"></div><img id="chart-img" alt="' + esc(sym) + ' 缠论图:周线、日线、30分钟" hidden>' +
+        '<span class="zoom-hint" aria-hidden="true">⤢ 全屏</span></button>' : '<div class="state" style="padding:24px"><p>暂无图片</p></div>');
+    if (interactive) h += '</details>';
+    if (!interactive) {
+      h += '<p class="muted small" style="margin-top:8px">交互图先支持 NVDA;该标的暂用静态图。</p>';
+    }
+    h += '</section>';
     var others = SIGS.filter(function (x) { return x.symbol === sym; }).sort(function (a, b) { return b.score - a.score; });
     if (others.length > 1 || (others.length && !g)) {
       h += '<section class="d-block"><h3>该标的全部信号 <span class="count">' + others.length + '</span></h3><div class="other-sigs">' + others.map(function (x) {
@@ -525,12 +540,20 @@
     $("dr-body").innerHTML = h;
     $("dr-body").scrollTop = 0;
 
-    if (s.image) {
+    if (window.ChanInteractive) {
+      if (ChanInteractive.isSupported(sym)) {
+        var preferred = (g && g.level) || "daily";
+        ChanInteractive.mount($("ichart-root"), sym, { level: preferred });
+      } else {
+        ChanInteractive.destroy();
+      }
+    }
+    if (s.image && $("chart-img")) {
       var img = $("chart-img");
       img.onload = function () { img.hidden = false; var sk = $("chart-skel"); if (sk) sk.remove(); };
       img.onerror = function () { var sk = $("chart-skel"); if (sk) { sk.classList.remove("skeleton"); sk.style.aspectRatio = "auto"; sk.style.padding = "20px"; sk.style.color = "#666"; sk.textContent = "图片加载失败"; } };
       img.src = s.image;
-      $("chart-btn").addEventListener("click", function () { openLightbox(s.image, sym + " 缠论图(周/日/30分钟)", this); });
+      if ($("chart-btn")) $("chart-btn").addEventListener("click", function () { openLightbox(s.image, sym + " 缠论图(周/日/30分钟)", this); });
     }
     qsa("[data-other]", $("dr-body")).forEach(function (b) {
       b.addEventListener("click", function () { var x = SIGS[+b.getAttribute("data-other")]; openDrawer(x.symbol, x); var f = document.querySelector('[data-other="' + x._id + '"]'); if (f) f.focus(); });
@@ -557,6 +580,7 @@
     setTimeout(function () { dr.hidden = true; dr.classList.remove("closing"); }, 200);
     document.body.style.overflow = "";
     current = null;
+    if (window.ChanInteractive) ChanInteractive.destroy();
     if (lastFocus && document.body.contains(lastFocus)) lastFocus.focus();
   }
   $("dr-close").addEventListener("click", closeDrawer);
