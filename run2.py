@@ -1,18 +1,73 @@
 import json, datetime, warnings
 warnings.filterwarnings("ignore")
 import pandas as pd
-try:
-    import yfinance as yf
-except ImportError:
-    yf=None  # only needed when not CACHED
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import os
+from zoneinfo import ZoneInfo
 from chan2 import analyze_level, resonance, score_signal
 CACHED=os.environ.get('CACHED')=='1'  # re-use data2_*.csv instead of re-downloading
+FORCE_RUN=os.environ.get('FORCE_RUN')=='true'  # bypass market-hours gate (workflow_dispatch)
+NY_TZ="America/New_York"
 SYMS="MU SNDK SPCX SKHY INTC NVDA TSLA LITE AAOI MRVL AMD META MRNA TSM ORCL AVGO AAPL PLTR NOK GOOG".split()
 LEVELS=[("weekly","1wk","5y"),("daily","1d","2y"),("30m","30m","60d")]
+
+def in_trading_session(now=None):
+    """True during NYSE regular session 9:30-16:05 America/New_York.
+    Auto-adapts to EDT/EST and skips weekends + exchange holidays."""
+    now = now or datetime.datetime.now(ZoneInfo(NY_TZ))
+    if now.weekday() >= 5:
+        return False
+    try:
+        import exchange_calendars as xcals
+        if not xcals.get_calendar("XNYS").is_session(now.date()):
+            return False
+    except Exception:
+        pass  # calendar unavailable: fall back to weekday+hours check
+    t = now.time()
+    return datetime.time(9,30) <= t < datetime.time(16,5)
+
+if not CACHED and not FORCE_RUN and not in_trading_session():
+    print("skip: outside NYSE trading session (America/New_York); set FORCE_RUN=true to override")
+    raise SystemExit(0)
+
+def fetch_alpaca_frames():
+    """Fetch OHLC bars from Alpaca (IEX feed, free tier). Returns {level: {sym: df}}.
+    df: tz-aware America/New_York index, columns Open/High/Low/Close/Volume."""
+    from alpaca.data.historical import StockHistoricalDataClient
+    from alpaca.data.requests import StockBarsRequest
+    from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
+    from alpaca.data.enums import DataFeed
+    key=os.environ.get("ALPACA_API_KEY"); secret=os.environ.get("ALPACA_SECRET_KEY")
+    if not key or not secret:
+        raise SystemExit("ALPACA_API_KEY / ALPACA_SECRET_KEY not set (repo Settings -> Secrets and variables -> Actions)")
+    client=StockHistoricalDataClient(key, secret)
+    tf={"weekly":TimeFrame(1,TimeFrameUnit.Week),
+        "daily":TimeFrame(1,TimeFrameUnit.Day),
+        "30m":TimeFrame(30,TimeFrameUnit.Minute)}
+    days={"weekly":5*366,"daily":2*366,"30m":61}
+    now=datetime.datetime.now(datetime.timezone.utc)
+    frames={}
+    for lv in ("weekly","daily","30m"):
+        req=StockBarsRequest(symbol_or_symbols=SYMS, timeframe=tf[lv],
+                             start=now-datetime.timedelta(days=days[lv]),
+                             end=now, feed=DataFeed.IEX)
+        df=client.get_stock_bars(req).df
+        per={}
+        if df is not None and len(df):
+            df=df.tz_convert(NY_TZ)
+            for s in SYMS:
+                try: sdf=df.xs(s, level=0)
+                except KeyError: continue
+                sdf=(sdf.rename(columns={"open":"Open","high":"High","low":"Low",
+                                         "close":"Close","volume":"Volume"})
+                        [["Open","High","Low","Close","Volume"]].sort_index())
+                sdf=sdf[~sdf.index.duplicated(keep="last")]
+                per[s]=sdf
+        frames[lv]=per
+    return frames
+
 def fmt(ts): 
     return str(ts)[:16] if hasattr(ts,'hour') and ts.hour else str(ts)[:10]
 def plot(sym, res, dfs):
@@ -45,6 +100,7 @@ def plot(sym, res, dfs):
         ax.set_title(f"{sym} {lv}  bars={n} segs={len(r['segs'])} pivots={len(r['pivots'])} state={st['direction']}  (? = unconfirmed, may repaint; not advice)",fontsize=10)
         ax.legend(loc="upper left",fontsize=8)
     fig.tight_layout(); fig.savefig(f"out/{sym}_chan2.png",dpi=80); plt.close(fig)
+FRAMES={} if CACHED else fetch_alpaca_frames()
 out={"generated":datetime.datetime.utcnow().isoformat()+"Z","symbols":{},"failures":{}}
 for s in SYMS:
     res={}; dfs={}; ent={"levels":{}}
@@ -52,9 +108,10 @@ for s in SYMS:
         try:
             if CACHED:
                 df=pd.read_csv(f"data2_{s}_{lv}.csv",index_col=0)
-                df.index=pd.to_datetime(df.index,utc=True).tz_convert("America/New_York")
+                df.index=pd.to_datetime(df.index,utc=True).tz_convert(NY_TZ)
             else:
-                df=yf.Ticker(s).history(period=per,interval=iv,auto_adjust=False)
+                df=FRAMES[lv].get(s)
+                if df is None or len(df)==0: raise ValueError("no bars from Alpaca")
             df=df.dropna(subset=["High","Low","Open","Close"])
             if len(df)<40: raise ValueError(f"too few bars: {len(df)}")
             if not CACHED: df.to_csv(f"data2_{s}_{lv}.csv")
