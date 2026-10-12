@@ -23,8 +23,8 @@ class TestPivotEdge(unittest.TestCase):
         highs[8] = 103.0; lows[8] = 101.7; closes[8] = 102.1
         sigs = find_pivot_edge_signals(segs, pivots, highs, lows, closes)
         types = {s["type"] for s in sigs}
-        self.assertIn("ZG_B", types)
-        self.assertIn("ZD_S", types)
+        self.assertIn("ZG_S", types)
+        self.assertIn("ZD_B", types)
         for s in sigs:
             self.assertEqual(s["kind"], "pivot_edge")
             sc, bd = score_signal(s, "daily")
@@ -32,7 +32,7 @@ class TestPivotEdge(unittest.TestCase):
             self.assertIn("base", bd)
 
     def test_score_routes(self):
-        s, bd = score_signal(dict(type="ZG_B", kind="pivot_edge", price=100, confirmed=True,
+        s, bd = score_signal(dict(type="ZG_S", kind="pivot_edge", price=100, confirmed=True,
                                   bars_ago=1, resonance="strong", zg=100, zd=95, dist_pct=0.1), "daily")
         self.assertGreaterEqual(s, 3.0)
         s2, _ = score_signal(dict(type="3B", price=100, confirmed=True, bars_ago=1,

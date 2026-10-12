@@ -3,7 +3,7 @@
 缠论(周线/日线/30分钟)信号的纯静态可视化网页。**启发式规则,未回测,不构成投资建议,未确认信号可能重绘。**
 
 ## 信号类型
-缠论 1/2/3 买卖点 + 中枢沿(ZG_B 上沿买 / ZD_S 下沿卖,`kind=pivot_edge`)。详情默认交互 K 线。
+缠论 1/2/3 买卖点 + 中枢沿(ZG_S 上沿卖 / ZD_B 下沿买,`kind=pivot_edge`)。详情默认交互 K 线。
 
 ## 结构
 - `site/` 静态网页(无需构建):`index.html`、`style.css`、`app.js`、`chart.js`、`vendor/lightweight-charts.min.js`、`data/signals.json`、`data/charts/*.json`、`img/*.png`

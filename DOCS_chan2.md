@@ -41,17 +41,17 @@ Notes: a stale signal is almost always driven to ~0-2. Theoretical max ~9.5 (1B/
 Re-run with cached data (no download): `CACHED=1 .venv/bin/python run2.py` (the existing `.venv` has pandas/matplotlib).
 
 
-## Pivot-edge signals (中枢上沿买 / 下沿卖) — `kind=pivot_edge`
+## Pivot-edge signals (中枢上沿卖 / 下沿买) — `kind=pivot_edge`
 
 **Disclaimer:** heuristic edge alerts, not classic Chan 1/2/3 points, not backtested, not investment advice.
 
 | Type | Label | Rule |
 |---|---|---|
-| `ZG_B` | 中枢上沿买 | Within a segment-pivot's active bar window, the latest bar whose range intersects ZG ± 0.3% (`EDGE_TOL`). Price near/at upper edge → buy hint. |
-| `ZD_S` | 中枢下沿卖 | Same window; latest bar intersecting ZD ± 0.3% → sell hint. |
+| `ZG_S` | 中枢上沿卖 | Within a segment-pivot's active bar window, the latest bar whose range intersects ZG ± 0.3% (`EDGE_TOL`). Price near/at upper edge → sell hint. |
+| `ZD_B` | 中枢下沿买 | Same window; latest bar intersecting ZD ± 0.3% → buy hint. |
 
 - Emitted alongside classic 1B/2B/3B/1S/2S/3S; each signal has `kind` (`chan` or `pivot_edge`), plus `edge` (`ZG`/`ZD`) and `dist_pct` (close vs edge, %).
-- At most one `ZG_B` and one `ZD_S` **per pivot** (latest touch kept).
+- At most one `ZG_S` and one `ZD_B` **per pivot** (latest touch kept).
 - Score uses `score_pivot_edge()`: base 3.0 + resonance + confirmed + freshness + quality (proximity up to +2, pivot width up to +0.5). Cap 0–10. No MACD divergence term.
 - Web UI styles them with cyan/amber chips (`chip-edge-buy` / `chip-edge-sell`), distinct from red/green Chan chips. Interactive chart markers use circles (Chan uses arrows).
 

@@ -4,7 +4,7 @@
   var SUPPORTED = null; // null = try any symbol via data/charts/{SYM}.json
   var LV_LABEL = { weekly: "周线", daily: "日线", "30m": "30分钟" };
   var LV_ORDER = ["weekly", "daily", "30m"];
-  var TYPE_NAME = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_B": "上沿买", "ZD_S": "下沿卖" };
+  var TYPE_NAME = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_S": "上沿卖", "ZD_B": "下沿买" };
 
   var state = {
     root: null,
@@ -239,7 +239,7 @@
     if (state.show.signals && lv.signals && lv.signals.length && candle.setMarkers) {
       var markers = lv.signals.map(function (s) {
         var buy = isBuy(s.type);
-        var edge = s.kind === "pivot_edge" || s.type === "ZG_B" || s.type === "ZD_S";
+        var edge = s.kind === "pivot_edge" || s.type === "ZG_S" || s.type === "ZD_B";
         var label = (TYPE_NAME[s.type] || s.type) + (s.confirmed ? "" : "?") + (s.score != null ? " " + Number(s.score).toFixed(1) : "");
         return {
           time: s.time,

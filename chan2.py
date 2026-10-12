@@ -210,7 +210,7 @@ def resonance(sig_type, big_states):
 EDGE_TOL = 0.003  # 0.3%: treat high/low crossing ZG/ZD within this band as a touch
 
 def find_pivot_edge_signals(segs, pivots, highs, lows, closes):
-    """中枢上沿买 (ZG_B) / 中枢下沿卖 (ZD_S).
+    """中枢上沿卖 (ZG_S) / 中枢下沿买 (ZD_B).
     For each segment-pivot, scan bars in its active window; keep the *latest* touch
     of ZG and of ZD. A touch = bar range intersects [level*(1-tol), level*(1+tol)].
     These are heuristic edge alerts, NOT classic Chan 1/2/3 points. kind=pivot_edge."""
@@ -236,12 +236,12 @@ def find_pivot_edge_signals(segs, pivots, highs, lows, closes):
                 last_zd = (i, cl, abs(cl - zd) / zd if zd else 0.0)
         if last_zg is not None:
             i, px, dist = last_zg
-            out.append(dict(type="ZG_B", idx=i, price=px, confirmed=True, seg=None,
+            out.append(dict(type="ZG_S", idx=i, price=px, confirmed=True, seg=None,
                             zg=zg, zd=zd, edge="ZG", kind="pivot_edge",
                             dist_pct=100.0 * dist, margin_pct=100.0 * (px / zg - 1.0)))
         if last_zd is not None:
             i, px, dist = last_zd
-            out.append(dict(type="ZD_S", idx=i, price=px, confirmed=True, seg=None,
+            out.append(dict(type="ZD_B", idx=i, price=px, confirmed=True, seg=None,
                             zg=zg, zd=zd, edge="ZD", kind="pivot_edge",
                             dist_pct=100.0 * dist, margin_pct=100.0 * (1.0 - px / zd)))
     out.sort(key=lambda d: d["idx"])
@@ -284,7 +284,7 @@ STALE_PENALTY = -4.0
 def _clip(x, lo, hi): return max(lo, min(hi, x))
 
 def score_pivot_edge(sig, level):
-    """Simplified 0-10 score for ZG_B / ZD_S (kind=pivot_edge). Not backtested."""
+    """Simplified 0-10 score for ZG_S / ZD_B (kind=pivot_edge). Not backtested."""
     bd = {"base": 3.0, "divergence": 0.0}
     bd["resonance"] = RESONANCE_PTS.get(sig.get("resonance"), 0.0)
     bd["confirmed"] = 0.0 if sig.get("confirmed") else UNCONFIRMED_PENALTY
@@ -312,8 +312,8 @@ def score_signal(sig, level):
     """sig: signal dict as written to signals.json (type, price, confirmed, bars_ago, resonance,
     ratio, dif_enter, dif_leave, zd, zg, margin_pct). Returns (score 0-10 float, breakdown dict).
     Components (points): base, divergence, resonance, confirmed, freshness, quality.
-    Pivot-edge signals (ZG_B/ZD_S, kind=pivot_edge) use score_pivot_edge()."""
-    if sig.get("kind") == "pivot_edge" or sig.get("type") in ("ZG_B", "ZD_S"):
+    Pivot-edge signals (ZG_S/ZD_B, kind=pivot_edge) use score_pivot_edge()."""
+    if sig.get("kind") == "pivot_edge" or sig.get("type") in ("ZG_S", "ZD_B"):
         return score_pivot_edge(sig, level)
     kind = sig['type'][0]
     bd = {'base': BASE_SCORE[kind]}

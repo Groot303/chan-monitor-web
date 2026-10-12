@@ -34,7 +34,7 @@ def plot(sym, res, dfs):
             buy=s['type'].endswith('B'); edge=s.get('kind')=='pivot_edge'
             if edge:
                 ax.scatter([s['idx']],[s['price']],marker="D" if buy else "D",s=90,color="cyan" if buy else "orange",edgecolor="k",zorder=5)
-                label=("上沿买" if buy else "下沿卖")
+                label=("下沿买" if buy else "上沿卖")
             else:
                 ax.scatter([s['idx']],[s['price']],marker="^" if buy else "v",s=110,color="lime" if buy else "magenta",edgecolor="k",zorder=5)
                 label=s['type']
@@ -83,7 +83,7 @@ for s in SYMS:
     print(s,{lv:(len(r['segs']),len(r['pivots']),len(r['signals'])) for lv,r in res.items()})
 json.dump(out,open("out/signals.json","w"),indent=1,default=str)
 # summary md
-L=["# Chan v2 signals summary (含中枢沿 ZG_B/ZD_S)","",f"Generated {out['generated']} (UTC). Prototype, read-only analysis. NOT investment advice.",
+L=["# Chan v2 signals summary (含中枢沿 ZG_S/ZD_B)","",f"Generated {out['generated']} (UTC). Prototype, read-only analysis. NOT investment advice.",
 "'?'/unconfirmed = last segment not yet confirmed, signal may repaint or vanish. Last-close data may include today's incomplete bar.",""]
 if out["failures"]:
     L+=["## Data failures",*[f"- {k}: {v}" for k,v in out["failures"].items()],""]

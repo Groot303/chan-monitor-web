@@ -6,7 +6,7 @@
   var LV = { weekly: "周线", daily: "日线", "30m": "30分钟" };
   var LV_ORDER = ["weekly", "daily", "30m"];
   var RECENT_WIN = { weekly: 4, daily: 10, "30m": 40 };
-  var TY = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_B": "中枢上沿买", "ZD_S": "中枢下沿卖" };
+  var TY = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_S": "中枢上沿卖", "ZD_B": "中枢下沿买" };
   var BK = [
     ["base", "基础分"], ["divergence", "背驰"], ["resonance", "共振"],
     ["confirmed", "确认"], ["freshness", "新鲜度"], ["quality", "中枢质量"]
@@ -32,7 +32,7 @@
   function fmtSigned(v, n) { v = num(v, 0); var s = v.toFixed(n == null ? 2 : n); return v > 0 ? "+" + s : (v < 0 ? "−" + s.slice(1) : s); }
   function fmtPct(v) { v = num(v); return v == null ? "—" : v.toFixed(2) + "%"; }
   function isBuy(g) { return /B$/.test((g && g.type) || g || ""); }
-  function isEdge(g) { return (g && g.kind === "pivot_edge") || g.type === "ZG_B" || g.type === "ZD_S"; }
+  function isEdge(g) { return (g && g.kind === "pivot_edge") || g.type === "ZG_S" || g.type === "ZD_B"; }
   function tier(score) { for (var i = 0; i < TIER.length; i++) if (score >= TIER[i][0]) return { k: TIER[i][1], label: TIER[i][2] }; return { k: "lo", label: "低" }; }
   function typeName(t) { return TY[t] || t; }
   function fmtTime(t, level) { if (!t) return "—"; return level === "30m" ? t + " ET" : t; }
@@ -220,7 +220,7 @@
         D = d;
         SIGS = d.signals.filter(function (g) { return g && g.symbol && g.type; }).map(function (g, i) {
           g._id = i; g.score = num(g.score, 0);
-          if (!g.kind) g.kind = (g.type === "ZG_B" || g.type === "ZD_S") ? "pivot_edge" : "chan";
+          if (!g.kind) g.kind = (g.type === "ZG_S" || g.type === "ZD_B") ? "pivot_edge" : "chan";
           return g;
         });
         init();
@@ -373,7 +373,7 @@
       return '<button type="button" class="card ' + cardCls + (g.recent ? "" : " stale") + '" data-sig="' + g._id + '" style="animation-delay:' + Math.min(i * 35, 400) + 'ms" ' +
         'aria-label="' + esc(g.symbol + " " + (LV[g.level] || g.level) + " " + typeName(g.type) + ",分数 " + g.score.toFixed(1) + "," + (g.confirmed ? "已确认" : "未确认,可能重绘")) + '">' +
         '<div class="card-top">' + ringHTML(g.score) +
-        '<div class="card-id"><div class="sym">' + esc(g.symbol) + '<span class="side-tag ' + sideCls + '">' + (edge ? (buy ? "上沿买" : "下沿卖") : ((buy ? "买" : "卖") + " · " + typeName(g.type))) + '</span></div>' +
+        '<div class="card-id"><div class="sym">' + esc(g.symbol) + '<span class="side-tag ' + sideCls + '">' + (edge ? (buy ? "下沿买" : "上沿卖") : ((buy ? "买" : "卖") + " · " + typeName(g.type))) + '</span></div>' +
         '<div class="card-price">信号价 <span class="num">' + fmtPrice(g.price) + '</span></div></div></div>' +
         chipsHTML(g) +
         '<div class="card-meta">' +
@@ -461,7 +461,7 @@
   function explain(g) {
     var b = g.score_breakdown || {}, out = [], t = g.type, buy = isBuy(g);
     if (isEdge(g)) {
-      out.push(["base", typeName(t) + "为中枢沿启发式信号(非经典一二三类买卖点):价格接近/触及中枢" + (buy ? "上沿 ZG" : "下沿 ZD") + ",基础分 " + fmtSigned(b.base, 1) + "。" + (g.dist_pct != null ? "距沿 " + num(g.dist_pct, 0).toFixed(3) + "%。" : "")]);
+      out.push(["base", typeName(t) + "为中枢沿启发式信号(非经典一二三类买卖点):价格接近/触及中枢" + (buy ? "下沿 ZD" : "上沿 ZG") + ",基础分 " + fmtSigned(b.base, 1) + "。" + (g.dist_pct != null ? "距沿 " + num(g.dist_pct, 0).toFixed(3) + "%。" : "")]);
     } else {
     var kind = t.charAt(0);
     if (kind === "1") out.push(["base", typeName(t) + "为逆势信号(趋势背驰),基础分 " + fmtSigned(b.base, 1) + ",主要依赖背驰证据。"]);

@@ -102,10 +102,10 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);if(c==="us"||c==="cn")
           <option value="B">全部买点</option>
           <option value="S">全部卖点</option>
           <option value="chan">缠论买卖点(1/2/3)</option>
-          <option value="edge">中枢沿(上沿买/下沿卖)</option>
+          <option value="edge">中枢沿(上沿卖/下沿买)</option>
           <option value="1B">一买 1B</option><option value="2B">二买 2B</option><option value="3B">三买 3B</option>
           <option value="1S">一卖 1S</option><option value="2S">二卖 2S</option><option value="3S">三卖 3S</option>
-          <option value="ZG_B">中枢上沿买</option><option value="ZD_S">中枢下沿卖</option>
+          <option value="ZG_S">中枢上沿卖</option><option value="ZD_B">中枢下沿买</option>
         </select>
       </div>
       <div class="f-field">
@@ -178,7 +178,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);if(c==="us"||c==="cn")
       <article class="panel">
         <h3>两类信号</h3>
         <p><span class="chip chip-buy">缠论买卖点</span> 为一/二/三类买点与卖点(背驰、中枢离开等)。</p>
-        <p><span class="chip chip-edge-buy">中枢上沿买</span> / <span class="chip chip-edge-sell">中枢下沿卖</span> 为价格接近或触及中枢 ZG/ZD 的启发式提示,<b>不是</b>经典缠论买卖点;样式与分数规则单独区分。</p>
+        <p><span class="chip chip-edge-sell">中枢上沿卖</span> / <span class="chip chip-edge-buy">中枢下沿买</span> 为价格接近或触及中枢 ZG/ZD 的启发式提示,<b>不是</b>经典缠论买卖点;样式与分数规则单独区分。</p>
       </article>
       <article class="panel">
         <h3>配色约定</h3>
@@ -197,7 +197,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);if(c==="us"||c==="cn")
 
 <footer class="footer">
   <div class="footer-inner">
-    <p class="muted small">20 个标的均为可缩放交互 K 线(Lightweight Charts,叠加笔/线段/中枢)。箭头=缠论一二三类买卖点;青绿/琥珀圆点=中枢上沿买/下沿卖。静态 PNG 可在详情中展开对照。</p>
+    <p class="muted small">20 个标的均为可缩放交互 K 线(Lightweight Charts,叠加笔/线段/中枢)。箭头=缠论一二三类买卖点;青绿/琥珀圆点=中枢下沿买/上沿卖。静态 PNG 可在详情中展开对照。</p>
     <p class="disclaimer"><b>免责声明:</b>本页信号基于启发式规则,<b>未回测</b>,<b>不构成投资建议</b>;<b>未确认信号可能重绘</b>。数据源 Yahoo Finance,可能延迟或缺失。</p>
     <p class="muted small" id="foot-meta"></p>
   </div>
