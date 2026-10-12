@@ -147,6 +147,14 @@
       ctx.rect(left, top, right - left, bot - top);
       ctx.fill();
       ctx.stroke();
+      // pivot edge price labels
+      ctx.font = "11px -apple-system,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif";
+      ctx.fillStyle = th.dark ? "#f0b35e" : "#9a6200";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "bottom";
+      ctx.fillText("ZG " + Number(p.zg).toFixed(2), right - 2, top - 3);
+      ctx.textBaseline = "top";
+      ctx.fillText("ZD " + Number(p.zd).toFixed(2), right - 2, bot + 3);
     });
   }
 
