@@ -56,10 +56,17 @@ def fetch_alpaca_frames():
         df=client.get_stock_bars(req).df
         per={}
         if df is not None and len(df):
-            df=df.tz_convert(NY_TZ)
+            # alpaca-py>=0.30: multi-symbol .df has a MultiIndex row index
+            # (symbol, timestamp) with UNNAMED levels; df.tz_convert() on it
+            # raises KeyError('Level None not found'). Split per symbol first,
+            # then tz-convert each plain DatetimeIndex.
             for s in SYMS:
                 try: sdf=df.xs(s, level=0)
                 except KeyError: continue
+                sdf.index=pd.DatetimeIndex(sdf.index)
+                if sdf.index.tz is None:
+                    sdf.index=sdf.index.tz_localize("UTC")
+                sdf.index=sdf.index.tz_convert(NY_TZ)
                 sdf=(sdf.rename(columns={"open":"Open","high":"High","low":"Low",
                                          "close":"Close","volume":"Volume"})
                         [["Open","High","Low","Close","Volume"]].sort_index())
