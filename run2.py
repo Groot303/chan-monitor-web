@@ -92,6 +92,9 @@ def plot(sym, res, dfs):
         for P in r['pivots']:
             x0=r['segs'][P['first']].s_i; x1=r['segs'][P['last']].e_i
             ax.add_patch(Rectangle((x0,P['zd']),max(x1-x0,1),P['zg']-P['zd'],alpha=0.25,color="orange"))
+            # label pivot edge prices on the chart
+            ax.text(x1,P['zg'],f" ZG {P['zg']:.2f}",fontsize=7,color="#9a6200",va="bottom",ha="right",clip_on=True)
+            ax.text(x1,P['zd'],f" ZD {P['zd']:.2f}",fontsize=7,color="#9a6200",va="top",ha="right",clip_on=True)
         for s in r['signals']:
             buy=s['type'].endswith('B'); edge=s.get('kind')=='pivot_edge'
             if edge:
