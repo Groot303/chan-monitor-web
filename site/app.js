@@ -145,9 +145,9 @@
 
   // ---------- 导航 ----------
   function setView(v, noHash) {
-    if (["signals", "symbols", "about"].indexOf(v) < 0) v = "signals";
+    if (["signals", "symbols", "strategy", "about"].indexOf(v) < 0) v = "signals";
     VIEW = v;
-    ["signals", "symbols", "about"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
+    ["signals", "symbols", "strategy", "about"].forEach(function (x) { var el=$("view-" + x); if(el) el.hidden = x !== v; });
     qsa(".tab[data-view]").forEach(function (b) {
       if (b.getAttribute("data-view") === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
@@ -699,4 +699,85 @@
   load();
   // 每分钟刷新相对时间
   setInterval(function () { if (D) { var g = new Date(D.generated); if (!isNaN(g)) $("meta-short").textContent = "更新于 " + relTime(g) + " · " + g.toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }); } }, 60000);
+
+
+  // ---------- 策略研究模块 ----------
+  function pct(x) {
+    if (x == null || !isFinite(x)) return "—";
+    return (100 * x).toFixed(2) + "%";
+  }
+  function svgEquity(curve) {
+    if (!curve || !curve.length) return '<p class="muted">等待数据 / 尚未生成回测报告</p>';
+    var w = 720, h = 220, pad = 28;
+    var vals = curve.map(function (r) { return r.equity; });
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    if (min === max) { min *= 0.99; max *= 1.01; }
+    var pts = curve.map(function (r, i) {
+      var x = pad + (w - 2 * pad) * (i / Math.max(1, curve.length - 1));
+      var y = h - pad - (h - 2 * pad) * ((r.equity - min) / (max - min));
+      return x.toFixed(1) + "," + y.toFixed(1);
+    }).join(" ");
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="220" role="img" aria-label="权益曲线">' +
+      '<polyline fill="none" stroke="var(--accent,#5b8cff)" stroke-width="2" points="' + pts + '"/>' +
+      '<text x="' + pad + '" y="16" fill="currentColor" font-size="11">max ' + max.toFixed(0) + '</text>' +
+      '<text x="' + pad + '" y="' + (h - 8) + '" fill="currentColor" font-size="11">min ' + min.toFixed(0) + '</text></svg>';
+  }
+  function renderStrategy(d) {
+    var status = $("strat-status");
+    if (!d) {
+      if (status) status.textContent = "尚未连接";
+      $("strat-disclaimer").textContent = "尚未生成回测数据。运行 scripts/run_strategy_backtest.py 后刷新。";
+      $("strat-kpis").innerHTML = "";
+      $("strat-equity").innerHTML = '<p class="muted">等待数据</p>';
+      $("strat-trades").innerHTML = '<p class="muted">等待数据</p>';
+      $("strat-signals").innerHTML = '<p class="muted">等待数据</p>';
+      return;
+    }
+    if (status) status.textContent = d.version || "已加载";
+    $("strat-disclaimer").textContent = (d.disclaimer || "") + " " + (d.performance_note || "");
+    var p = d.performance || {};
+    var kpis = [
+      ["总收益", pct(p.total_return)],
+      ["最大回撤", pct(p.max_drawdown)],
+      ["胜率", pct(p.win_rate)],
+      ["交易次数", p.trades == null ? "—" : String(p.trades)],
+      ["Sharpe", p.sharpe == null ? "—" : Number(p.sharpe).toFixed(2)],
+      ["IBKR", (d.ibkr && d.ibkr.status) || "尚未连接"]
+    ];
+    $("strat-kpis").innerHTML = kpis.map(function (kv) {
+      return '<div class="kpi"><div class="kpi-label">' + esc(kv[0]) + '</div><div class="kpi-val">' + esc(kv[1]) + '</div></div>';
+    }).join("");
+    $("strat-regime").textContent = JSON.stringify(d.regime_latest || {}, null, 2);
+    $("strat-config").textContent = JSON.stringify(d.config_summary || {}, null, 2);
+    $("strat-equity").innerHTML = svgEquity(d.equity_curve || []);
+    var trades = d.trades || [];
+    if (!trades.length) {
+      $("strat-trades").innerHTML = '<p class="muted">无交易记录（可能样本不足）</p>';
+    } else {
+      var rows = trades.slice(0, 80).map(function (t) {
+        return "<tr><td>" + esc(t.symbol) + "</td><td>" + esc(t.strategy) + "</td><td>" + esc(t.signal_date) +
+          "</td><td>" + esc(t.entry_date) + "</td><td>" + esc(t.status) + "</td><td>" +
+          (t.pnl == null ? "—" : Number(t.pnl).toFixed(2)) + "</td><td>" + esc(t.exit_reason || "") + "</td></tr>";
+      }).join("");
+      $("strat-trades").innerHTML = '<table class="data"><thead><tr><th>标的</th><th>策略</th><th>信号日</th><th>入场日</th><th>状态</th><th>PnL</th><th>原因</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    }
+    var sigs = d.signals_sample || [];
+    if (!sigs.length) {
+      $("strat-signals").innerHTML = '<p class="muted">无信号样本</p>';
+    } else {
+      var srows = sigs.slice(0, 40).map(function (s) {
+        return "<tr><td>" + esc(s.symbol) + "</td><td>" + esc(s.strategy) + "</td><td>" + esc(s.date) +
+          "</td><td>" + (s.score == null ? "—" : Number(s.score).toFixed(1)) + "</td><td>" + esc((s.reasons || []).slice(0, 2).join("; ")) + "</td></tr>";
+      }).join("");
+      $("strat-signals").innerHTML = '<table class="data"><thead><tr><th>标的</th><th>策略</th><th>日期</th><th>评分</th><th>理由</th></tr></thead><tbody>' + srows + '</tbody></table>';
+    }
+  }
+  function loadStrategy() {
+    fetch("data/strategy/backtest.json", { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error("missing");
+      return r.json();
+    }).then(renderStrategy).catch(function () { renderStrategy(null); });
+  }
+
+  loadStrategy();
 })();

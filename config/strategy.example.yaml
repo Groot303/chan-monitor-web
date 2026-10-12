@@ -1,0 +1,25 @@
+# 美股策略研究配置示例（复制后按需修改；不要提交含密钥的文件）
+version: us-lab-v1
+watchlist: [SNDK, MU, AAOI, NVDA, TSLA, SPCX, RKLB]
+benchmarks: [QQQ, SPY]
+score_entry_min: 55
+hold_max_days: 30
+risk:
+  risk_per_trade: 0.005
+  max_position_pct: 0.10
+  max_positions: 4
+  max_drawdown: 0.10
+  atr_stop_mult: 2.0
+  initial_cash: 100000
+costs:
+  commission_per_share: 0.005
+  commission_min: 1.0
+  slippage_bps: 5.0
+fill_rule: >
+  Signal confirmed after daily close on T;
+  fill at next session open on T+1 with slippage;
+  stop gaps fill at open.
+# IBKR: 仅在受保护主机设置环境变量，不要写入本文件
+# IBKR_HOST=127.0.0.1
+# IBKR_PORT=7497
+# IBKR_CLIENT_ID=1

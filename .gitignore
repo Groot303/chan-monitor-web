@@ -6,3 +6,7 @@ data_*.csv
 *.pyc
 preview/
 .venv
+
+data_cache/
+.env
+*.egg-info/

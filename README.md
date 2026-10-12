@@ -34,3 +34,36 @@
 - 仓库 Settings → Actions → General → Workflow permissions 需为 "Read and write permissions"(workflow 已声明 `contents: write`,但仓库/组织级默认若更严格会覆盖)。
 - 定时任务可能延迟几分钟;仓库 60 天无活动时 GitHub 会暂停定时任务(本流程会提交所以通常不会)。
 - Yahoo Finance 为非官方接口,runner IP 可能被限流,导致某些标的失败(记录在 `failures`)。
+
+
+## 美股策略研究实验室（增量模块）
+
+独立包 `quant/`：规则策略 + 风险引擎 + 日线回测 + 纸面模拟。**第一版禁止真实下单**；IBKR 适配器仅为 stub（尚未连接）。
+
+### 本地回测
+
+```bash
+pip install -r requirements.txt
+# 可选：复制 .env.example；IBKR 凭据不要写入仓库
+python scripts/run_strategy_backtest.py --start 2025-07-01
+# 产出：out/strategy_backtest.json|md 与 site/data/strategy/backtest.json
+```
+
+单元测试：
+
+```bash
+python -m unittest tests.test_quant_indicators tests.test_quant_risk tests.test_quant_backtest tests.test_quant_lookahead -v
+```
+
+前端：打开站点后点「策略研究」。若缺少 `site/data/strategy/backtest.json`，页面会显示「等待数据 / 尚未连接」，**不会伪造绩效**。
+
+### 成交与风控约定
+
+- 信号：日线收盘后确认；模拟成交：**下一交易日开盘价** ± 滑点。
+- 止损跳空：以开盘价成交并标记 `stop_gap_open`。
+- 默认风险：单笔 0.5% 净值、单股 ≤10%、最多 4 仓、回撤 10% 暂停新开仓（不自动清仓）。
+- 评分 0–100：规则匹配度，**不是**上涨概率。
+
+配置示例：`config/strategy.example.yaml`、`.env.example`。
+
+开发分支：`feat/us-strategy-lab`（勿直接当生产）。审计：`out/strategy_audit.md`（本地）。

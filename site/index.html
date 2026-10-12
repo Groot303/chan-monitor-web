@@ -32,6 +32,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);if(c==="us"||c==="cn")
     <nav class="tabs tabs-top" aria-label="主导航">
       <button class="tab" data-view="signals" aria-current="page">信号</button>
       <button class="tab" data-view="symbols">标的总览</button>
+      <button class="tab" data-view="strategy">策略研究</button>
       <button class="tab" data-view="about">说明</button>
     </nav>
     <div class="top-actions">
@@ -161,6 +162,42 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);if(c==="us"||c==="cn")
     <div class="sym-grid" id="sym-grid"></div>
   </section>
 
+
+  <!-- 策略研究 -->
+  <section class="view" id="view-strategy" aria-labelledby="h-strategy" hidden>
+    <div class="section-head">
+      <h2 id="h-strategy">美股策略研究 <span class="count" id="strat-status"></span></h2>
+      <p class="muted small">规则策略回测 / 模拟研究模块。数据来自 Yahoo/CSV；IBKR <b>尚未连接</b>；<b>禁止真实下单</b>。评分是规则匹配度，不是上涨概率。</p>
+    </div>
+    <div class="banner" role="note">
+      <div class="banner-txt"><span id="strat-disclaimer">加载策略报告…</span></div>
+    </div>
+    <section class="kpis" id="strat-kpis" aria-label="回测概览"></section>
+    <div class="about-grid" style="margin-top:1rem">
+      <article class="panel">
+        <h3>市场状态</h3>
+        <pre id="strat-regime" class="code-block">—</pre>
+      </article>
+      <article class="panel">
+        <h3>配置摘要</h3>
+        <pre id="strat-config" class="code-block">—</pre>
+      </article>
+    </div>
+    <div class="section-head" style="margin-top:1.25rem">
+      <h2>权益曲线</h2>
+      <p class="muted small">静态折线（SVG）。无数据时显示「等待数据」。</p>
+    </div>
+    <div id="strat-equity" class="panel" style="padding:12px;overflow:auto"></div>
+    <div class="section-head" style="margin-top:1.25rem">
+      <h2>交易明细</h2>
+    </div>
+    <div id="strat-trades" class="panel" style="overflow:auto"></div>
+    <div class="section-head" style="margin-top:1.25rem">
+      <h2>高分信号样本</h2>
+    </div>
+    <div id="strat-signals" class="panel" style="overflow:auto"></div>
+  </section>
+
   <!-- 说明 -->
   <section class="view" id="view-about" aria-labelledby="h-about" hidden>
     <div class="section-head"><h2 id="h-about">说明</h2></div>
@@ -209,6 +246,8 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);if(c==="us"||c==="cn")
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 17l5-6 4 4 4-7 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>信号</span></button>
   <button class="tab" data-view="symbols">
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>标的</span></button>
+  <button class="tab" data-view="strategy">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>策略</span></button>
   <button class="tab" data-view="about">
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span>说明</span></button>
 </nav>
