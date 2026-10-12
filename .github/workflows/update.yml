@@ -1,8 +1,11 @@
 name: update-signals
 on:
   schedule:
-    # UTC, hourly at :35, Mon-Fri 14:00-21:59 UTC -> covers US market hours in both EDT (13:30-20:00) and EST (14:30-21:00).
-    - cron: "35 14-21 * * 1-5"
+    # Every 15 min, Mon-Fri 13:00-21:59 UTC. Covers US market hours in both
+    # EDT (13:30-20:00 UTC) and EST (14:30-21:00 UTC); run2.py itself skips
+    # outside 9:30-16:05 America/New_York (weekends + exchange holidays),
+    # so no cron change is needed at DST transitions.
+    - cron: "*/15 13-21 * * 1-5"
   workflow_dispatch:
 permissions:
   contents: write
@@ -13,6 +16,10 @@ jobs:
   update:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' }}
+      ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+      ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -25,8 +32,10 @@ jobs:
           mkdir -p out
           python run2.py
       - name: Build site data
+        if: hashFiles('out/signals.json') != ''
         run: python scripts/build_data.py out
       - name: Notify Telegram
+        if: hashFiles('out/signals.json') != ''
         continue-on-error: true
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
