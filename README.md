@@ -10,7 +10,7 @@
 - `scripts/build_data.py` 把分析输出(`out/signals.json`、`out/*_chan2.png`)整理进 `site/data` 与 `site/img`,并在有 CSV 时导出交互图 JSON
 - `scripts/export_chart.py` 从 `data2_SYM_*.csv` + chan2 导出 `site/data/charts/{SYM}.json`(OHLC + 笔/线段/中枢/买卖点)。目前样例为 NVDA
 - `chan.py` / `chan2.py` / `run2.py` 分析代码(从 chan-monitor 复制,GitHub Actions 需要它们才能在 runner 里重新计算)
-- `.github/workflows/update.yml` 美股交易时段工作日每小时(UTC :35,14-21点)及手动触发,安装依赖、运行分析、重建 `site/` 并提交回仓库
+- `.github/workflows/update.yml` 美股交易时段工作日每 15 分钟(UTC 13–21 点;run2.py 内按 America/New_York 9:30–16:05 判断交易时段并过滤节假日,自动适配夏令/冬令时)及手动触发,安装依赖、运行分析、重建 `site/` 并提交回仓库
 - `DOCS_chan2.md` 规则与评分说明
 
 ## 本地预览
@@ -33,4 +33,4 @@
 ## GitHub Actions 注意
 - 仓库 Settings → Actions → General → Workflow permissions 需为 "Read and write permissions"(workflow 已声明 `contents: write`,但仓库/组织级默认若更严格会覆盖)。
 - 定时任务可能延迟几分钟;仓库 60 天无活动时 GitHub 会暂停定时任务(本流程会提交所以通常不会)。
-- Yahoo Finance 为非官方接口,runner IP 可能被限流,导致某些标的失败(记录在 `failures`)。
+- 行情来自 Alpaca(IEX 免费实时);需在仓库 Settings → Secrets and variables → Actions 配置 `ALPACA_API_KEY` / `ALPACA_SECRET_KEY`。失败标的记录在 `failures`。
