@@ -23,6 +23,10 @@
   "confirmed": false,
   "score": 6.0
  },
+ "AMD|30m|3B|2026-10-12 11:30": {
+  "confirmed": false,
+  "score": 6.0
+ },
  "AVGO|30m|3S|2026-09-22 15:30": {
   "confirmed": true,
   "score": 0.2
@@ -86,6 +90,10 @@
  "TSM|30m|ZD_B|2026-10-09 12:00": {
   "confirmed": true,
   "score": 6.9
+ },
+ "TSM|30m|ZD_B|2026-10-12 11:00": {
+  "confirmed": true,
+  "score": 7.4
  },
  "TSM|daily|3B|2025-09-02": {
   "confirmed": true,
