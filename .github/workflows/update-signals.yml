@@ -1,7 +1,7 @@
 name: update-signals
 on:
   schedule:
-    - cron: "*/15 13-21 * * 1-5"
+    - cron: "*/15 1-7,13-21 * * 1-5"
   workflow_dispatch:
 permissions:
   contents: write
@@ -27,6 +27,13 @@ jobs:
         run: |
           mkdir -p out
           python run2.py
+      - name: Run analysis (CN)
+        run: |
+          mkdir -p out_cn
+          python run_cn.py
+      - name: Build site data (CN)
+        if: hashFiles('out_cn/signals.json') != ''
+        run: python scripts/build_data.py out_cn --market cn
       - name: Build site data
         if: hashFiles('out/signals.json') != ''
         run: python scripts/build_data.py out
