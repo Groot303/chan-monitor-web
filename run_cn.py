@@ -31,6 +31,12 @@ CN_SYMS = [
 ]
 LEVELS = [("weekly", "102"), ("daily", "101"), ("30m", "30"), ("5m", "5")]
 
+# Trend-filter mode for pivot-edge signals that conflict with the higher-timeframe trend
+# (2026-10-13 opt): 'downweight' keeps the signal at half size (backtest: variant D +373.5%
+# vs variant C +269.2% showed hard-drop threw away LITE/AMD/TSM winners);
+# set to 'drop' to restore the old hard-discard behavior.
+TREND_FILTER_MODE = 'downweight'  # 'downweight' | 'drop' 
+
 EM_URL = "https://push2his.eastmoney.com/api/qt/stock/kline/get"
 EM_UT = "7eea3edcaed734bea9cbfc24409ed989"
 
@@ -154,8 +160,26 @@ def plot(sym, res, dfs):
 
 os.makedirs(OUT, exist_ok=True)
 FRAMES = {} if CACHED else fetch_em_frames()
+
+def cn_regime():
+    """Bear-regime check for A-shares (2026-10-13 opt, matches backtest REGIME=pause):
+    上证指数 daily close < 200d SMA -> bear. Never raises; on failure returns
+    bear=False with an error note so the pipeline keeps flowing."""
+    try:
+        df = FRAMES["daily"].get("上证指数")
+        closes = df["Close"].dropna()
+        if len(closes) < 210:
+            raise ValueError(f"too few 上证指数 bars: {len(closes)}")
+        sma200 = float(closes.iloc[-200:].mean())
+        last = float(closes.iloc[-1])
+        return {"benchmark": "上证指数", "bear": bool(last < sma200),
+                "close": round(last, 2), "sma200": round(sma200, 2)}
+    except Exception as e:
+        return {"benchmark": "上证指数", "bear": False, "error": str(e)[:120]}
+
+REGIME = {} if CACHED else cn_regime()
 out = {"generated": datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z",
-       "market": "cn", "symbols": {}, "failures": {}}
+       "market": "cn", "symbols": {}, "failures": {}, "regime": REGIME}
 for s, secid in CN_SYMS:
     res = {}
     dfs = {}
@@ -175,7 +199,7 @@ for s, secid in CN_SYMS:
             if not CACHED:
                 df.to_csv(f"{OUT}/data2_{s}_{lv}.csv")
             dfs[lv] = df
-            res[lv] = analyze_level(df)
+            res[lv] = analyze_level(df, level=lv)
         except Exception as e:
             out["failures"][f"{s}/{lv}"] = str(e)[:200]
             continue
@@ -205,16 +229,29 @@ for s, secid in CN_SYMS:
             for sg in ent["levels"][lv]["signals"]:
                 sg["resonance"] = resonance(sg["type"], bs)
                 sg["resonance_vs"] = [b for b in bigs if b in ent["levels"]]
-    # trend filter (2026-10-13): drop pivot-edge buys/sells that fight the bigger trend.
+    # trend filter (2026-10-13, 优化 2026-10-13晚): pivot-edge buys/sells that fight the
+    # bigger trend are DOWNWEIGHTED (kept at half size) instead of dropped.
+    # 一键切回硬丢弃: TREND_FILTER_MODE='drop' (见文件顶部).
     for lv in ent["levels"]:
         kept = []
         for sg in ent["levels"][lv]["signals"]:
             if sg.get("kind") == "pivot_edge" and sg.get("resonance") == "conflict":
-                out.setdefault("filtered", {})[f"{s}/{lv}/{sg['type']}"] = \
-                    f"dropped: {sg['type']} conflicts with higher-timeframe trend ({'/'.join(sg.get('resonance_vs', []))})"
-                continue
+                msg = (f"{sg['type']} conflicts with higher-timeframe trend "
+                       f"({'/'.join(sg.get('resonance_vs', []))})")
+                if TREND_FILTER_MODE == 'drop':
+                    out.setdefault("filtered", {})[f"{s}/{lv}/{sg['type']}"] = "dropped: " + msg
+                    continue
+                sg["downweighted"] = True  # pipeline marks; execution sizes it at half
+                out.setdefault("filtered", {})[f"{s}/{lv}/{sg['type']}"] = "downweighted (half size): " + msg
             kept.append(sg)
         ent["levels"][lv]["signals"] = kept
+    # regime pause (2026-10-13 opt, matches backtest REGIME=pause):
+    # bear regime -> buy-type signals flagged regime_paused; sells unaffected.
+    if REGIME.get("bear"):
+        for lv in ent["levels"]:
+            for sg in ent["levels"][lv]["signals"]:
+                if sg["type"].endswith("B"):
+                    sg["regime_paused"] = True
     for lv in ent["levels"]:
         for sg, raw in zip(ent["levels"][lv]["signals"], res[lv]['signals']):
             sg["score"], sg["score_breakdown"] = score_signal(sg, lv)

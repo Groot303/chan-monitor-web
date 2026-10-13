@@ -13,6 +13,12 @@ NY_TZ="America/New_York"
 SYMS="MU SNDK SPCX SKHY INTC NVDA TSLA LITE AAOI MRVL AMD META MRNA TSM ORCL AVGO AAPL PLTR NOK GOOG".split()
 LEVELS=[("weekly","1wk","5y"),("daily","1d","2y"),("30m","30m","60d"),("5m","5m","30d")]
 
+# Trend-filter mode for pivot-edge signals that conflict with the higher-timeframe trend
+# (2026-10-13 opt): 'downweight' keeps the signal at half size (backtest: variant D +373.5%
+# vs variant C +269.2% showed hard-drop threw away LITE/AMD/TSM winners);
+# set to 'drop' to restore the old hard-discard behavior.
+TREND_FILTER_MODE = 'downweight'  # 'downweight' | 'drop'
+
 # NOTE 2026-10-13: US pipeline runs 24/7 per user request (no market-hours gate).
 
 def fetch_alpaca_frames():
@@ -95,7 +101,33 @@ def plot(sym, res, dfs):
         ax.legend(loc="upper left",fontsize=8)
     fig.tight_layout(); fig.savefig(f"out/{sym}_chan2.png",dpi=80); plt.close(fig)
 FRAMES={} if CACHED else fetch_alpaca_frames()
-out={"generated":datetime.datetime.utcnow().isoformat()+"Z","symbols":{},"failures":{}}
+
+def fetch_regime():
+    """Bear-regime check (2026-10-13 opt, matches backtest REGIME=pause):
+    SPY daily close < 200d SMA -> bear. Never raises; on failure returns
+    bear=False with an error note so the pipeline keeps flowing."""
+    try:
+        from alpaca.data.historical import StockHistoricalDataClient
+        from alpaca.data.requests import StockBarsRequest
+        from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
+        from alpaca.data.enums import DataFeed
+        key=os.environ.get("ALPACA_API_KEY"); secret=os.environ.get("ALPACA_SECRET_KEY")
+        client=StockHistoricalDataClient(key, secret)
+        now=datetime.datetime.now(datetime.timezone.utc)
+        req=StockBarsRequest(symbol_or_symbols=["SPY"], timeframe=TimeFrame(1,TimeFrameUnit.Day),
+                             start=now-datetime.timedelta(days=400), end=now, feed=DataFeed.IEX)
+        df=client.get_stock_bars(req).df
+        try: sdf=df.xs("SPY", level=0)
+        except (KeyError, TypeError): sdf=df
+        closes=sdf["close"].dropna()
+        if len(closes)<210: raise ValueError(f"too few SPY bars: {len(closes)}")
+        sma200=float(closes.iloc[-200:].mean()); last=float(closes.iloc[-1])
+        return {"benchmark":"SPY","bear":bool(last<sma200),"close":round(last,2),"sma200":round(sma200,2)}
+    except Exception as e:
+        return {"benchmark":"SPY","bear":False,"error":str(e)[:120]}
+
+REGIME={} if CACHED else fetch_regime()
+out={"generated":datetime.datetime.utcnow().isoformat()+"Z","symbols":{},"failures":{},"regime":REGIME}
 for s in SYMS:
     res={}; dfs={}; ent={"levels":{}}
     for lv,iv,per in LEVELS:
@@ -109,7 +141,7 @@ for s in SYMS:
             df=df.dropna(subset=["High","Low","Open","Close"])
             if len(df)<40: raise ValueError(f"too few bars: {len(df)}")
             if not CACHED: df.to_csv(f"data2_{s}_{lv}.csv")
-            dfs[lv]=df; res[lv]=analyze_level(df)
+            dfs[lv]=df; res[lv]=analyze_level(df, level=lv)
         except Exception as e:
             out["failures"][f"{s}/{lv}"]=str(e)[:200]; continue
     for lv,_,_ in LEVELS:
@@ -126,18 +158,31 @@ for s in SYMS:
             bs=[ent["levels"][b]["state"] for b in bigs if b in ent["levels"]]
             for sg in ent["levels"][lv]["signals"]:
                 sg["resonance"]=resonance(sg["type"],bs); sg["resonance_vs"]=[b for b in bigs if b in ent["levels"]]
-    # trend filter (2026-10-13): drop pivot-edge buys/sells that fight the bigger trend.
+    # trend filter (2026-10-13, 优化 2026-10-13晚): pivot-edge buys/sells that fight the
+    # bigger trend are DOWNWEIGHTED (kept at half size) instead of dropped.
     # ZD_B with resonance 'conflict' = buying the lower edge while higher timeframes
     # are in a downtrend -> classic falling-knife. Same for ZG_S in an uptrend.
+    # 一键切回硬丢弃: TREND_FILTER_MODE='drop' (见文件顶部).
     for lv in ent["levels"]:
         kept=[]
         for sg in ent["levels"][lv]["signals"]:
             if sg.get("kind")=="pivot_edge" and sg.get("resonance")=="conflict":
-                out.setdefault("filtered",{})[f"{s}/{lv}/{sg['type']}"]=\
-                    f"dropped: {sg['type']} conflicts with higher-timeframe trend ({'/'.join(sg.get('resonance_vs',[]))})"
-                continue
+                msg=(f"{sg['type']} conflicts with higher-timeframe trend "
+                     f"({'/'.join(sg.get('resonance_vs',[]))})")
+                if TREND_FILTER_MODE=='drop':
+                    out.setdefault("filtered",{})[f"{s}/{lv}/{sg['type']}"]="dropped: "+msg
+                    continue
+                sg["downweighted"]=True  # pipeline marks; execution sizes it at half
+                out.setdefault("filtered",{})[f"{s}/{lv}/{sg['type']}"]="downweighted (half size): "+msg
             kept.append(sg)
         ent["levels"][lv]["signals"]=kept
+    # regime pause (2026-10-13 opt, matches backtest REGIME=pause):
+    # bear regime -> buy-type signals flagged regime_paused; sells unaffected.
+    if REGIME.get("bear"):
+        for lv in ent["levels"]:
+            for sg in ent["levels"][lv]["signals"]:
+                if sg["type"].endswith("B"):
+                    sg["regime_paused"]=True
     for lv in ent["levels"]:
         for sg,raw in zip(ent["levels"][lv]["signals"],res[lv]['signals']):
             sg["score"],sg["score_breakdown"]=score_signal(sg,lv); raw["score"]=sg["score"]
