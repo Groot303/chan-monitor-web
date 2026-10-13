@@ -17,7 +17,7 @@
   var TIER = [[5, "hi", "高"], [2.5, "mid", "中"], [-Infinity, "lo", "低"]];
   // 市场配置:美股(us) / A股指数(cn)
   // API_BASE: 后端API地址 (Cloudflare Tunnel HTTPS)。localStorage 可覆盖。
-  var API_BASE = localStorage.getItem("chan.apiBase") || "https://iso-therapy-bills-counties.trycloudflare.com";
+  var API_BASE = localStorage.getItem("chan.apiBase") || ""; // default same-origin: backend serves frontend
   var MK = {
     us: { label: "美股", signals: "data/signals.json", api: "/api/signals", tz: "ET", src: "Alpaca(IEX 免费版)", delay: "Alpaca 可能延迟",
           watch: ["AAOI","AAPL","AMD","AVGO","GOOG","INTC","LITE","META","MRNA","MRVL","MU","NOK","NVDA","ORCL","PLTR","SKHY","SNDK","SPCX","TSLA","TSM"],
@@ -26,10 +26,9 @@
           watch: ["上证指数","科创50","银行指数","平均股价"],
           searchPh: "搜索指数,如 上证指数" }
   };
-  function signalsURL() {
-    var m = MK[MARKET];
-    return API_BASE ? API_BASE + m.api : m.signals;
-  }
+  function apiURL() { var m = MK[MARKET]; return (API_BASE || "") + m.api; }
+  function staticURL() { return MK[MARKET].signals; }
+  function signalsURL() { return apiURL(); }
   var MARKET = lsGet("chan.market") === "cn" ? "cn" : "us";
   var DEFAULT_F = { q: "", level: "", type: "", conf: "", min: 3, recent: false, sort: "score", dir: "desc" };
   // filters.v2:旧版默认 recent=true 已写入 localStorage,换键后首次加载回落到新默认(显示全部信号)
@@ -307,28 +306,35 @@
     $("sig-results").innerHTML = '<div class="cards" aria-busy="true" aria-label="加载中">' +
       new Array(7).join('<div class="skel-card skeleton"></div>') + '</div>';
   }
+  function handleData(d) {
+    if (!d || !Array.isArray(d.signals) || !d.symbols) throw new Error("数据格式不正确");
+    D = d;
+    SIGS = d.signals.filter(function (g) { return g && g.symbol && g.type; }).map(function (g, i) {
+      g._id = i; g.score = num(g.score, 0);
+      if (!g.kind) g.kind = (g.type === "ZG_S" || g.type === "ZD_B") ? "pivot_edge" : "chan";
+      return g;
+    });
+    init();
+  }
+  function showLoadErr(e, url) {
+    $("meta-short").textContent = "数据加载失败";
+    qsa("#meta-sub .dot").forEach(function (x) { x.className = "dot err"; });
+    $("kpis").innerHTML = "";
+    $("sig-results").innerHTML = stateHTML("err", "数据加载失败", "无法读取 " + esc(url) + "(" + esc(e.message || e) + ")。若直接用 file:// 打开页面,请改用本地服务器,例如 <code>python3 -m http.server</code>。", '<button type="button" class="btn primary" id="retry">重试</button>');
+    var r = $("retry"); if (r) r.addEventListener("click", load);
+  }
   function load() {
     showLoading();
     $("meta-short").textContent = "加载中…";
-    fetch(signalsURL() + "?t=" + Date.now(), { cache: "no-store" })
-      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-      .then(function (d) {
-        if (!d || !Array.isArray(d.signals) || !d.symbols) throw new Error("数据格式不正确");
-        D = d;
-        SIGS = d.signals.filter(function (g) { return g && g.symbol && g.type; }).map(function (g, i) {
-          g._id = i; g.score = num(g.score, 0);
-          if (!g.kind) g.kind = (g.type === "ZG_S" || g.type === "ZD_B") ? "pivot_edge" : "chan";
-          return g;
-        });
-        init();
-      })
-      .catch(function (e) {
-        $("meta-short").textContent = "数据加载失败";
-        qsa("#meta-sub .dot").forEach(function (x) { x.className = "dot err"; });
-        $("kpis").innerHTML = "";
-        $("sig-results").innerHTML = stateHTML("err", "数据加载失败", "无法读取 " + esc(signalsURL()) + "(" + esc(e.message || e) + ")。若直接用 file:// 打开页面,请改用本地服务器,例如 <code>python3 -m http.server</code>。", '<button type="button" class="btn primary" id="retry">重试</button>');
-        var r = $("retry"); if (r) r.addEventListener("click", load);
-      });
+    var apiU = apiURL() + "?t=" + Date.now(), staticU = staticURL() + "?t=" + Date.now();
+    function getJSON(u) {
+      return fetch(u, { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
+    }
+    // 先走同源 API,失败时回落到静态 JSON(Cloudflare Pages 部署)
+    getJSON(apiU).then(handleData).catch(function () {
+      getJSON(staticU).then(handleData).catch(function (e) { showLoadErr(e, apiU); });
+    });
   }
 
   function stateHTML(kind, title, text, action) {

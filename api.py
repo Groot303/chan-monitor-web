@@ -5,8 +5,9 @@ Deploy: systemd service (see api.service), data in /opt/chan-monitor/api_data/.
 import json
 import os
 import subprocess
+import sys
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -21,6 +22,24 @@ BASE = Path("/opt/chan-monitor")
 REPO = BASE / "repo"
 DATA_DIR = BASE / "api_data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def load_dotenv():
+    """Load /opt/chan-monitor/.env into os.environ (setdefault: real env wins)."""
+    p = BASE / ".env"
+    if not p.exists():
+        return
+    for line in p.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        k, v = k.strip(), v.strip().strip("'\"")
+        if k and k not in os.environ:
+            os.environ[k] = v
+
+
+load_dotenv()
 
 app = FastAPI(title="chan-monitor-web API", version="2.0")
 
@@ -40,9 +59,17 @@ job_status = {
     "run_count": 0,
 }
 
+ibkr_status = {
+    "last_run": None,
+    "last_result": None,
+    "running": False,
+    "symbols": [],
+}
+
 
 def run_pipeline():
     """Run the data pipeline synchronously. Called by scheduler and manual trigger."""
+    check_self_update()
     if job_status["running"]:
         log.warning("pipeline already running, skip")
         return {"status": "already_running"}
@@ -78,6 +105,76 @@ def run_pipeline():
     return {"status": job_status["last_result"]}
 
 
+API_PY = Path(__file__).resolve()
+API_PY_MTIME = API_PY.stat().st_mtime if API_PY.exists() else None
+
+
+def check_self_update():
+    """Restart via systemd if api.py changed on disk (cron git pull).
+
+    The 15-min cron keeps the repo fresh; this backend is a long-running
+    process, so it must reload itself to pick up api.py changes.
+    py_compile gate prevents restart-loops on broken pushes.
+    """
+    global API_PY_MTIME
+    try:
+        mtime = API_PY.stat().st_mtime
+    except OSError:
+        return
+    if API_PY_MTIME is None:
+        API_PY_MTIME = mtime
+        return
+    if mtime == API_PY_MTIME:
+        return
+    log.warning("api.py changed on disk, verifying before restart")
+    r = subprocess.run([sys.executable, "-m", "py_compile", str(API_PY)],
+                       capture_output=True, timeout=30)
+    if r.returncode == 0:
+        log.warning("new api.py compiles, exiting for systemd restart")
+        os._exit(42)
+    log.error("new api.py does NOT compile, staying on current version")
+    API_PY_MTIME = mtime  # don't spam the log
+
+
+def fetch_ibkr_positions():
+    """Pull IBKR open positions via Flex Web Service (every 6h).
+
+    Writes api_data/data/positions_ibkr.json (served at /api/positions) and
+    mirrors to repo site/data/positions_ibkr.json (static site + run2.py SYMS).
+    """
+    if ibkr_status["running"]:
+        log.warning("ibkr fetch already running, skip")
+        return
+    ibkr_status["running"] = True
+    t0 = datetime.now(timezone.utc)
+    ibkr_status["last_run"] = t0.isoformat()
+    log.info("ibkr fetch start")
+    try:
+        out_path = DATA_DIR / "data" / "positions_ibkr.json"
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        env = {**os.environ, "POSITIONS_OUT": str(out_path)}
+        r = subprocess.run(
+            [sys.executable, str(REPO / "scripts" / "fetch_ibkr_positions.py")],
+            capture_output=True, text=True, timeout=600,
+            cwd=str(REPO), env=env,
+        )
+        if r.returncode != 0:
+            raise RuntimeError((r.stderr or r.stdout or "unknown error")[-500:])
+        if out_path.exists():
+            dst = REPO / "site" / "data" / "positions_ibkr.json"
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_bytes(out_path.read_bytes())
+            d = json.loads(out_path.read_text(encoding="utf-8"))
+            ibkr_status["symbols"] = d.get("symbols", [])
+        ibkr_status["last_result"] = "ok"
+        log.info(f"ibkr fetch ok: {ibkr_status['symbols']}")
+    except Exception as e:
+        ibkr_status["last_result"] = f"error: {str(e)[:300]}"
+        log.error(f"ibkr fetch failed: {e}")
+    finally:
+        ibkr_status["running"] = False
+
+
 # ---- scheduler ----
 scheduler = None
 
@@ -89,8 +186,11 @@ async def on_startup():
         scheduler = AsyncIOScheduler(timezone="UTC")
         scheduler.add_job(run_pipeline, "interval", minutes=15, id="pipeline",
                           max_instances=1, coalesce=True)
+        scheduler.add_job(fetch_ibkr_positions, "interval", hours=6, id="ibkr",
+                          max_instances=1, coalesce=True,
+                          next_run_time=datetime.now(timezone.utc) + timedelta(minutes=2))
         scheduler.start()
-        log.info("APScheduler started (every 15 min)")
+        log.info("APScheduler started (pipeline every 15 min, ibkr every 6h)")
         # Run once on startup (in background thread to not block)
         import threading
         threading.Thread(target=run_pipeline, daemon=True).start()
@@ -112,9 +212,12 @@ def health():
 @app.get("/api/jobs")
 def jobs():
     d = dict(job_status)
+    d["ibkr"] = dict(ibkr_status)
     if scheduler:
-        nxt = scheduler.get_job("pipeline").next_run_time
-        d["next_run"] = nxt.isoformat() if nxt else None
+        for jid, key in (("pipeline", "next_run"), ("ibkr", "ibkr_next_run")):
+            job = scheduler.get_job(jid)
+            nxt = job.next_run_time if job else None
+            d[key] = nxt.isoformat() if nxt else None
     return d
 
 
@@ -151,6 +254,11 @@ def api_signals_cn():
     return _read_json("signals_cn.json")
 
 
+@app.get("/api/positions")
+def api_positions():
+    return _read_json("positions_ibkr.json")
+
+
 # static: images and interactive chart data
 # Note: build_data.py writes charts to api_data/data/charts/ (not api_data/charts/)
 for _sub, _dirname in (("img", "img"), ("img_cn", "img_cn"),
@@ -158,3 +266,10 @@ for _sub, _dirname in (("img", "img"), ("img_cn", "img_cn"),
     _d = DATA_DIR / _dirname
     _d.mkdir(parents=True, exist_ok=True)
     app.mount(f"/api/{_sub}", StaticFiles(directory=str(_d)), name=_sub)
+
+
+# full-stack: serve the web frontend from the same origin (no CORS / tunnel).
+# Mounted last so explicit /api/* routes take precedence.
+_site_dir = REPO / "site"
+if _site_dir.is_dir():
+    app.mount("/", StaticFiles(directory=str(_site_dir), html=True), name="site")

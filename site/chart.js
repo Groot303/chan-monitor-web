@@ -3,13 +3,11 @@
   "use strict";
   var SUPPORTED = null; // null = try any symbol via data/charts/{SYM}.json
   // API_BASE: 与 app.js 一致，后端API地址。localStorage 可覆盖。
-  var API_BASE = (typeof localStorage !== "undefined" && localStorage.getItem("chan.apiBase")) || "https://iso-therapy-bills-counties.trycloudflare.com";
+  var API_BASE = (typeof localStorage !== "undefined" && localStorage.getItem("chan.apiBase")) || ""; // default same-origin
   var CHART_BASE = "data/charts/"; // 市场切换时改为 data/charts_cn/ (API模式: /api/charts/ 或 /api/charts_cn/)
   function chartBase() {
-    if (API_BASE) {
-      return API_BASE + (CHART_BASE.indexOf("charts_cn") >= 0 ? "/api/charts_cn/" : "/api/charts/");
-    }
-    return CHART_BASE;
+    // 同源相对路径;localStorage 覆盖时走绝对地址
+    return (API_BASE || "") + (CHART_BASE.indexOf("charts_cn") >= 0 ? "/api/charts_cn/" : "/api/charts/");
   }
   var LV_LABEL = { weekly: "周线", daily: "日线", "30m": "30分钟", "5m": "5分钟" };
   var LV_ORDER = ["weekly", "daily", "30m", "5m"];

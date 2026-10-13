@@ -10,7 +10,17 @@ from chan2 import analyze_level, resonance, score_signal, RECENT_BARS
 CACHED=os.environ.get('CACHED')=='1'  # re-use data2_*.csv instead of re-downloading
 FORCE_RUN=os.environ.get('FORCE_RUN')=='true'  # bypass market-hours gate (workflow_dispatch)
 NY_TZ="America/New_York"
-SYMS="MU SNDK SPCX SKHY INTC NVDA TSLA LITE AAOI MRVL AMD META MRNA TSM ORCL AVGO AAPL PLTR NOK GOOG".split()
+FALLBACK_SYMS="MU SNDK SPCX SKHY INTC NVDA TSLA LITE AAOI MRVL AMD META MRNA TSM ORCL AVGO AAPL PLTR NOK GOOG".split()
+def _ibkr_symbols(path="site/data/positions_ibkr.json"):
+    """Dynamic watchlist from IBKR positions (Flex; refreshed every 6h by the backend).
+    Falls back to the hardcoded list when the file is missing or unreadable."""
+    try:
+        d=json.load(open(path))
+        return [s for s in d.get("symbols",[]) if isinstance(s,str) and s]
+    except Exception:
+        return []
+# IBKR holdings first, then the hardcoded watchlist; cap 20 (Alpaca free-tier comfort).
+SYMS=list(dict.fromkeys(_ibkr_symbols()+FALLBACK_SYMS))[:20]
 LEVELS=[("weekly","1wk","5y"),("daily","1d","2y"),("30m","30m","60d"),("5m","5m","30d")]
 
 # Trend-filter mode for pivot-edge signals that conflict with the higher-timeframe trend
