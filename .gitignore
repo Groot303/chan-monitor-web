@@ -6,3 +6,5 @@ data_*.csv
 *.pyc
 preview/
 .venv
+# generated IBKR positions (local only, never commit)
+site/data/positions_ibkr.json
