@@ -6,7 +6,7 @@
   var LV = { weekly: "周线", daily: "日线", "30m": "30分钟", "5m": "5分钟" };
   var LV_ORDER = ["weekly", "daily", "30m", "5m"];
   var RECENT_WIN = { weekly: 4, daily: 10, "30m": 40, "5m": 120 };
-  var TY = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_S": "中枢上沿卖", "ZD_B": "中枢下沿买", "BC_B": "盘整背驰买", "BC_S": "盘整背驰卖" };
+  var TY = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_S": "中枢上沿卖", "ZD_B": "中枢下沿买", "BC_B": "盘整背驰买", "BC_S": "盘整背驰卖", "PRE_1B": "预一买", "PRE_2B": "预二买", "PRE_3B": "预三买", "PRE_1S": "预一卖", "PRE_2S": "预二卖", "PRE_3S": "预三卖" };
   var BK = [
     ["base", "基础分"], ["divergence", "背驰"], ["resonance", "共振"],
     ["confirmed", "确认"], ["freshness", "新鲜度"], ["quality", "中枢质量"]

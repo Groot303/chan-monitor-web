@@ -132,8 +132,16 @@ def make_area_fn(hist, dif):
                (float(np.maximum(-h, 0).sum()), float(d.min()))
     return f
 
-def find_signals(segs, pivots, area_fn):
-    """Return list of signal dicts (type in 1B,1S,2B,2S,3B,3S). Time/price = extreme point.
+def find_signals(segs, pivots, area_fn, level=None):
+    """Return list of signal dicts (type in 1B,1S,2B,2S,3B,3S, plus PRE_1B... pre-signals
+    and BC_B/BC_S on 30m only). Time/price = extreme point.
+    level: 'weekly' | 'daily' | '30m' | None. BC (盘整背驰) signals are ONLY generated
+      when level == '30m' (user decision 2026-10-13: daily/weekly BC is a dead signal).
+    Pre-signals (2026-10-13 opt): classic 1/2/3 patterns whose exit segment is not yet
+      confirmed (confirmed=False) are emitted as PRE_1B/PRE_1S/... instead of the raw
+      unconfirmed signal. They are explicitly repaintable (may vanish on later refits);
+      backtest maps them to half-size watch positions, topped up when the confirmed
+      signal later appears.
     Rules:
     1B/1S: pivot P with previous pivot P' lower (P.zg < P'.zd) [higher for 1S], P left downward
       (upward), entering seg same direction as leave seg, leave end beyond entering end, and
@@ -145,6 +153,11 @@ def find_signals(segs, pivots, area_fn):
     def mk(typ, seg, idx, **kw):
         d = dict(type=typ, idx=seg.e_i, price=seg.e_p, confirmed=seg.confirmed, seg=idx)
         d.update(kw); return d
+    def pre_typ(base, seg):
+        """Return (type_name, is_pre): unconfirmed classic signals become PRE_* pre-signals."""
+        if seg.confirmed:
+            return base, False
+        return 'PRE_' + base, True
     for pi, P in enumerate(pivots):
         if P['enter'] is None or pi == 0: continue
         prev = pivots[pi-1]; en = segs[P['enter']]
@@ -154,59 +167,71 @@ def find_signals(segs, pivots, area_fn):
             if not lv.up and P['zg'] < prev['zd'] and lv.e_p < en.e_p:
                 a_en, d_en = area_fn(en.s_i, en.e_i, False); a_lv, d_lv = area_fn(lv.s_i, lv.e_i, False)
                 if a_lv < a_en:
-                    out.append(mk('1B', lv, ex, area_enter=a_en, area_leave=a_lv,
+                    typ, is_pre = pre_typ('1B', lv)
+                    out.append(mk(typ, lv, ex, area_enter=a_en, area_leave=a_lv,
                                   ratio=a_lv/a_en if a_en else None, dif_enter=d_en, dif_leave=d_lv,
-                                  zd=P['zd'], zg=P['zg']))
+                                  zd=P['zd'], zg=P['zg'], pre=is_pre))
             if lv.up and P['zd'] > prev['zg'] and lv.e_p > en.e_p:
                 a_en, d_en = area_fn(en.s_i, en.e_i, True); a_lv, d_lv = area_fn(lv.s_i, lv.e_i, True)
                 if a_lv < a_en:
-                    out.append(mk('1S', lv, ex, area_enter=a_en, area_leave=a_lv,
+                    typ, is_pre = pre_typ('1S', lv)
+                    out.append(mk(typ, lv, ex, area_enter=a_en, area_leave=a_lv,
                                   ratio=a_lv/a_en if a_en else None, dif_enter=d_en, dif_leave=d_lv,
-                                  zd=P['zd'], zg=P['zg']))
+                                  zd=P['zd'], zg=P['zg'], pre=is_pre))
     for s in list(out):
-        if s['type'] not in ('1B', '1S'): continue
+        if s['type'] not in ('1B', '1S', 'PRE_1B', 'PRE_1S'): continue
         L = s['seg']
         if L + 2 < len(segs):
             pb = segs[L+2]; ref = segs[L]
-            if s['type'] == '1B' and pb.e_p > ref.e_p:
-                out.append(mk('2B', pb, L+2, ref_low=ref.e_p, margin_pct=100*(pb.e_p/ref.e_p-1)))
-            if s['type'] == '1S' and pb.e_p < ref.e_p:
-                out.append(mk('2S', pb, L+2, ref_high=ref.e_p, margin_pct=100*(1-pb.e_p/ref.e_p)))
+            is_buy = s['type'] in ('1B', 'PRE_1B')
+            if is_buy and pb.e_p > ref.e_p:
+                typ, is_pre = pre_typ('2B', pb)
+                out.append(mk(typ, pb, L+2, ref_low=ref.e_p, margin_pct=100*(pb.e_p/ref.e_p-1), pre=is_pre))
+            if not is_buy and pb.e_p < ref.e_p:
+                typ, is_pre = pre_typ('2S', pb)
+                out.append(mk(typ, pb, L+2, ref_high=ref.e_p, margin_pct=100*(1-pb.e_p/ref.e_p), pre=is_pre))
     # 盘整背驰 (consolidation divergence, 2026-10-13): pure pivot-level MACD divergence
     # on exit vs entry, without the trend-context filter required for 1B/1S.
     # BC_B: exit makes new low vs entry end, but MACD area weaker -> exhaustion, potential buy.
     # BC_S: exit makes new high vs entry end, but MACD area weaker -> exhaustion, potential sell.
     # These are weaker than 1B/1S (no trend confirmation) and scored accordingly.
-    for pi, P in enumerate(pivots):
-        if P['enter'] is None: continue
-        en = segs[P['enter']]
-        for ex in P['exits']:
-            lv = segs[ex]
-            if lv.up != en.up: continue
-            # skip if this exit already produced a 1B/1S (avoid duplicates)
-            if any(s['type'] in ('1B','1S') and s['seg'] == ex for s in out):
-                continue
-            if not lv.up and lv.e_p < en.e_p:
-                a_en, d_en = area_fn(en.s_i, en.e_i, False); a_lv, d_lv = area_fn(lv.s_i, lv.e_i, False)
-                if a_en > 0 and a_lv < a_en:
-                    out.append(mk('BC_B', lv, ex, area_enter=a_en, area_leave=a_lv,
-                                  ratio=a_lv/a_en, dif_enter=d_en, dif_leave=d_lv,
-                                  zd=P['zd'], zg=P['zg'], kind='beichi'))
-            if lv.up and lv.e_p > en.e_p:
-                a_en, d_en = area_fn(en.s_i, en.e_i, True); a_lv, d_lv = area_fn(lv.s_i, lv.e_i, True)
-                if a_en > 0 and a_lv < a_en:
-                    out.append(mk('BC_S', lv, ex, area_enter=a_en, area_leave=a_lv,
-                                  ratio=a_lv/a_en, dif_enter=d_en, dif_leave=d_lv,
-                                  zd=P['zd'], zg=P['zg'], kind='beichi'))
+    # 2026-10-13 opt: BC is ONLY generated on the 30m timeframe (dead signal on daily/weekly).
+    # 2026-10-13 opt: BC signals now carry stop_price (same 3% rule as ZD_B/ZG_S).
+    if level == '30m':
+        for pi, P in enumerate(pivots):
+            if P['enter'] is None: continue
+            en = segs[P['enter']]
+            for ex in P['exits']:
+                lv = segs[ex]
+                if lv.up != en.up: continue
+                # skip if this exit already produced a 1B/1S (or its PRE_ pre-signal): avoid duplicates
+                if any(s['type'] in ('1B','1S','PRE_1B','PRE_1S') and s['seg'] == ex for s in out):
+                    continue
+                if not lv.up and lv.e_p < en.e_p:
+                    a_en, d_en = area_fn(en.s_i, en.e_i, False); a_lv, d_lv = area_fn(lv.s_i, lv.e_i, False)
+                    if a_en > 0 and a_lv < a_en:
+                        out.append(mk('BC_B', lv, ex, area_enter=a_en, area_leave=a_lv,
+                                      ratio=a_lv/a_en, dif_enter=d_en, dif_leave=d_lv,
+                                      zd=P['zd'], zg=P['zg'], kind='beichi',
+                                      stop_price=round(lv.e_p * (1 - STOP_PCT), 2)))
+                if lv.up and lv.e_p > en.e_p:
+                    a_en, d_en = area_fn(en.s_i, en.e_i, True); a_lv, d_lv = area_fn(lv.s_i, lv.e_i, True)
+                    if a_en > 0 and a_lv < a_en:
+                        out.append(mk('BC_S', lv, ex, area_enter=a_en, area_leave=a_lv,
+                                      ratio=a_lv/a_en, dif_enter=d_en, dif_leave=d_lv,
+                                      zd=P['zd'], zg=P['zg'], kind='beichi',
+                                      stop_price=round(lv.e_p * (1 + STOP_PCT), 2)))
     for P in pivots:
         if P['leave'] is not None and P['third']:
             pb = segs[P['leave']+1]
             if P['leave_up']:
-                out.append(mk('3B', pb, P['leave']+1, zg=P['zg'], zd=P['zd'],
-                              margin_pct=100*(pb.e_p/P['zg']-1)))
+                typ, is_pre = pre_typ('3B', pb)
+                out.append(mk(typ, pb, P['leave']+1, zg=P['zg'], zd=P['zd'],
+                              margin_pct=100*(pb.e_p/P['zg']-1), pre=is_pre))
             else:
-                out.append(mk('3S', pb, P['leave']+1, zg=P['zg'], zd=P['zd'],
-                              margin_pct=100*(1-pb.e_p/P['zd'])))
+                typ, is_pre = pre_typ('3S', pb)
+                out.append(mk(typ, pb, P['leave']+1, zg=P['zg'], zd=P['zd'],
+                              margin_pct=100*(1-pb.e_p/P['zd']), pre=is_pre))
     out.sort(key=lambda d: d['idx'])
     return out
 
@@ -302,8 +327,9 @@ def find_pivot_edge_signals(segs, pivots, highs, lows, closes):
     out.sort(key=lambda d: d["idx"])
     return out
 
-def analyze_level(df):
-    """df: DataFrame with High, Low, Close. Returns dict with all structures."""
+def analyze_level(df, level=None):
+    """df: DataFrame with High, Low, Close. level: 'weekly'|'daily'|'30m'|None.
+    level is passed to find_signals (BC signals only fire on '30m')."""
     raw = [(d, float(r.High), float(r.Low)) for d, r in df.iterrows()]
     bars, pts_m, strokes, _ = analyze(raw)
     pts = [(bars[i].ext, t, p) for i, t, p in pts_m]
@@ -316,7 +342,7 @@ def analyze_level(df):
     segs = build_segments(pts)
     pivots = build_pivots(segs)
     dif, dea, hist = macd(df['Close'].values)
-    sigs = find_signals(segs, pivots, make_area_fn(hist, dif))
+    sigs = find_signals(segs, pivots, make_area_fn(hist, dif), level=level)
     for s in sigs:
         s.setdefault("kind", "chan")
     edge = find_pivot_edge_signals(segs, pivots, df["High"].values, df["Low"].values, df["Close"].values)
@@ -371,8 +397,14 @@ def score_signal(sig, level):
     if sig.get("kind") == "pivot_edge" or sig.get("type") in ("ZG_S", "ZD_B"):
         return score_pivot_edge(sig, level)
     typ = sig['type']
-    kind = 'BC' if typ.startswith('BC') else typ[0]
-    bd = {'base': BASE_SCORE[kind]}
+    if typ.startswith('PRE_'):
+        # pre-signal: half base score (unconfirmed pattern, may repaint).
+        # unconfirmed penalty below applies on top.
+        kind = typ[4]
+        bd = {'base': BASE_SCORE[kind] / 2.0}
+    else:
+        kind = 'BC' if typ.startswith('BC') else typ[0]
+        bd = {'base': BASE_SCORE[kind]}
     # divergence: MACD area ratio leave/enter, smaller = stronger. 1B/1S and BC carry it. 0..2.5
     r = sig.get('ratio')
     bd['divergence'] = round(2.5 * (1 - _clip(r, 0.0, 1.0)), 2) if (kind in ('1', 'BC') and r is not None) else 0.0
