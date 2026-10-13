@@ -478,5 +478,24 @@ button.kpi,button.card,button.sym-card{font:inherit;color:inherit;text-align:lef
 /* 持仓 */
 .held-badge{display:inline-block;vertical-align:2px;margin-left:6px;font-size:11px;font-weight:700;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);background:var(--accent-bg);border-radius:99px;padding:1px 8px;white-space:nowrap}
 .pnl-pos{color:var(--buy)} .pnl-neg{color:var(--sell)}
-#pos-kpis{margin-bottom:14px}
-#pos-kpis .kpi{cursor:default}
+/* 持仓分析图表 */
+.pos-charts{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.pos-duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:760px){.pos-duo{grid-template-columns:1fr}}
+.pos-chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;box-shadow:var(--shadow)}
+.pos-chart-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;margin-bottom:8px}
+.pos-chart-head b{font-size:15px}
+.pos-kchart{height:260px;width:100%}
+.pos-pnlchart{height:220px;width:100%}
+.pos-klegend{min-height:18px;margin-bottom:4px}
+/* 成本 vs 现价 */
+.cm-rows{display:flex;flex-direction:column;gap:10px;padding:4px 0}
+.cm-sym{font-weight:700;font-size:13px}
+.cm-bar-row{display:flex;align-items:center;gap:8px}
+.cm-label{width:32px;flex:none;font-size:12px;color:var(--text-2)}
+.cm-track{flex:1;height:10px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.cm-fill{height:100%;border-radius:99px}
+.cm-cost{background:var(--text-3)}
+.cm-mark-p{background:var(--buy)}
+.cm-mark-n{background:var(--sell)}
+.cm-val{font-size:12px;min-width:66px;text-align:right;flex:none}

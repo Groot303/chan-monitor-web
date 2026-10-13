@@ -222,6 +222,7 @@
     if (!noHash && location.hash.slice(1) !== v) history.replaceState(null, "", "#" + v);
     if (v === "symbols" && D) renderSymbols();
     if (v === "holdings") renderHoldings();
+    var kp = $("kpis"); if (kp) kp.style.display = (v === "holdings") ? "none" : "";
   }
   qsa(".tab[data-view]").forEach(function (b) {
     b.addEventListener("click", function () { setView(b.getAttribute("data-view")); window.scrollTo({ top: 0, behavior: "smooth" }); });
@@ -388,23 +389,17 @@
     var tb = $("pos-tbody");
     if (!tb) return;
     if (!POSDATA || !Array.isArray(POSDATA.positions) || !POSDATA.positions.length) {
-      tb.innerHTML = '<tr><td colspan="7" class="muted">暂无持仓数据</td></tr>';
-      var pc = $("pos-count"); if (pc) pc.textContent = "";
-      var pu = $("pos-updated"); if (pu) pu.textContent = "持仓数据未就绪";
-      var pk = $("pos-kpis"); if (pk) pk.innerHTML = "";
+      tb.innerHTML = '<tr><td colspan="5" class="muted">暂无持仓数据</td></tr>';
+      var pc0 = $("pos-count"); if (pc0) pc0.textContent = "";
+      var pu0 = $("pos-updated"); if (pu0) pu0.textContent = "持仓数据未就绪";
+      renderPosCharts();
       return;
     }
     var ps = POSDATA.positions.slice().sort(function (a, b) { return num(b.value, 0) - num(a.value, 0); });
-    var totV = 0, totP = 0;
-    ps.forEach(function (p) { totV += num(p.value, 0); totP += num(p.unrealized, 0); });
     $("pos-count").textContent = ps.length;
     var gen = POSDATA.generated ? new Date(POSDATA.generated) : null, gok = gen && !isNaN(gen.getTime());
     $("pos-updated").textContent = "更新于 " + (gok ? relTime(gen) + " · " + gen.toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "未知") +
       (POSDATA.report_date ? " · 报告日 " + fmtReportDate(POSDATA.report_date) : "");
-    $("pos-kpis").innerHTML =
-      '<div class="kpi"><div class="kpi-label">持仓标的</div><div class="kpi-value num">' + ps.length + "</div></div>" +
-      '<div class="kpi"><div class="kpi-label">总市值</div><div class="kpi-value num">$' + fmtPrice(totV) + "</div></div>" +
-      '<div class="kpi"><div class="kpi-label">总浮盈亏</div><div class="kpi-value num ' + (totP >= 0 ? "pnl-pos" : "pnl-neg") + '">' + (totP >= 0 ? "+" : "−") + "$" + fmtPrice(Math.abs(totP)) + "</div></div>";
     tb.innerHTML = ps.map(function (p) {
       var u = num(p.unrealized, 0), cls = u >= 0 ? "pnl-pos" : "pnl-neg";
       return "<tr>" +
@@ -412,16 +407,166 @@
         '<td class="r num">' + esc(fmtPrice(p.qty)) + "</td>" +
         '<td class="r num">$' + esc(fmtPrice(p.cost)) + "</td>" +
         '<td class="r num">$' + esc(fmtPrice(p.mark)) + "</td>" +
-        '<td class="r num">$' + esc(fmtPrice(p.value)) + "</td>" +
-        '<td class="r num ' + cls + '">' + (u >= 0 ? "+" : "−") + "$" + esc(fmtPrice(Math.abs(u))) + "</td>" +
-        '<td class="muted small">' + esc(p.account || "—") + "</td>" +
+        '<td class="r num ' + cls + '">' + (u >= 0 ? "+" : "\u2212") + "$" + esc(fmtPrice(Math.abs(u))) + "</td>" +
         "</tr>";
     }).join("");
+    renderPosCharts();
    } catch (e) {
      var tb2 = $("pos-tbody");
-     if (tb2) tb2.innerHTML = '<tr><td colspan="7" class="muted">持仓加载失败，请稍后重试</td></tr>';
+     if (tb2) tb2.innerHTML = '<tr><td colspan="5" class="muted">持仓加载失败，请稍后重试</td></tr>';
    }
+  }
 
+  // ---------- 持仓图表 ----------
+  var CHART_CACHE = {};  // symbol -> chart json (avoid refetch on view switch)
+  var POS_CHART_OBJS = [];  // live Lightweight Charts instances (removed on re-render)
+  function posTheme() {
+    function css(n) { try { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); } catch (e) { return ""; } }
+    var dark = document.documentElement.getAttribute("data-theme") !== "light";
+    return {
+      bg: css("--surface") || (dark ? "#121826" : "#ffffff"),
+      text: css("--text-2") || "#aab3c5",
+      grid: dark ? "rgba(148,163,184,.10)" : "rgba(15,23,42,.08)",
+      border: css("--border") || "rgba(148,163,184,.14)",
+      up: css("--buy") || "#f0505e",
+      down: css("--sell") || "#1fc47d",
+      accent: css("--accent") || "#5b8cff",
+      muted: css("--text-3") || "#8a93a6"
+    };
+  }
+  function posChartBase() { return (typeof API_BASE !== "undefined" ? (API_BASE || "") : "") + "/api/charts/"; }
+  function renderPosCharts() {
+    var host = $("pos-charts");
+    if (!host) return;
+    // only render when holdings view is visible (Lightweight Charts needs layout)
+    if (VIEW !== "holdings") return;
+    try {
+      if (!POSDATA || !Array.isArray(POSDATA.positions) || !POSDATA.positions.length) {
+        host.innerHTML = '<p class="muted">暂无持仓数据</p>';
+        return;
+      }
+      var ps = POSDATA.positions.slice().sort(function (a, b) { return num(b.value, 0) - num(a.value, 0); });
+      POS_CHART_OBJS.forEach(function (c) { try { c.remove(); } catch (e) {} });
+      POS_CHART_OBJS = [];
+      host.innerHTML = "";
+      // -- 组合:浮盈亏对比 + 成本现价对比 --
+      var duo = document.createElement("div");
+      duo.className = "pos-duo";
+      var c1 = document.createElement("div"); c1.className = "pos-chart-card";
+      c1.innerHTML = '<div class="pos-chart-head"><b>浮盈亏对比</b><span class="muted small">正=盈利/负=亏损</span></div><div class="pos-pnlchart" id="pos-pnl"></div>';
+      var c2 = document.createElement("div"); c2.className = "pos-chart-card";
+      c2.innerHTML = '<div class="pos-chart-head"><b>成本 vs 现价</b><span class="muted small">灰=成本/彩=现价</span></div><div id="pos-cm"></div>';
+      duo.appendChild(c1); duo.appendChild(c2); host.appendChild(duo);
+      renderPnlChart($("pos-pnl"), ps);
+      renderCostMark($("pos-cm"), ps);
+      // -- 每只: K 线 + 成本/现价线 --
+      ps.forEach(function (p, i) {
+        var u = num(p.unrealized, 0);
+        var card = document.createElement("div");
+        card.className = "pos-chart-card";
+        card.innerHTML = '<div class="pos-chart-head"><b>' + esc(p.symbol) + '</b>' +
+          '<span class="muted small">' + esc(fmtPrice(p.qty)) + ' 股 · 成本 $' + esc(fmtPrice(p.cost)) + ' · 现价 $' + esc(fmtPrice(p.mark)) + '</span>' +
+          '<span class="num ' + (u >= 0 ? "pnl-pos" : "pnl-neg") + '">' + (u >= 0 ? "浮盈 +" : "浮亏 \u2212") + "$" + esc(fmtPrice(Math.abs(u))) + "</span></div>" +
+          '<div class="pos-klegend muted small" id="kleg-' + i + '"></div>' +
+          '<div class="pos-kchart" id="kchart-' + i + '"></div>';
+        host.appendChild(card);
+        renderSymbolKChart($("kchart-" + i), $("kleg-" + i), p);
+      });
+    } catch (e) { host.innerHTML = '<p class="muted">图表加载失败</p>'; }
+  }
+  function renderPnlChart(el, ps) {
+    if (!el) return;
+    try {
+      var LC = window.LightweightCharts;
+      if (!LC) { el.innerHTML = '<p class="muted">图表库未加载</p>'; return; }
+      var th = posTheme();
+      var chart = LC.createChart(el, {
+        autoSize: true,
+        layout: { background: { color: th.bg }, textColor: th.text, fontSize: 11, attributionLogo: false },
+        grid: { vertLines: { color: th.grid }, horzLines: { color: th.grid } },
+        rightPriceScale: { borderColor: th.border },
+        timeScale: {
+          borderColor: th.border,
+          tickMarkFormatter: function (time) { var i = Math.round(time) - 1; return (ps[i] && ps[i].symbol) || ""; }
+        }
+      });
+      var hist = chart.addHistogramSeries({
+        priceFormat: { type: "custom", formatter: function (v) { return (v < 0 ? "\u2212$" : "$") + Math.abs(v).toFixed(0); } },
+        lastValueVisible: false, priceLineVisible: false
+      });
+      hist.setData(ps.map(function (p, i) {
+        var u = num(p.unrealized, 0);
+        return { time: i + 1, value: u, color: u >= 0 ? th.up : th.down };
+      }));
+      chart.timeScale().fitContent();
+      POS_CHART_OBJS.push(chart);
+    } catch (e) { el.innerHTML = '<p class="muted">图表加载失败</p>'; }
+  }
+  function renderCostMark(el, ps) {
+    if (!el) return;
+    try {
+      var mx = 0;
+      ps.forEach(function (p) { mx = Math.max(mx, num(p.cost, 0), num(p.mark, 0)); });
+      if (!(mx > 0)) { el.innerHTML = '<p class="muted">暂无数据</p>'; return; }
+      el.innerHTML = '<div class="cm-rows">' + ps.map(function (p) {
+        var u = num(p.unrealized, 0);
+        return '<div class="cm-sym">' + esc(p.symbol) + '</div>' +
+          '<div class="cm-bar-row"><span class="cm-label">成本</span><div class="cm-track"><div class="cm-fill cm-cost" style="width:' + (num(p.cost, 0) / mx * 100).toFixed(1) + '%"></div></div><span class="cm-val num">$' + esc(fmtPrice(p.cost)) + "</span></div>" +
+          '<div class="cm-bar-row"><span class="cm-label">现价</span><div class="cm-track"><div class="cm-fill ' + (u >= 0 ? "cm-mark-p" : "cm-mark-n") + '" style="width:' + (num(p.mark, 0) / mx * 100).toFixed(1) + '%"></div></div><span class="cm-val num">$' + esc(fmtPrice(p.mark)) + "</span></div>";
+      }).join("") + "</div>";
+    } catch (e) { el.innerHTML = '<p class="muted">图表加载失败</p>'; }
+  }
+  function renderSymbolKChart(el, legEl, p) {
+    if (!el) return;
+    try {
+      var LC = window.LightweightCharts;
+      if (!LC) { el.innerHTML = '<p class="muted">图表库未加载</p>'; return; }
+      el.innerHTML = '<p class="muted small">加载 K 线…</p>';
+      var sym = p.symbol;
+      function done(data) {
+        try {
+          var lv = data && data.levels && (data.levels.daily || data.levels["30m"] || data.levels.weekly);
+          if (!lv || !lv.ohlc || !lv.ohlc.length) { el.innerHTML = '<p class="muted">K 线数据缺失</p>'; return; }
+          el.innerHTML = "";
+          var th = posTheme();
+          var chart = LC.createChart(el, {
+            autoSize: true,
+            layout: { background: { color: th.bg }, textColor: th.text, fontSize: 11, attributionLogo: false },
+            grid: { vertLines: { color: th.grid }, horzLines: { color: th.grid } },
+            crosshair: { mode: LC.CrosshairMode ? LC.CrosshairMode.Normal : 1 },
+            rightPriceScale: { borderColor: th.border, scaleMargins: { top: 0.08, bottom: 0.08 } },
+            timeScale: { borderColor: th.border, rightOffset: 4 },
+            handleScroll: { vertTouchDrag: false }
+          });
+          var candle = chart.addCandlestickSeries({
+            upColor: th.up, downColor: th.down,
+            borderUpColor: th.up, borderDownColor: th.down,
+            wickUpColor: th.up, wickDownColor: th.down,
+            lastValueVisible: false, priceLineVisible: false
+          });
+          candle.setData(lv.ohlc);
+          var u = num(p.unrealized, 0);
+          if (num(p.cost) != null) candle.createPriceLine({ price: p.cost, color: "#f59e0b", lineWidth: 2, lineStyle: LC.LineStyle.Dashed, axisLabelVisible: true, title: "成本 " + fmtPrice(p.cost) });
+          if (num(p.mark) != null) candle.createPriceLine({ price: p.mark, color: u >= 0 ? th.up : th.down, lineWidth: 2, lineStyle: LC.LineStyle.Solid, axisLabelVisible: true, title: "现价 " + fmtPrice(p.mark) });
+          chart.timeScale().fitContent();
+          POS_CHART_OBJS.push(chart);
+          if (legEl) {
+            chart.subscribeCrosshairMove(function (param) {
+              try {
+                if (!param || !param.time) { legEl.textContent = ""; return; }
+                var b = param.seriesData.get(candle);
+                legEl.textContent = b ? ("开 " + b.open.toFixed(2) + "  高 " + b.high.toFixed(2) + "  低 " + b.low.toFixed(2) + "  收 " + b.close.toFixed(2)) : "";
+              } catch (e2) {}
+            });
+          }
+        } catch (e) { el.innerHTML = '<p class="muted">图表加载失败</p>'; }
+      }
+      if (CHART_CACHE[sym]) { done(CHART_CACHE[sym]); return; }
+      fetch(posChartBase() + encodeURIComponent(sym) + ".json", { cache: "no-cache" })
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then(function (d) { CHART_CACHE[sym] = d; done(d); })
+        .catch(function () { el.innerHTML = '<p class="muted">K 线数据缺失</p>'; });
+    } catch (e) { el.innerHTML = '<p class="muted">图表加载失败</p>'; }
   }
 
   // ---------- 概览 ----------
