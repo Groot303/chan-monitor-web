@@ -5,12 +5,13 @@ Deploy: systemd service (see api.service), data in /opt/chan-monitor/api_data/.
 import json
 import os
 import subprocess
+import secrets
 import sys
 import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
@@ -221,8 +222,38 @@ def jobs():
     return d
 
 
+def _get_api_token():
+    """Read API_TOKEN live from .env (os.environ fallback).
+
+    Read from disk on every check (not just at startup) so rotating the
+    token needs no restart, and the scheduler/self-update paths stay untouched.
+    """
+    try:
+        for line in (BASE / ".env").read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith("API_TOKEN"):
+                k, _, v = line.partition("=")
+                if k.strip() == "API_TOKEN" and v.strip():
+                    return v.strip().strip("'\"")
+    except OSError:
+        pass
+    return os.environ.get("API_TOKEN", "")
+
+
+def _require_token(request: Request):
+    """Guard write/sensitive endpoints. Token lives in /opt/chan-monitor/.env
+    as API_TOKEN (never in the repo)."""
+    token = _get_api_token()
+    if not token:
+        raise HTTPException(status_code=503, detail="API_TOKEN not configured")
+    got = request.headers.get("x-api-token", "")
+    if not secrets.compare_digest(got, token):
+        raise HTTPException(status_code=401, detail="bad token")
+
+
 @app.post("/api/jobs/run")
-def trigger():
+def trigger(request: Request):
+    _require_token(request)
     import threading
     if job_status["running"]:
         return {"status": "already_running"}
@@ -255,8 +286,23 @@ def api_signals_cn():
 
 
 @app.get("/api/positions")
-def api_positions():
+def api_positions(request: Request):
+    _require_token(request)  # full qty/cost/P&L: token only
     return _read_json("positions_ibkr.json")
+
+
+@app.get("/api/holdings")
+def api_holdings():
+    """Public: held symbols only (for the web badge). No quantities/costs."""
+    p = DATA_DIR / "data" / "positions_ibkr.json"
+    if not p.exists():
+        raise HTTPException(status_code=503, detail="positions_ibkr.json not ready yet")
+    try:
+        d = json.loads(p.read_text(encoding="utf-8"))
+        return JSONResponse(content={"symbols": d.get("symbols", []),
+                                     "generated": d.get("generated")})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)[:200])
 
 
 # static: images and interactive chart data

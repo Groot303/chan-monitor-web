@@ -2,7 +2,7 @@
 # One-shot Caddy install for chan-monitor-web on the Alibaba Cloud VPS.
 # Run as root on the VPS AFTER opening ports 80/443 in the console firewall.
 set -euo pipefail
-HOST="${1:-47-251-20-175.nip.io}"
+HOST="${1:-groot303.duckdns.org}"
 if [ "$(id -u)" != "0" ]; then echo "run as root"; exit 1; fi
 echo "==> installing Caddy (official repo)"
 apt-get update -qq
@@ -13,7 +13,7 @@ apt-get update -qq && apt-get install -y -qq caddy
 echo "==> writing Caddyfile for $HOST"
 cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak 2>/dev/null || true
 cp "$(dirname "$0")/Caddyfile" /etc/caddy/Caddyfile
-sed -i "s/47-251-20-175.nip.io/$HOST/" /etc/caddy/Caddyfile
+sed -i "s/groot303.duckdns.org/$HOST/" /etc/caddy/Caddyfile
 caddy fmt --overwrite /etc/caddy/Caddyfile
 caddy validate --config /etc/caddy/Caddyfile
 systemctl enable --now caddy

@@ -1,5 +1,5 @@
-# chan-monitor-web: stable HTTPS frontend + API via nip.io (no registration needed).
+# chan-monitor-web: stable HTTPS frontend + API via groot303.duckdns.org (DuckDNS).
 # Caddy obtains/renews a Let's Encrypt cert automatically (needs ports 80/443 open).
-47-251-20-175.nip.io {
+groot303.duckdns.org {
 	reverse_proxy 127.0.0.1:8000
 }
