@@ -13,7 +13,9 @@
   }
   var LV_LABEL = { weekly: "周线", daily: "日线", "30m": "30分钟", "5m": "5分钟" };
   var LV_ORDER = ["weekly", "daily", "30m", "5m"];
-  var TYPE_NAME = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_S": "上沿卖", "ZD_B": "下沿买", "PRE_1B": "预一买", "PRE_2B": "预二买", "PRE_3B": "预三买", "PRE_1S": "预一卖", "PRE_2S": "预二卖", "PRE_3S": "预三卖" };
+  var TYPE_NAME = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_S": "上沿卖", "ZD_B": "下沿买",
+    "PRE_1B": "预一买", "PRE_2B": "预二买", "PRE_3B": "预三买", "PRE_1S": "预一卖", "PRE_2S": "预二卖", "PRE_3S": "预三卖",
+    "BC_B": "盘整背驰买", "BC_S": "盘整背驰卖" };
 
   var state = {
     root: null,
@@ -51,7 +53,6 @@
       pivotStroke: "rgba(245,177,76,.55)",
       edgeBuy: "#22d3ee",
       edgeSell: "#f59e0b",
-      pre: "#a78bfa",
     };
   }
 
@@ -258,12 +259,14 @@
       var markers = lv.signals.map(function (s) {
         var buy = isBuy(s.type);
         var edge = s.kind === "pivot_edge" || s.type === "ZG_S" || s.type === "ZD_B";
-        var pre = s.pre === true || /^PRE_/.test(s.type || "");
-        var label = (pre ? "【预】" : "") + (TYPE_NAME[s.type] || s.type) + (s.confirmed ? "" : "?") + (s.score != null ? " " + Number(s.score).toFixed(1) : "");
+        var isPre = s.type && s.type.indexOf("PRE_") === 0;
+        var label = (isPre ? "【预】" : "") + (TYPE_NAME[s.type] || s.type) + (s.confirmed ? "" : "?") + (s.score != null ? " " + Number(s.score).toFixed(1) : "");
+        // PRE 预信号用黄色标记，醒目区分
+        var markerColor = isPre ? "#ffcc00" : (edge ? (buy ? th.edgeBuy : th.edgeSell) : (buy ? th.up : th.down));
         return {
           time: s.time,
           position: buy ? "belowBar" : "aboveBar",
-          color: pre ? th.pre : (edge ? (buy ? th.edgeBuy : th.edgeSell) : (buy ? th.up : th.down)),
+          color: markerColor,
           shape: edge ? "circle" : (buy ? "arrowUp" : "arrowDown"),
           text: label,
         };
