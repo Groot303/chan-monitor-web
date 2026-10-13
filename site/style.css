@@ -475,3 +475,8 @@ button.kpi,button.card,button.sym-card{font:inherit;color:inherit;text-align:lef
 .ios-input:focus{outline:none;border-color:var(--accent)}
 /* PRE 预信号徽标 */
 .pre-badge{display:inline-block;background:#ffcc00;color:#333;font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:middle}
+/* 持仓 */
+.held-badge{display:inline-block;vertical-align:2px;margin-left:6px;font-size:11px;font-weight:700;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);background:var(--accent-bg);border-radius:99px;padding:1px 8px;white-space:nowrap}
+.pnl-pos{color:var(--buy)} .pnl-neg{color:var(--sell)}
+#pos-kpis{margin-bottom:14px}
+#pos-kpis .kpi{cursor:default}
