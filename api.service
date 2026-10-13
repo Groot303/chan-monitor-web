@@ -1,0 +1,17 @@
+[Unit]
+Description=chan-monitor-web API (FastAPI + APScheduler)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/chan-monitor/repo
+Environment="PATH=/opt/chan-monitor/repo/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/opt/chan-monitor/repo/venv/bin/uvicorn api:app --host 127.0.0.1 --port 8000 --log-level info
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/chan-monitor/logs/api.log
+StandardError=append:/opt/chan-monitor/logs/api.log
+
+[Install]
+WantedBy=multi-user.target
