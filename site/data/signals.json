@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-13T12:00:15.858778Z",
+ "generated": "2026-10-13T12:15:18.892776Z",
  "market": "us",
  "failures": {
   "SPCX/weekly": "too few bars: 19",
@@ -200,10 +200,10 @@
      }
     },
     "30m": {
-     "bars": 664,
+     "bars": 665,
      "first": "2026-08-13 09:00",
-     "last": "2026-10-12 15:30",
-     "last_close": 163.455,
+     "last": "2026-10-13 08:00",
+     "last_close": 162.25,
      "state": {
       "direction": "up",
       "pivot_pos": "above",
@@ -220,10 +220,10 @@
      }
     },
     "5m": {
-     "bars": 492,
+     "bars": 493,
      "first": "2026-10-05 09:10",
-     "last": "2026-10-12 15:55",
-     "last_close": 163.455,
+     "last": "2026-10-13 08:10",
+     "last_close": 162.25,
      "state": {
       "direction": "down",
       "pivot_pos": "below",
@@ -350,10 +350,10 @@
      }
     },
     "30m": {
-     "bars": 671,
+     "bars": 672,
      "first": "2026-08-13 08:30",
-     "last": "2026-10-12 15:30",
-     "last_close": 101.33,
+     "last": "2026-10-13 08:00",
+     "last_close": 99.82,
      "state": {
       "direction": "down",
       "pivot_pos": "below",
@@ -370,10 +370,10 @@
      }
     },
     "5m": {
-     "bars": 498,
+     "bars": 499,
      "first": "2026-10-05 08:10",
-     "last": "2026-10-12 15:55",
-     "last_close": 101.33,
+     "last": "2026-10-13 08:00",
+     "last_close": 99.82,
      "state": {
       "direction": "down",
       "pivot_pos": "none",
@@ -1115,10 +1115,10 @@
      }
     },
     "30m": {
-     "bars": 583,
+     "bars": 584,
      "first": "2026-08-13 09:00",
-     "last": "2026-10-12 15:30",
-     "last_close": 444.51,
+     "last": "2026-10-13 08:00",
+     "last_close": 441.52,
      "state": {
       "direction": "down",
       "pivot_pos": "below",
@@ -1135,10 +1135,10 @@
      }
     },
     "5m": {
-     "bars": 476,
+     "bars": 477,
      "first": "2026-10-05 08:35",
-     "last": "2026-10-12 15:55",
-     "last_close": 444.51,
+     "last": "2026-10-13 08:10",
+     "last_close": 441.52,
      "state": {
       "direction": "down",
       "pivot_pos": "below",
@@ -1285,10 +1285,10 @@
      }
     },
     "30m": {
-     "bars": 607,
+     "bars": 608,
      "first": "2026-08-13 09:00",
-     "last": "2026-10-12 15:30",
-     "last_close": 354.79,
+     "last": "2026-10-13 08:00",
+     "last_close": 350.04,
      "state": {
       "direction": "down",
       "pivot_pos": "below",
@@ -1305,10 +1305,10 @@
      }
     },
     "5m": {
-     "bars": 474,
+     "bars": 475,
      "first": "2026-10-05 09:30",
-     "last": "2026-10-12 15:55",
-     "last_close": 354.79,
+     "last": "2026-10-13 08:10",
+     "last_close": 350.04,
      "state": {
       "direction": "down",
       "pivot_pos": "below",
@@ -1540,10 +1540,10 @@
      }
     },
     "30m": {
-     "bars": 697,
+     "bars": 698,
      "first": "2026-08-13 08:30",
-     "last": "2026-10-12 15:30",
-     "last_close": 9.9,
+     "last": "2026-10-13 08:00",
+     "last_close": 9.61,
      "state": {
       "direction": "down",
       "pivot_pos": "below",
@@ -1560,10 +1560,10 @@
      }
     },
     "5m": {
-     "bars": 550,
+     "bars": 551,
      "first": "2026-10-05 08:00",
-     "last": "2026-10-12 15:55",
-     "last_close": 9.9,
+     "last": "2026-10-13 08:05",
+     "last_close": 9.61,
      "state": {
       "direction": "down",
       "pivot_pos": "below",
@@ -1681,7 +1681,7 @@
    "margin_pct": -0.07282260413632446,
    "stop_price": 432.9,
    "time": "2026-10-12 11:00",
-   "bars_ago": 9,
+   "bars_ago": 10,
    "recent": true,
    "confirmed": true,
    "repaint_warning": null,
@@ -1713,7 +1713,7 @@
    "pre": false,
    "kind": "chan",
    "time": "2026-10-08 16:00",
-   "bars_ago": 28,
+   "bars_ago": 29,
    "recent": true,
    "confirmed": true,
    "repaint_warning": null,
@@ -1848,7 +1848,7 @@
    "margin_pct": -0.34903534326390373,
    "stop_price": 374.78,
    "time": "2026-10-09 15:25",
-   "bars_ago": 84,
+   "bars_ago": 85,
    "recent": true,
    "confirmed": true,
    "repaint_warning": null,
@@ -2021,7 +2021,7 @@
    "margin_pct": -1.1248441480999571,
    "stop_price": 380.01,
    "time": "2026-10-08 12:30",
-   "bars_ago": 32,
+   "bars_ago": 33,
    "recent": true,
    "confirmed": true,
    "repaint_warning": null,
@@ -2309,7 +2309,7 @@
    "pre": false,
    "kind": "chan",
    "time": "2026-09-23 13:00",
-   "bars_ago": 217,
+   "bars_ago": 218,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
@@ -2341,7 +2341,7 @@
    "pre": false,
    "kind": "chan",
    "time": "2026-09-28 10:30",
-   "bars_ago": 149,
+   "bars_ago": 150,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
@@ -2505,7 +2505,7 @@
    "margin_pct": -0.36278955754383,
    "stop_price": 395.71,
    "time": "2026-09-03 10:30",
-   "bars_ago": 373,
+   "bars_ago": 374,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
@@ -2743,7 +2743,7 @@
    "margin_pct": -1.8001595078044774,
    "stop_price": 85.14,
    "time": "2026-09-03 09:30",
-   "bars_ago": 431,
+   "bars_ago": 432,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
@@ -3210,7 +3210,7 @@
    "margin_pct": -1.733121065200094,
    "stop_price": 134.04,
    "time": "2026-09-02 10:00",
-   "bars_ago": 443,
+   "bars_ago": 444,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
@@ -3681,7 +3681,7 @@
    "margin_pct": -0.4080913654913254,
    "stop_price": 175.41,
    "time": "2026-10-07 11:50",
-   "bars_ago": 293,
+   "bars_ago": 294,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
@@ -3813,7 +3813,7 @@
    "margin_pct": -0.8741679364824839,
    "stop_price": 128.43,
    "time": "2026-10-02 10:30",
-   "bars_ago": 108,
+   "bars_ago": 109,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
@@ -4124,7 +4124,7 @@
    "margin_pct": -0.5528223851810621,
    "stop_price": 499.33,
    "time": "2026-10-06 15:30",
-   "bars_ago": 323,
+   "bars_ago": 324,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
@@ -4157,7 +4157,7 @@
    "pre": false,
    "kind": "chan",
    "time": "2026-10-09 09:30",
-   "bars_ago": 157,
+   "bars_ago": 158,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
@@ -4518,7 +4518,7 @@
    "margin_pct": -0.7483629560336769,
    "stop_price": 11.01,
    "time": "2026-10-07 15:30",
-   "bars_ago": 48,
+   "bars_ago": 49,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
@@ -4553,7 +4553,7 @@
    "margin_pct": -0.9021842355175558,
    "stop_price": 10.85,
    "time": "2026-10-09 09:30",
-   "bars_ago": 169,
+   "bars_ago": 170,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
