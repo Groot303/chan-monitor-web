@@ -3,3 +3,6 @@ exchange_calendars
 pandas
 numpy
 matplotlib
+fastapi
+uvicorn
+apscheduler

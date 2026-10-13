@@ -17,8 +17,8 @@ sys.path.insert(0, ROOT)
 import pandas as pd
 from chan2 import analyze_level, score_signal, resonance
 
-LEVELS = ("weekly", "daily", "30m")
-RECENT = {"weekly": 4, "daily": 10, "30m": 40}
+LEVELS = ("weekly", "daily", "30m", "5m")
+RECENT = {"weekly": 4, "daily": 10, "30m": 40, "5m": 120}
 
 
 def find_csv(sym: str, lv: str, data_dirs: list[str]) -> str:
@@ -41,7 +41,7 @@ def bar_time(ts, lv: str):
     """Lightweight Charts time: YYYY-MM-DD for daily/weekly, unix seconds (UTC) for intraday."""
     if hasattr(ts, "to_pydatetime"):
         ts = ts.to_pydatetime()
-    if lv == "30m":
+    if lv in ("30m", "5m"):
         # LWC expects UTCTimestamp (seconds)
         if ts.tzinfo is None:
             raise ValueError("intraday bar missing tz")
@@ -147,7 +147,7 @@ def export_symbol(sym: str, data_dirs: list[str]) -> dict:
         raw_levels[lv] = export_level(df, lv, sym, big_states=None)
 
     # resonance: 30m vs daily+weekly, daily vs weekly
-    for lv, bigs in (("30m", ["daily", "weekly"]), ("daily", ["weekly"])):
+    for lv, bigs in (("5m", ["30m", "daily", "weekly"]), ("30m", ["daily", "weekly"]), ("daily", ["weekly"])):
         if lv not in dfs or raw_levels.get(lv) is None:
             continue
         bs = []

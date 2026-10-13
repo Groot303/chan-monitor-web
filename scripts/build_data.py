@@ -11,12 +11,15 @@ import json, os, shutil, sys
 ap = argparse.ArgumentParser()
 ap.add_argument("src", nargs="?", default="out")
 ap.add_argument("--market", default="us", choices=["us", "cn"])
+ap.add_argument("--outdir", default=None, help="output base dir (default: site/)")
 args = ap.parse_args()
 src = args.src
 market = args.market
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-site = os.path.join(root, "site")
+# API_MODE: output to API_DATA_DIR instead of site/
+outbase = args.outdir or os.environ.get("API_DATA_DIR") or os.path.join(root, "site")
+site = outbase
 if market == "cn":
     data_name, img_dirname, charts_dirname = "signals_cn.json", "img_cn", "charts_cn"
 else:

@@ -3,8 +3,8 @@
   "use strict";
   var SUPPORTED = null; // null = try any symbol via data/charts/{SYM}.json
   var CHART_BASE = "data/charts/"; // 市场切换时改为 data/charts_cn/
-  var LV_LABEL = { weekly: "周线", daily: "日线", "30m": "30分钟" };
-  var LV_ORDER = ["weekly", "daily", "30m"];
+  var LV_LABEL = { weekly: "周线", daily: "日线", "30m": "30分钟", "5m": "5分钟" };
+  var LV_ORDER = ["weekly", "daily", "30m", "5m"];
   var TYPE_NAME = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_S": "上沿卖", "ZD_B": "下沿买" };
 
   var state = {
@@ -195,7 +195,7 @@
       rightPriceScale: { borderColor: th.border, scaleMargins: { top: 0.08, bottom: 0.08 } },
       timeScale: {
         borderColor: th.border,
-        timeVisible: state.level === "30m",
+        timeVisible: state.level === "30m" || state.level === "5m",
         secondsVisible: false,
         rightOffset: 4,
       },
