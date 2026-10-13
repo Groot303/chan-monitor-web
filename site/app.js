@@ -16,8 +16,8 @@
   var POS = { above: "中枢上方", below: "中枢下方", inside: "中枢内", none: "无中枢" };
   var TIER = [[5, "hi", "高"], [2.5, "mid", "中"], [-Infinity, "lo", "低"]];
   // 市场配置:美股(us) / A股指数(cn)
-  // API_BASE: 后端API地址 (Cloudflare Tunnel HTTPS)。为空则用相对路径(静态模式)。
-  var API_BASE = localStorage.getItem("chan.apiBase") || "";
+  // API_BASE: 后端API地址 (Cloudflare Tunnel HTTPS)。localStorage 可覆盖。
+  var API_BASE = localStorage.getItem("chan.apiBase") || "https://iso-therapy-bills-counties.trycloudflare.com";
   var MK = {
     us: { label: "美股", signals: "data/signals.json", api: "/api/signals", tz: "ET", src: "Alpaca(IEX 免费版)", delay: "Alpaca 可能延迟",
           watch: ["AAOI","AAPL","AMD","AVGO","GOOG","INTC","LITE","META","MRNA","MRVL","MU","NOK","NVDA","ORCL","PLTR","SKHY","SNDK","SPCX","TSLA","TSM"],

@@ -2,8 +2,8 @@
 (function (global) {
   "use strict";
   var SUPPORTED = null; // null = try any symbol via data/charts/{SYM}.json
-  // API_BASE: 与 app.js 一致，后端API地址。为空则用相对路径(静态模式)。
-  var API_BASE = (typeof localStorage !== "undefined" && localStorage.getItem("chan.apiBase")) || "";
+  // API_BASE: 与 app.js 一致，后端API地址。localStorage 可覆盖。
+  var API_BASE = (typeof localStorage !== "undefined" && localStorage.getItem("chan.apiBase")) || "https://iso-therapy-bills-counties.trycloudflare.com";
   var CHART_BASE = "data/charts/"; // 市场切换时改为 data/charts_cn/ (API模式: /api/charts/ 或 /api/charts_cn/)
   function chartBase() {
     if (API_BASE) {
