@@ -109,7 +109,7 @@
 
   // ---------- 状态 ----------
   var D = null, SIGS = [], F = loadFilters(), MODE = lsGet(LS.mode) === "table" ? "table" : "cards", VIEW = "signals";
-  var POS = null, HELD = {};  // IBKR positions (public /api/positions), HELD: symbol -> position
+  var POSDATA = null, HELD = {};  // IBKR positions (public /api/positions), HELD: symbol -> position
   var lastFocus = null, current = null;
 
   function loadFilters() {
@@ -361,7 +361,7 @@
     syncControls();
     renderSignals();
     renderSymbols();
-    loadPositions();
+    try { loadPositions(); } catch (e) { /* 持仓加载失败不影响信号看板 */ }
   }
 
   // ---------- 持仓 ----------
@@ -370,10 +370,12 @@
     fetch(positionsURL() + "?t=" + Date.now(), { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) {
-        POS = d; HELD = {};
-        (d.positions || []).forEach(function (p) { if (p && p.symbol) HELD[p.symbol] = p; });
-        renderHoldings();
-        if (VIEW === "symbols" && D) renderSymbols();  // refresh 持有 badges
+        try {
+          POSDATA = d; HELD = {};
+          (d.positions || []).forEach(function (p) { if (p && p.symbol) HELD[p.symbol] = p; });
+          renderHoldings();
+          if (VIEW === "symbols" && D) renderSymbols();  // refresh 持有 badges
+        } catch (e) { /* 持仓渲染失败不影响信号看板 */ }
       })
       .catch(function () { renderHoldings(); });  // 持仓缺失不影响主流程
   }
@@ -382,22 +384,23 @@
     return s.length === 8 ? s.slice(0, 4) + "-" + s.slice(4, 6) + "-" + s.slice(6, 8) : s;
   }
   function renderHoldings() {
+   try {
     var tb = $("pos-tbody");
     if (!tb) return;
-    if (!POS || !Array.isArray(POS.positions) || !POS.positions.length) {
+    if (!POSDATA || !Array.isArray(POSDATA.positions) || !POSDATA.positions.length) {
       tb.innerHTML = '<tr><td colspan="7" class="muted">暂无持仓数据</td></tr>';
       var pc = $("pos-count"); if (pc) pc.textContent = "";
       var pu = $("pos-updated"); if (pu) pu.textContent = "持仓数据未就绪";
       var pk = $("pos-kpis"); if (pk) pk.innerHTML = "";
       return;
     }
-    var ps = POS.positions.slice().sort(function (a, b) { return num(b.value, 0) - num(a.value, 0); });
+    var ps = POSDATA.positions.slice().sort(function (a, b) { return num(b.value, 0) - num(a.value, 0); });
     var totV = 0, totP = 0;
     ps.forEach(function (p) { totV += num(p.value, 0); totP += num(p.unrealized, 0); });
     $("pos-count").textContent = ps.length;
-    var gen = POS.generated ? new Date(POS.generated) : null, gok = gen && !isNaN(gen.getTime());
+    var gen = POSDATA.generated ? new Date(POSDATA.generated) : null, gok = gen && !isNaN(gen.getTime());
     $("pos-updated").textContent = "更新于 " + (gok ? relTime(gen) + " · " + gen.toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "未知") +
-      (POS.report_date ? " · 报告日 " + fmtReportDate(POS.report_date) : "");
+      (POSDATA.report_date ? " · 报告日 " + fmtReportDate(POSDATA.report_date) : "");
     $("pos-kpis").innerHTML =
       '<div class="kpi"><div class="kpi-label">持仓标的</div><div class="kpi-value num">' + ps.length + "</div></div>" +
       '<div class="kpi"><div class="kpi-label">总市值</div><div class="kpi-value num">$' + fmtPrice(totV) + "</div></div>" +
@@ -414,6 +417,11 @@
         '<td class="muted small">' + esc(p.account || "—") + "</td>" +
         "</tr>";
     }).join("");
+   } catch (e) {
+     var tb2 = $("pos-tbody");
+     if (tb2) tb2.innerHTML = '<tr><td colspan="7" class="muted">持仓加载失败，请稍后重试</td></tr>';
+   }
+
   }
 
   // ---------- 概览 ----------
@@ -592,7 +600,7 @@
         body = '<div class="sym-empty" role="status">暂无信号<span class="muted"> · 仍可打开查看多级别状态</span></div>';
       }
       return '<button type="button" class="sym-card' + (info.latest ? "" : " is-empty") + '" data-sym="' + esc(sym) + '" style="animation-delay:' + Math.min(i * 25, 400) + 'ms" aria-label="' + esc(sym + (info.latest ? ",查看详情" : ",暂无信号,查看状态")) + '">' +
-        '<div class="sym-head"><span class="sym">' + esc(sym) + (HELD[sym] ? ' <span class="held-badge" title="IBKR 持仓中">持有</span>' : "") + '</span><span class="sym-close">' + (lc ? '<span class="num">' + fmtPrice(lc.last_close) + '</span>' : "—") + '</span></div>' +
+        '<div class="sym-head"><span class="sym">' + esc(sym) + ((HELD && HELD[sym]) ? ' <span class="held-badge" title="IBKR 持仓中">持有</span>' : "") + '</span><span class="sym-close">' + (lc ? '<span class="num">' + fmtPrice(lc.last_close) + '</span>' : "—") + '</span></div>' +
         '<div class="dirs">' + dirs + '</div>' + body + '</button>';
     }).join("");
     qsa("[data-sym]", $("sym-grid")).forEach(function (el) {
