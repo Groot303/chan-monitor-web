@@ -152,7 +152,9 @@ def api_signals_cn():
 
 
 # static: images and interactive chart data
-for _sub in ("img", "img_cn", "charts", "charts_cn"):
-    _d = DATA_DIR / _sub
+# Note: build_data.py writes charts to api_data/data/charts/ (not api_data/charts/)
+for _sub, _dirname in (("img", "img"), ("img_cn", "img_cn"),
+                       ("charts", "data/charts"), ("charts_cn", "data/charts_cn")):
+    _d = DATA_DIR / _dirname
     _d.mkdir(parents=True, exist_ok=True)
     app.mount(f"/api/{_sub}", StaticFiles(directory=str(_d)), name=_sub)
