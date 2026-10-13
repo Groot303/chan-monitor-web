@@ -34,6 +34,10 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);if(c==="us"||c==="cn")
       <button class="tab" data-view="symbols">标的总览</button>
       <button class="tab" data-view="about">说明</button>
     </nav>
+    <div class="seg market-seg" role="group" aria-label="市场切换">
+      <button type="button" class="mkt-btn" data-market="us" aria-pressed="true">美股</button>
+      <button type="button" class="mkt-btn" data-market="cn" aria-pressed="false">A股</button>
+    </div>
     <div class="top-actions">
       <button class="icon-btn" id="btn-color" type="button" aria-label="切换涨跌配色" title="切换涨跌配色">
         <span class="color-swatch" aria-hidden="true"><i class="sw-buy"></i><i class="sw-sell"></i></span>
@@ -188,7 +192,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);if(c==="us"||c==="cn")
       </article>
       <article class="panel">
         <h3>数据</h3>
-        <p>行情来自 Alpaca(IEX 免费版,单交易所数据),价格未复权。信号时间为极值K线时间(美东时间),确认会滞后若干根K线。周线最后一根为当周未完成K线。</p>
+        <p id="about-src">行情来自 Alpaca(IEX 免费版,单交易所数据),价格未复权。信号时间为极值K线时间(美东时间),确认会滞后若干根K线。周线最后一根为当周未完成K线。</p>
         <div id="failures"></div>
       </article>
     </div>
@@ -197,8 +201,8 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);if(c==="us"||c==="cn")
 
 <footer class="footer">
   <div class="footer-inner">
-    <p class="muted small">20 个标的均为可缩放交互 K 线(Lightweight Charts,叠加笔/线段/中枢)。箭头=缠论一二三类买卖点;青绿/琥珀圆点=中枢下沿买/上沿卖。静态 PNG 可在详情中展开对照。</p>
-    <p class="disclaimer"><b>免责声明:</b>本页信号基于启发式规则,<b>未回测</b>,<b>不构成投资建议</b>;<b>未确认信号可能重绘</b>。数据源 Alpaca,可能延迟或缺失。</p>
+    <p class="muted small" id="foot-syms">20 个标的均为可缩放交互 K 线(Lightweight Charts,叠加笔/线段/中枢)。箭头=缠论一二三类买卖点;青绿/琥珀圆点=中枢下沿买/上沿卖。静态 PNG 可在详情中展开对照。</p>
+    <p class="disclaimer"><b>免责声明:</b>本页信号基于启发式规则,<b>未回测</b>,<b>不构成投资建议</b>;<b>未确认信号可能重绘</b>。<span id="foot-disc-src">数据源 Alpaca,可能延迟或缺失。</span></p>
     <p class="muted small" id="foot-meta"></p>
   </div>
 </footer>
