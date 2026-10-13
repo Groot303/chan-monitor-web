@@ -128,7 +128,11 @@ def trigger():
 
 
 def _read_json(name):
-    p = DATA_DIR / name
+    # build_data.py outputs to api_data/data/<name>
+    p = DATA_DIR / "data" / name
+    if not p.exists():
+        # fallback: top level (legacy)
+        p = DATA_DIR / name
     if not p.exists():
         raise HTTPException(status_code=503, detail=f"{name} not ready yet")
     try:
