@@ -51,6 +51,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Cache control: StaticFiles emits ETag/Last-Modified but no Cache-Control,
+# so WebKit/iOS Safari falls back to heuristic caching and can serve stale
+# index.html / app.js indefinitely. Force revalidation on the entry document,
+# assets and data files (cheap 304 via ETag when unchanged).
+@app.middleware("http")
+async def _no_cache_static(request: Request, call_next):
+    resp = await call_next(request)
+    p = request.url.path
+    if p == "/" or p.endswith((".html", ".js", ".css", ".json", ".png", ".svg", ".ico")):
+        resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
 # ---- job status ----
 job_status = {
     "last_run": None,
