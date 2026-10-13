@@ -166,15 +166,19 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
       <h2 id="h-holdings">持仓 <span class="count" id="pos-count"></span></h2>
       <p class="muted small" id="pos-updated">加载中…</p>
     </div>
-    <div class="kpis" id="pos-kpis" aria-label="持仓概览"></div>
     <div class="table-wrap"><table aria-label="持仓明细">
       <thead><tr>
         <th class="plain">标的</th><th class="plain r">数量</th><th class="plain r">成本</th>
-        <th class="plain r">现价</th><th class="plain r">市值</th><th class="plain r">浮盈亏</th><th class="plain">账户</th>
+        <th class="plain r">现价</th><th class="plain r">浮盈亏</th>
       </tr></thead>
-      <tbody id="pos-tbody"><tr><td colspan="7" class="muted">加载中…</td></tr></tbody>
+      <tbody id="pos-tbody"><tr><td colspan="5" class="muted">加载中…</td></tr></tbody>
     </table></div>
     <p class="muted small" style="margin-top:10px">数据来自 IBKR Flex 持仓快照（每日更新），数量/成本/浮盈亏已公开。</p>
+    <div class="section-head" style="margin-top:20px">
+      <h2>持仓分析</h2>
+      <p class="muted small">K 线叠加成本价与现价 · 组合浮盈亏 / 成本现价对比</p>
+    </div>
+    <div id="pos-charts"><p class="muted">加载中…</p></div>
   </section>
 
   <!-- 说明 -->
