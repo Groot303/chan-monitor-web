@@ -1,0 +1,47 @@
+{
+ "generated": "2026-10-13T15:36:42Z",
+ "report_date": "20261012",
+ "accounts": [
+  "U18609721"
+ ],
+ "symbols": [
+  "INTC",
+  "MU",
+  "SNDK"
+ ],
+ "positions": [
+  {
+   "symbol": "INTC",
+   "asset": "STK",
+   "currency": "USD",
+   "qty": 10.0,
+   "cost": 120.0339287,
+   "mark": 101.35,
+   "value": 1013.5,
+   "unrealized": -186.839287,
+   "account": "U18609721"
+  },
+  {
+   "symbol": "MU",
+   "asset": "STK",
+   "currency": "USD",
+   "qty": 2.0,
+   "cost": 919.19981,
+   "mark": 989.04,
+   "value": 1978.08,
+   "unrealized": 139.68038,
+   "account": "U18609721"
+  },
+  {
+   "symbol": "SNDK",
+   "asset": "STK",
+   "currency": "USD",
+   "qty": 3.0,
+   "cost": 1703.779507667,
+   "mark": 1487.33,
+   "value": 4461.99,
+   "unrealized": -649.348523,
+   "account": "U18609721"
+  }
+ ]
+}
