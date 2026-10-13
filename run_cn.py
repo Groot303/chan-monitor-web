@@ -22,20 +22,6 @@ FORCE_RUN = os.environ.get('FORCE_RUN') == 'true'  # bypass market-hours gate (w
 SH_TZ = "Asia/Shanghai"
 OUT = "out_cn"
 
-# Trend-filter mode for pivot-edge signals that conflict with the higher-timeframe trend
-# (2026-10-13 opt, mirrors run2.py): 'downweight' keeps the signal at half size
-# (backtest: variant D +373.5% vs variant C +269.2% showed hard-drop threw away winners);
-# set to 'drop' to restore the old hard-discard behavior.
-TREND_FILTER_MODE = 'downweight'  # 'downweight' | 'drop'
-
-# Regime pause (2026-10-13 opt; backtest parity: backtest_opt.py REGIME=pause).
-# Benchmark for A-shares: 上证指数 (already in CN_SYMS). When its daily close is
-# below the 200-day SMA, new BUY entries are paused (signals marked, not deleted;
-# sells unaffected). <200 daily bars -> no filtering, same as backtest.
-REGIME_BENCH = "上证指数"
-REGIME_SMA = 200
-REGIME_MODE = 'pause'  # 'pause' | 'off'
-
 # (display name, eastmoney secid)
 CN_SYMS = [
     ("上证指数", "1.000001"),
@@ -102,7 +88,9 @@ def fetch_em_frames():
         per = {}
         for name, secid in CN_SYMS:
             try:
-                df = fetch_em_kline(secid, klt)
+                # 5m 级别多取一些 K 线 (2000根 ≈ 40个交易日)
+                _lmt = "2000" if lv == "5m" else "1000"
+                df = fetch_em_kline(secid, klt, lmt=_lmt)
                 if df is not None and len(df):
                     per[name] = df
                     print(f"  {name} {lv}: {len(df)} bars, last={df.index[-1]}")
@@ -164,57 +152,10 @@ def plot(sym, res, dfs):
     plt.close(fig)
 
 
-def cn_regime_df():
-    """Return 上证指数 daily df for the regime filter, or None."""
-    try:
-        if not CACHED:
-            df = FRAMES.get("daily", {}).get(REGIME_BENCH)
-            if df is not None and len(df):
-                return df
-        p = f"{OUT}/data2_{REGIME_BENCH}_daily.csv"
-        df = pd.read_csv(p, index_col=0)
-        df.index = pd.to_datetime(df.index, utc=True).tz_convert(SH_TZ)
-        return df
-    except Exception:
-        return None
-
-
-def cn_regime():
-    """dict(bear, close, sma200, asof) or None. bear = close < 200d SMA.
-    <200 bars -> bear=False (no filtering), same as backtest."""
-    try:
-        df = cn_regime_df()
-        if df is None:
-            return None
-        closes = df["Close"].dropna()
-        if len(closes) < 2:
-            return None
-        sma = closes.rolling(REGIME_SMA).mean().iloc[-1]
-        last = float(closes.iloc[-1])
-        bear = False if pd.isna(sma) else bool(last < float(sma))
-        return {"bear": bear, "close": last,
-                "sma200": None if pd.isna(sma) else float(sma),
-                "asof": fmt(df.index[-1])}
-    except Exception as e:
-        print(f"regime benchmark unavailable ({e}); continuing without regime filter")
-        return None
-
-
 os.makedirs(OUT, exist_ok=True)
 FRAMES = {} if CACHED else fetch_em_frames()
-REG_CN = cn_regime()
-REGIME_BEAR = bool(REG_CN and REG_CN["bear"]) and REGIME_MODE == 'pause'
-print("regime:", REGIME_BENCH, "bear=" + str(bool(REG_CN and REG_CN["bear"])),
-      "close=", REG_CN["close"] if REG_CN else None,
-      "sma200=", REG_CN["sma200"] if REG_CN else None)
 out = {"generated": datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z",
-       "market": "cn", "symbols": {}, "failures": {},
-       "regime": {"benchmark": REGIME_BENCH, "sma_days": REGIME_SMA, "mode": REGIME_MODE,
-                  "bear": bool(REG_CN and REG_CN["bear"]),
-                  "close": REG_CN["close"] if REG_CN else None,
-                  "sma200": REG_CN["sma200"] if REG_CN else None,
-                  "asof": REG_CN["asof"] if REG_CN else None,
-                  "note": "bear regime: new BUY entries paused (backtest REGIME=pause parity); sells unaffected; <200 bars -> no filter"}}
+       "market": "cn", "symbols": {}, "failures": {}}
 for s, secid in CN_SYMS:
     res = {}
     dfs = {}
@@ -234,7 +175,7 @@ for s, secid in CN_SYMS:
             if not CACHED:
                 df.to_csv(f"{OUT}/data2_{s}_{lv}.csv")
             dfs[lv] = df
-            res[lv] = analyze_level(df, level=lv)
+            res[lv] = analyze_level(df)
         except Exception as e:
             out["failures"][f"{s}/{lv}"] = str(e)[:200]
             continue
@@ -264,28 +205,16 @@ for s, secid in CN_SYMS:
             for sg in ent["levels"][lv]["signals"]:
                 sg["resonance"] = resonance(sg["type"], bs)
                 sg["resonance_vs"] = [b for b in bigs if b in ent["levels"]]
-    # trend filter (2026-10-13, 优化 2026-10-13晚): pivot-edge buys/sells that fight the
-    # bigger trend are DOWNWEIGHTED (kept at half size) instead of dropped.
-    # 一键切回硬丢弃: TREND_FILTER_MODE='drop' (见文件顶部).
+    # trend filter (2026-10-13): drop pivot-edge buys/sells that fight the bigger trend.
     for lv in ent["levels"]:
         kept = []
         for sg in ent["levels"][lv]["signals"]:
             if sg.get("kind") == "pivot_edge" and sg.get("resonance") == "conflict":
-                msg = (f"{sg['type']} conflicts with higher-timeframe trend "
-                       f"({'/'.join(sg.get('resonance_vs', []))})")
-                if TREND_FILTER_MODE == 'drop':
-                    out.setdefault("filtered", {})[f"{s}/{lv}/{sg['type']}"] = "dropped: " + msg
-                    continue
-                sg["downweighted"] = True  # pipeline marks; execution sizes it at half
-                out.setdefault("filtered", {})[f"{s}/{lv}/{sg['type']}"] = "downweighted (half size): " + msg
+                out.setdefault("filtered", {})[f"{s}/{lv}/{sg['type']}"] = \
+                    f"dropped: {sg['type']} conflicts with higher-timeframe trend ({'/'.join(sg.get('resonance_vs', []))})"
+                continue
             kept.append(sg)
         ent["levels"][lv]["signals"] = kept
-    # regime pause: mark buy-type signals while in bear regime (new buys paused)
-    if REGIME_BEAR:
-        for lv in ent["levels"]:
-            for sg in ent["levels"][lv]["signals"]:
-                if sg["type"].endswith("B"):
-                    sg["regime_paused"] = True
     for lv in ent["levels"]:
         for sg, raw in zip(ent["levels"][lv]["signals"], res[lv]['signals']):
             sg["score"], sg["score_breakdown"] = score_signal(sg, lv)
@@ -299,10 +228,7 @@ json.dump(out, open(f"{OUT}/signals.json", "w"), indent=1, default=str, ensure_a
 # summary md
 L = ["# Chan v2 signals summary (A股指数, 含中枢沿 ZG_S/ZD_B)", "",
      f"Generated {out['generated']} (UTC). Prototype, read-only analysis. NOT investment advice.",
-     "'?'/unconfirmed = last segment not yet confirmed, signal may repaint or vanish.", "",
-     f"Regime ({out['regime']['benchmark']} {out['regime']['sma_days']}d SMA, asof {out['regime']['asof']}): "
-     f"{'BEAR - new BUY entries paused' if out['regime']['bear'] else 'bull/neutral - no pause'} "
-     f"(close {out['regime']['close']}, SMA {out['regime']['sma200']})", ""]
+     "'?'/unconfirmed = last segment not yet confirmed, signal may repaint or vanish.", ""]
 if out["failures"]:
     L += ["## Data failures", *[f"- {k}: {v}" for k, v in out["failures"].items()], ""]
 rec = [g for e in out["symbols"].values() for d in e["levels"].values() for g in d["signals"] if g["recent"]]

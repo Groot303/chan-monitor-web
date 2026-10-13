@@ -260,7 +260,8 @@
         var buy = isBuy(s.type);
         var edge = s.kind === "pivot_edge" || s.type === "ZG_S" || s.type === "ZD_B";
         var isPre = s.type && s.type.indexOf("PRE_") === 0;
-        var label = (isPre ? "【预】" : "") + (TYPE_NAME[s.type] || s.type) + (s.confirmed ? "" : "?") + (s.score != null ? " " + Number(s.score).toFixed(1) : "");
+        var priceStr = (s.price != null ? " @" + Number(s.price).toFixed(2) : "");
+        var label = (isPre ? "【预】" : "") + (TYPE_NAME[s.type] || s.type) + (s.confirmed ? "" : "?") + (s.score != null ? " " + Number(s.score).toFixed(1) : "") + priceStr;
         // PRE 预信号用黄色标记，醒目区分
         var markerColor = isPre ? "#ffcc00" : (edge ? (buy ? th.edgeBuy : th.edgeSell) : (buy ? th.up : th.down));
         return {
