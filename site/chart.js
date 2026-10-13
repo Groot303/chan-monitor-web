@@ -51,6 +51,7 @@
       pivotStroke: "rgba(245,177,76,.55)",
       edgeBuy: "#22d3ee",
       edgeSell: "#f59e0b",
+      pre: "#a78bfa",
     };
   }
 
@@ -257,11 +258,12 @@
       var markers = lv.signals.map(function (s) {
         var buy = isBuy(s.type);
         var edge = s.kind === "pivot_edge" || s.type === "ZG_S" || s.type === "ZD_B";
-        var label = (TYPE_NAME[s.type] || s.type) + (s.confirmed ? "" : "?") + (s.score != null ? " " + Number(s.score).toFixed(1) : "");
+        var pre = s.pre === true || /^PRE_/.test(s.type || "");
+        var label = (pre ? "【预】" : "") + (TYPE_NAME[s.type] || s.type) + (s.confirmed ? "" : "?") + (s.score != null ? " " + Number(s.score).toFixed(1) : "");
         return {
           time: s.time,
           position: buy ? "belowBar" : "aboveBar",
-          color: edge ? (buy ? th.edgeBuy : th.edgeSell) : (buy ? th.up : th.down),
+          color: pre ? th.pre : (edge ? (buy ? th.edgeBuy : th.edgeSell) : (buy ? th.up : th.down)),
           shape: edge ? "circle" : (buy ? "arrowUp" : "arrowDown"),
           text: label,
         };

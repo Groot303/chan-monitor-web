@@ -194,6 +194,8 @@ select option{background:var(--surface);color:var(--text)}
 .chip-ok::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
 .chip-un{color:var(--warn);border-color:var(--warn-bd);background:var(--warn-bg);border-style:dashed}
 .chip-un::before{content:"!";font-weight:800;font-size:11px}
+.chip-pre{color:var(--warn);border-color:var(--warn);background:var(--warn-bg);font-weight:800}
+.chip-pre::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--warn)}
 .chip-stale{color:var(--text-3)}
 .chip-res-strong,.chip-res-partial{color:var(--text-2)}
 .chip-res-conflict,.chip-res-mixed{color:var(--text-3)}

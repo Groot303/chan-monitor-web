@@ -49,6 +49,8 @@
   function isEdge(g) { return (g && g.kind === "pivot_edge") || g.type === "ZG_S" || g.type === "ZD_B"; }
   function tier(score) { for (var i = 0; i < TIER.length; i++) if (score >= TIER[i][0]) return { k: TIER[i][1], label: TIER[i][2] }; return { k: "lo", label: "低" }; }
   function typeName(t) { return TY[t] || t; }
+  function isPre(g) { return !!(g && (g.pre === true || /^PRE_/.test(g.type || ""))); }
+  function preBadge(g) { return isPre(g) ? '<span class="chip chip-pre" title="预信号·形态未确认·可能重绘或消失">预</span>' : ""; }
   function fmtTime(t, level) { if (!t) return "—"; return level === "30m" ? t + " " + MK[MARKET].tz : t; }
   var uid = 0;
 
@@ -98,6 +100,7 @@
     } else {
       out.push('<span class="chip ' + (buy ? "chip-buy" : "chip-sell") + '">' + esc(typeName(g.type)) + ' · ' + esc(g.type) + '</span>');
     }
+    out.push(preBadge(g));
     out.push(g.confirmed
       ? '<span class="chip chip-ok">已确认</span>'
       : '<span class="chip chip-un" title="最后一段尚未被特征序列分型确认,信号可能重绘或消失">未确认 · 可能重绘</span>');
@@ -367,9 +370,9 @@
       '<div class="kpi-foot"><span class="t-buy">买 ' + rb + '</span>·<span class="t-sell">卖 ' + (recent.length - rb) + '</span>·<span>未确认 ' + unRecent + '</span></div></button>';
     if (top) {
       var t = tier(top.score);
-      h += '<button type="button" id="k-top" class="kpi clickable tier-' + t.k + '" style="--k1:var(--t1);--k2:var(--t2)" aria-label="最高分信号 ' + esc(top.symbol) + ' ' + typeName(top.type) + ' ' + top.score.toFixed(1) + ' 分,点击查看详情">' +
+      h += '<button type="button" id="k-top" class="kpi clickable tier-' + t.k + '" style="--k1:var(--t1);--k2:var(--t2)" aria-label="最高分信号 ' + esc(top.symbol) + ' ' + (isPre(top) ? "预信号 " : "") + typeName(top.type) + ' ' + top.score.toFixed(1) + ' 分,点击查看详情">' +
         '<div class="kpi-label">最高分信号</div><div class="kpi-value"><span>' + esc(top.symbol) + '</span><span class="num tier-' + t.k + '" style="color:var(--t1)">' + top.score.toFixed(1) + '</span></div>' +
-        '<div class="kpi-foot"><span class="' + (isBuy(top) ? "t-buy" : "t-sell") + '">' + typeName(top.type) + '</span>·<span>' + esc(LV[top.level] || top.level) + '</span>·<span>' + (top.confirmed ? "已确认" : "未确认") + '</span></div></button>';
+        '<div class="kpi-foot"><span class="' + (isBuy(top) ? "t-buy" : "t-sell") + '">' + typeName(top.type) + '</span>' + preBadge(top) + '·<span>' + esc(LV[top.level] || top.level) + '</span>·<span>' + (top.confirmed ? "已确认" : "未确认") + '</span></div></button>';
     } else {
       h += '<div class="kpi"><div class="kpi-label">最高分信号</div><div class="kpi-value">—</div><div class="kpi-foot">暂无信号</div></div>';
     }
@@ -466,9 +469,9 @@
       var sideCls = edge ? (buy ? "edge-buy" : "edge-sell") : (buy ? "buy" : "sell");
       var cardCls = edge ? (buy ? "is-edge-buy" : "is-edge-sell") : (buy ? "is-buy" : "is-sell");
       return '<button type="button" class="card ' + cardCls + (g.recent ? "" : " stale") + '" data-sig="' + g._id + '" style="animation-delay:' + Math.min(i * 35, 400) + 'ms" ' +
-        'aria-label="' + esc(g.symbol + " " + (LV[g.level] || g.level) + " " + typeName(g.type) + ",分数 " + g.score.toFixed(1) + "," + (g.confirmed ? "已确认" : "未确认,可能重绘")) + '">' +
+        'aria-label="' + esc(g.symbol + " " + (LV[g.level] || g.level) + " " + typeName(g.type) + ",分数 " + g.score.toFixed(1) + "," + (isPre(g) ? "预信号," : "") + (g.confirmed ? "已确认" : "未确认,可能重绘")) + '">' +
         '<div class="card-top">' + ringHTML(g.score) +
-        '<div class="card-id"><div class="sym">' + esc(g.symbol) + '<span class="side-tag ' + sideCls + '">' + (edge ? (buy ? "下沿买" : "上沿卖") : ((buy ? "买" : "卖") + " · " + typeName(g.type))) + '</span></div>' +
+        '<div class="card-id"><div class="sym">' + esc(g.symbol) + '<span class="side-tag ' + sideCls + '">' + (edge ? (buy ? "下沿买" : "上沿卖") : ((buy ? "买" : "卖") + " · " + typeName(g.type))) + '</span>' + preBadge(g) + '</div>' +
         '<div class="card-price">信号价 <span class="num">' + fmtPrice(g.price) + '</span></div></div></div>' +
         chipsHTML(g) +
         '<div class="card-meta">' +
@@ -492,10 +495,10 @@
       '<th scope="col" class="plain">共振</th></tr>';
     var rows = a.map(function (g) {
       var buy = isBuy(g);
-      return '<tr tabindex="0" data-sig="' + g._id + '" aria-label="' + esc(g.symbol + " " + typeName(g.type) + " 分数 " + g.score.toFixed(1) + ",按回车查看详情") + '">' +
+      return '<tr tabindex="0" data-sig="' + g._id + '" aria-label="' + esc(g.symbol + " " + (isPre(g) ? "预信号 " : "") + typeName(g.type) + " 分数 " + g.score.toFixed(1) + ",按回车查看详情") + '">' +
         '<td>' + sbarHTML(g.score) + '</td>' +
         '<td class="t-sym">' + esc(g.symbol) + '</td>' +
-        '<td><span class="chip ' + (isEdge(g) ? (buy ? "chip-edge-buy" : "chip-edge-sell") : (buy ? "chip-buy" : "chip-sell")) + '">' + esc(typeName(g.type)) + '</span></td>' +
+        '<td><span class="chip ' + (isEdge(g) ? (buy ? "chip-edge-buy" : "chip-edge-sell") : (buy ? "chip-buy" : "chip-sell")) + '">' + esc(typeName(g.type)) + '</span>' + preBadge(g) + '</td>' +
         '<td><span class="chip chip-lv">' + esc(LV[g.level] || g.level) + '</span></td>' +
         '<td>' + (g.confirmed ? '<span class="chip chip-ok">已确认</span>' : '<span class="chip chip-un" title="可能重绘">未确认</span>') + (g.recent ? "" : ' <span class="chip chip-stale">过期</span>') + '</td>' +
         '<td class="num">' + esc(fmtTime(g.time, g.level)) + '</td>' +
@@ -536,7 +539,7 @@
       if (info.latest) {
         var L = info.latest, B = info.best, tb = tier(B.score);
         body = '<div class="sym-latest">' +
-          '<div class="row"><span class="muted">最新</span><span class="' + (isBuy(L) ? "t-buy" : "t-sell") + '" style="font-weight:650">' + esc(LV[L.level] || L.level) + ' ' + esc(typeName(L.type)) + (L.confirmed ? "" : ' <span style="color:var(--warn)" title="未确认,可能重绘">!</span>') + '</span></div>' +
+          '<div class="row"><span class="muted">最新</span><span class="' + (isBuy(L) ? "t-buy" : "t-sell") + '" style="font-weight:650">' + esc(LV[L.level] || L.level) + ' ' + esc(typeName(L.type)) + (L.confirmed ? "" : ' <span style="color:var(--warn)" title="未确认,可能重绘">!</span>') + preBadge(L) + '</span></div>' +
           '<div class="row"><span class="muted">时间</span><span class="num">' + esc(shortTime(L.time)) + '</span></div>' +
           '<div class="row"><span class="muted">最高分</span><span class="mini-score tier-' + tb.k + '"><span class="mini-bar"><i style="width:' + B.score * 10 + '%"></i></span><b class="num" style="color:var(--t1)">' + B.score.toFixed(1) + '</b></span></div>' +
           '<div class="row"><span class="muted">信号数</span><span>' + info.list.length + ' 条 · 近期 ' + info.list.filter(function (g) { return g.recent; }).length + '</span></div></div>';
@@ -613,7 +616,7 @@
     var s = D.symbols[sym] || {};
     current = { sym: sym, g: g };
     if (opener && !$("drawer").contains(opener)) lastFocus = opener;
-    var head = '<h2 id="dr-title">' + esc(sym) + (g ? ' <span class="side-tag ' + (isEdge(g) ? (isBuy(g) ? "edge-buy" : "edge-sell") : (isBuy(g) ? "buy" : "sell")) + '">' + (isEdge(g) ? esc(typeName(g.type)) : ((isBuy(g) ? "买" : "卖") + " · " + typeName(g.type))) + '</span>' : ' <span class="chip">暂无信号</span>') + '</h2>' + (g ? chipsHTML(g, { res: true }) : "");
+    var head = '<h2 id="dr-title">' + esc(sym) + (g ? ' <span class="side-tag ' + (isEdge(g) ? (isBuy(g) ? "edge-buy" : "edge-sell") : (isBuy(g) ? "buy" : "sell")) + '">' + (isEdge(g) ? esc(typeName(g.type)) : ((isBuy(g) ? "买" : "卖") + " · " + typeName(g.type))) + '</span>' + preBadge(g) : ' <span class="chip">暂无信号</span>') + '</h2>' + (g ? chipsHTML(g, { res: true }) : "");
     $("dr-headline").innerHTML = head;
     var h = "";
     if (g) {
@@ -622,7 +625,7 @@
         stat("中枢 ZG", fmtPrice(g.zg), true) + stat("中枢 ZD", fmtPrice(g.zd), true) +
         (g.ratio != null ? stat("MACD 面积比", num(g.ratio, 0).toFixed(2), true) : stat("离中枢", g.margin_pct != null ? fmtPct(g.margin_pct) : "—", true)) +
         '</div></div>';
-      if (!g.confirmed) h += '<div class="d-warn" role="note"><span aria-hidden="true">⚠</span><div><b>未确认信号,可能重绘。</b>最后一段尚未被特征序列分型确认,后续K线可能使该信号改变或消失。' + (g.repaint_warning ? '<div class="muted small" style="margin-top:4px">' + esc(g.repaint_warning) + '</div>' : "") + '</div></div>';
+      if (!g.confirmed) h += '<div class="d-warn" role="note"><span aria-hidden="true">⚠</span><div><b>' + (isPre(g) ? '预信号·形态未确认,可能重绘或消失。' : '未确认信号,可能重绘。') + '</b>' + (isPre(g) ? '经典买卖点形态尚未走完确认K线,后续K线可能使该信号改变或消失;仅建议观察,不建议直接按此交易。' : '最后一段尚未被特征序列分型确认,后续K线可能使该信号改变或消失。') + (g.repaint_warning ? '<div class="muted small" style="margin-top:4px">' + esc(g.repaint_warning) + '</div>' : "") + '</div></div>';
       h += '<section class="d-block"><h3>分项评分 <span class="tier-txt tier-' + tier(g.score).k + '">' + tier(g.score).label + '分段</span></h3>' + breakdownHTML(g) + '</section>';
       h += '<section class="d-block"><h3>解读</h3><ul class="explain">' + explain(g).map(function (e) {
         var v = num((g.score_breakdown || {})[e[0]], 0);
@@ -648,7 +651,7 @@
         var t = tier(x.score);
         return '<button type="button" class="other" data-other="' + x._id + '"' + (g && x._id === g._id ? ' aria-current="true"' : "") + '>' +
           '<span class="mini-score tier-' + t.k + '"><b class="num" style="color:var(--t1);width:28px">' + x.score.toFixed(1) + '</b></span>' +
-          '<span class="' + (isEdge(x) ? (isBuy(x) ? "t-edge-buy" : "t-edge-sell") : (isBuy(x) ? "t-buy" : "t-sell")) + '" style="font-weight:650">' + esc(typeName(x.type)) + '</span>' +
+          '<span class="' + (isEdge(x) ? (isBuy(x) ? "t-edge-buy" : "t-edge-sell") : (isBuy(x) ? "t-buy" : "t-sell")) + '" style="font-weight:650">' + esc(typeName(x.type)) + '</span>' + preBadge(x) +
           '<span class="grow">' + esc(LV[x.level] || x.level) + ' · ' + esc(fmtTime(x.time, x.level)) + '</span>' +
           (x.confirmed ? "" : '<span class="chip chip-un">未确认</span>') + (x.recent ? "" : '<span class="chip chip-stale">过期</span>') + '</button>';
       }).join("") + '</div></section>';
