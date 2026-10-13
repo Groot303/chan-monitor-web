@@ -316,10 +316,28 @@ def api_signals_cn():
     return _read_json("signals_cn.json")
 
 
+def _mask_account(acct):
+    a = str(acct or "")
+    return a[:4] + "*" * (len(a) - 4) if len(a) > 4 else a
+
+
 @app.get("/api/positions")
-def api_positions(request: Request):
-    _require_token(request)  # full qty/cost/P&L: token only
-    return _read_json("positions_ibkr.json")
+def api_positions():
+    # Public by user decision 2026-10-14: full qty/cost/P&L, accounts masked
+    # (e.g. U1234567 -> U123****). Write endpoints (e.g. /api/jobs/run) stay
+    # token-protected via _require_token.
+    p = DATA_DIR / "data" / "positions_ibkr.json"
+    if not p.exists():
+        raise HTTPException(status_code=503, detail="positions_ibkr.json not ready yet")
+    try:
+        d = json.loads(p.read_text(encoding="utf-8"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)[:200])
+    out = dict(d)
+    out["accounts"] = [_mask_account(a) for a in d.get("accounts", [])]
+    out["positions"] = [{**pos, "account": _mask_account(pos.get("account"))}
+                        for pos in d.get("positions", [])]
+    return JSONResponse(content=out)
 
 
 @app.get("/api/holdings")
