@@ -15,8 +15,16 @@
   var DIR = { up: "向上", down: "向下", range: "震荡", inside: "震荡" };
   var POS = { above: "中枢上方", below: "中枢下方", inside: "中枢内", none: "无中枢" };
   var TIER = [[5, "hi", "高"], [2.5, "mid", "中"], [-Infinity, "lo", "低"]];
-  // 监控清单:即使 signals.json 缺少某标的,筛选与总览仍展示全部 20 个
-  var WATCHLIST = ["AAOI","AAPL","AMD","AVGO","GOOG","INTC","LITE","META","MRNA","MRVL","MU","NOK","NVDA","ORCL","PLTR","SKHY","SNDK","SPCX","TSLA","TSM"];
+  // 市场配置:美股(us) / A股指数(cn)
+  var MK = {
+    us: { label: "美股", signals: "data/signals.json", tz: "ET", src: "Alpaca(IEX 免费版)", delay: "Alpaca 可能延迟",
+          watch: ["AAOI","AAPL","AMD","AVGO","GOOG","INTC","LITE","META","MRNA","MRVL","MU","NOK","NVDA","ORCL","PLTR","SKHY","SNDK","SPCX","TSLA","TSM"],
+          searchPh: "搜索代码,如 NVDA" },
+    cn: { label: "A股", signals: "data/signals_cn.json", tz: "北京时间", src: "东方财富", delay: "东财数据可能延迟",
+          watch: ["上证指数","科创50","银行指数","平均股价"],
+          searchPh: "搜索指数,如 上证指数" }
+  };
+  var MARKET = lsGet("chan.market") === "cn" ? "cn" : "us";
   var DEFAULT_F = { q: "", level: "", type: "", conf: "", min: 0, recent: false, sort: "score", dir: "desc" };
   // filters.v2:旧版默认 recent=true 已写入 localStorage,换键后首次加载回落到新默认(显示全部信号)
   var LS = { theme: "chan.theme", color: "chan.color", mode: "chan.mode", filters: "chan.filters.v2" };
@@ -35,7 +43,7 @@
   function isEdge(g) { return (g && g.kind === "pivot_edge") || g.type === "ZG_S" || g.type === "ZD_B"; }
   function tier(score) { for (var i = 0; i < TIER.length; i++) if (score >= TIER[i][0]) return { k: TIER[i][1], label: TIER[i][2] }; return { k: "lo", label: "低" }; }
   function typeName(t) { return TY[t] || t; }
-  function fmtTime(t, level) { if (!t) return "—"; return level === "30m" ? t + " ET" : t; }
+  function fmtTime(t, level) { if (!t) return "—"; return level === "30m" ? t + " " + MK[MARKET].tz : t; }
   var uid = 0;
 
   function relTime(date) {
@@ -104,8 +112,8 @@
   }
   function saveFilters() { lsSet(LS.filters, JSON.stringify(F)); }
   function allSymbols() {
-    var set = {}, i, s, keys;
-    for (i = 0; i < WATCHLIST.length; i++) set[WATCHLIST[i]] = true;
+    var set = {}, i, s, keys, wl = MK[MARKET].watch;
+    for (i = 0; i < wl.length; i++) set[wl[i]] = true;
     if (D && D.symbols) { keys = Object.keys(D.symbols); for (i = 0; i < keys.length; i++) set[keys[i]] = true; }
     return Object.keys(set).sort();
   }
@@ -158,6 +166,35 @@
     b.addEventListener("click", function () { setView(b.getAttribute("data-view")); window.scrollTo({ top: 0, behavior: "smooth" }); });
   });
   window.addEventListener("hashchange", function () { setView(location.hash.slice(1), true); });
+
+  // ---------- 市场切换(美股 / A股) ----------
+  function updateMarketTexts() {
+    var about = $("about-src");
+    if (about) about.textContent = "行情来自 " + MK[MARKET].src + "。信号时间为极值K线时间(" + MK[MARKET].tz + "),确认会滞后若干根K线。周线最后一根为当周未完成K线。";
+    var ff = $("foot-syms");
+    if (ff) ff.textContent = MK[MARKET].watch.length + " 个" + (MARKET === "cn" ? "指数" : "标的") + "均为可缩放交互 K 线(Lightweight Charts,叠加笔/线段/中枢)。箭头=缠论一二三类买卖点;青绿/琥珀圆点=中枢下沿买/上沿卖。静态 PNG 可在详情中展开对照。";
+    var disc = $("foot-disc-src");
+    if (disc) disc.textContent = "数据源 " + MK[MARKET].src + ",可能延迟或缺失。";
+  }
+  function syncMarketUI() {
+    qsa("[data-market]").forEach(function (b) {
+      b.setAttribute("aria-pressed", b.getAttribute("data-market") === MARKET ? "true" : "false");
+    });
+    var q = $("f-q"); if (q) q.setAttribute("placeholder", MK[MARKET].searchPh);
+    updateMarketTexts();
+  }
+  function switchMarket(m) {
+    if (!MK[m] || m === MARKET) { syncMarketUI(); return; }
+    MARKET = m; lsSet("chan.market", m);
+    if (window.ChanInteractive && ChanInteractive.setMarket) ChanInteractive.setMarket(m);
+    F.q = "";
+    closeDrawer();
+    syncMarketUI();
+    load();
+  }
+  qsa("[data-market]").forEach(function (b) {
+    b.addEventListener("click", function () { switchMarket(b.getAttribute("data-market")); window.scrollTo({ top: 0, behavior: "smooth" }); });
+  });
 
   // ---------- 筛选控件 ----------
   function syncControls() {
@@ -213,7 +250,7 @@
   function load() {
     showLoading();
     $("meta-short").textContent = "加载中…";
-    fetch("data/signals.json?t=" + Date.now(), { cache: "no-store" })
+    fetch(MK[MARKET].signals + "?t=" + Date.now(), { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) {
         if (!d || !Array.isArray(d.signals) || !d.symbols) throw new Error("数据格式不正确");
@@ -229,7 +266,7 @@
         $("meta-short").textContent = "数据加载失败";
         qsa("#meta-sub .dot").forEach(function (x) { x.className = "dot err"; });
         $("kpis").innerHTML = "";
-        $("sig-results").innerHTML = stateHTML("err", "数据加载失败", "无法读取 data/signals.json(" + esc(e.message || e) + ")。若直接用 file:// 打开页面,请改用本地服务器,例如 <code>python3 -m http.server</code>。", '<button type="button" class="btn primary" id="retry">重试</button>');
+        $("sig-results").innerHTML = stateHTML("err", "数据加载失败", "无法读取 " + esc(MK[MARKET].signals) + "(" + esc(e.message || e) + ")。若直接用 file:// 打开页面,请改用本地服务器,例如 <code>python3 -m http.server</code>。", '<button type="button" class="btn primary" id="retry">重试</button>');
         var r = $("retry"); if (r) r.addEventListener("click", load);
       });
   }
@@ -286,7 +323,7 @@
     h += '<div class="kpi" style="--k1:var(--green);--k2:var(--accent)"><div class="kpi-label"><span class="dot' + (ageH > 72 ? " stale" : "") + '" aria-hidden="true"></span>数据更新</div>' +
       '<div class="kpi-value" style="font-size:21px">' + (ok ? relTime(gen) : "—") + '</div>' +
       '<div class="kpi-foot"><span class="num" title="本地时间">' + (ok ? gen.toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "") + '</span><span class="hide-sm">本地时间</span></div>' +
-      '<div class="kpi-foot">' + allSymbols().length + ' 个标的' + (fails ? ' · <span style="color:var(--warn)">' + fails + ' 项失败</span>' : '') + '<span class="hide-sm">· Yahoo 可能延迟</span></div></div>';
+      '<div class="kpi-foot">' + allSymbols().length + ' 个' + (MARKET === "cn" ? "指数" : "标的") + (fails ? ' · <span style="color:var(--warn)">' + fails + ' 项失败</span>' : '') + '<span class="hide-sm">· ' + esc(MK[MARKET].delay) + '</span></div></div>';
     $("kpis").innerHTML = h;
     var kr = $("k-recent"); if (kr) kr.addEventListener("click", function () { F.recent = true; onFilter(); setView("signals"); $("h-signals").scrollIntoView({ behavior: "smooth", block: "start" }); });
     var kt = $("k-top"); if (kt) kt.addEventListener("click", function () { openDrawer(top.symbol, top, kt); });
@@ -695,6 +732,8 @@
 
   // ---------- 启动 ----------
   syncControls();
+  if (window.ChanInteractive && ChanInteractive.setMarket) ChanInteractive.setMarket(MARKET);
+  syncMarketUI();
   setView(location.hash.slice(1) || "signals", true);
   load();
   // 每分钟刷新相对时间
