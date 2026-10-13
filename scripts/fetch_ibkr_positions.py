@@ -66,7 +66,9 @@ def get_statement(token: str, refcode: str) -> ET.Element:
     deadline = time.time() + POLL_TIMEOUT
     while True:
         root = ET.fromstring(_http(url))
-        if root.tag == "FlexStatements" or root.find("FlexStatement") is not None:
+        # v3 wraps the report as <FlexQueryResponse><FlexStatements>...</FlexStatements>
+        # (older/docs examples show a bare <FlexStatements> root).
+        if root.tag in ("FlexQueryResponse", "FlexStatements") or root.find(".//FlexStatement") is not None:
             return root
         code = root.findtext("ErrorCode")
         if code == "1019":  # generation in progress -> keep polling
