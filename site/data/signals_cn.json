@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-13T02:55:31.626178+00:00Z",
+ "generated": "2026-10-13T08:16:20.859575+00:00Z",
  "market": "cn",
  "failures": {},
  "symbols": {
@@ -10,7 +10,7 @@
      "bars": 1819,
      "first": "1990-12-21",
      "last": "2026-10-13",
-     "last_close": 3757.88,
+     "last_close": 3800.86,
      "state": {
       "direction": "up",
       "pivot_pos": "above",
@@ -30,7 +30,7 @@
      "bars": 8740,
      "first": "1990-12-19",
      "last": "2026-10-13",
-     "last_close": 3757.43,
+     "last_close": 3800.86,
      "state": {
       "direction": "up",
       "pivot_pos": "above",
@@ -47,10 +47,10 @@
      }
     },
     "30m": {
-     "bars": 251,
+     "bars": 256,
      "first": "2026-08-21 10:00",
-     "last": "2026-10-13 11:00",
-     "last_close": 3756.95,
+     "last": "2026-10-13 15:00",
+     "last_close": 3800.86,
      "state": {
       "direction": "down",
       "pivot_pos": "below",
@@ -75,7 +75,7 @@
      "bars": 348,
      "first": "2020-01-03",
      "last": "2026-10-13",
-     "last_close": 1393.76,
+     "last_close": 1427.18,
      "state": {
       "direction": "up",
       "pivot_pos": "above",
@@ -95,7 +95,7 @@
      "bars": 1641,
      "first": "2019-12-31",
      "last": "2026-10-13",
-     "last_close": 1393.44,
+     "last_close": 1427.18,
      "state": {
       "direction": "up",
       "pivot_pos": "above",
@@ -112,10 +112,10 @@
      }
     },
     "30m": {
-     "bars": 251,
+     "bars": 256,
      "first": "2026-08-21 10:00",
-     "last": "2026-10-13 11:00",
-     "last_close": 1392.73,
+     "last": "2026-10-13 15:00",
+     "last_close": 1427.18,
      "state": {
       "direction": "down",
       "pivot_pos": "below",
@@ -140,7 +140,7 @@
      "bars": 584,
      "first": "2015-05-22",
      "last": "2026-10-13",
-     "last_close": 7746.84,
+     "last_close": 7727.6,
      "state": {
       "direction": "up",
       "pivot_pos": "above",
@@ -160,7 +160,7 @@
      "bars": 2770,
      "first": "2015-05-19",
      "last": "2026-10-13",
-     "last_close": 7746.91,
+     "last_close": 7727.6,
      "state": {
       "direction": "range",
       "pivot_pos": "inside",
@@ -177,10 +177,10 @@
      }
     },
     "30m": {
-     "bars": 251,
+     "bars": 256,
      "first": "2026-08-21 10:00",
-     "last": "2026-10-13 11:00",
-     "last_close": 7747.7,
+     "last": "2026-10-13 15:00",
+     "last_close": 7727.6,
      "state": {
       "direction": "up",
       "pivot_pos": "above",
@@ -205,7 +205,7 @@
      "bars": 1309,
      "first": "2001-01-05",
      "last": "2026-10-13",
-     "last_close": 25.5,
+     "last_close": 26.17,
      "state": {
       "direction": "up",
       "pivot_pos": "above",
@@ -225,7 +225,7 @@
      "bars": 6247,
      "first": "2001-01-02",
      "last": "2026-10-13",
-     "last_close": 25.49,
+     "last_close": 26.17,
      "state": {
       "direction": "up",
       "pivot_pos": "above",
@@ -242,10 +242,10 @@
      }
     },
     "30m": {
-     "bars": 251,
+     "bars": 256,
      "first": "2026-08-21 10:00",
-     "last": "2026-10-13 11:00",
-     "last_close": 25.49,
+     "last": "2026-10-13 15:00",
+     "last_close": 26.17,
      "state": {
       "direction": "down",
       "pivot_pos": "below",
@@ -265,138 +265,6 @@
   }
  },
  "signals": [
-  {
-   "symbol": "科创50",
-   "level": "30m",
-   "type": "ZD_B",
-   "price": 1500.39,
-   "zg": 1707.67,
-   "zd": 1516.2,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 1.0427384250098897,
-   "margin_pct": 1.0427384250098926,
-   "time": "2026-10-08 10:00",
-   "bars_ago": 26,
-   "recent": true,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "daily",
-    "weekly"
-   ],
-   "score": 5.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": 0.0,
-    "quality": 0.5,
-    "raw_total": 5.0,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "30m",
-   "type": "ZD_B",
-   "price": 26.62,
-   "zg": 28.9,
-   "zd": 26.85,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 0.8566108007448805,
-   "margin_pct": 0.8566108007448836,
-   "time": "2026-10-08 14:00",
-   "bars_ago": 21,
-   "recent": true,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "daily",
-    "weekly"
-   ],
-   "score": 5.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": 0.0,
-    "quality": 0.5,
-    "raw_total": 5.0,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "银行指数",
-   "level": "30m",
-   "type": "ZG_S",
-   "price": 7723.41,
-   "zg": 7646.28,
-   "zd": 7462.47,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 1.0087258117672921,
-   "margin_pct": 1.008725811767297,
-   "time": "2026-10-12 10:00",
-   "bars_ago": 10,
-   "recent": true,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "neutral",
-   "resonance_vs": [
-    "daily",
-    "weekly"
-   ],
-   "score": 4.2,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 0.0,
-    "confirmed": 0.0,
-    "freshness": 1.0,
-    "quality": 0.2,
-    "raw_total": 4.2,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "银行指数",
-   "level": "30m",
-   "type": "ZD_B",
-   "price": 7511.19,
-   "zg": 7646.28,
-   "zd": 7462.47,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 0.65286694619877,
-   "margin_pct": -0.6528669461987713,
-   "time": "2026-09-29 13:30",
-   "bars_ago": 38,
-   "recent": true,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "partial",
-   "resonance_vs": [
-    "daily",
-    "weekly"
-   ],
-   "score": 4.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 0.75,
-    "confirmed": 0.0,
-    "freshness": 0.0,
-    "quality": 0.2,
-    "raw_total": 3.95,
-    "capped": false
-   }
-  },
   {
    "symbol": "银行指数",
    "level": "daily",
@@ -442,6 +310,7 @@
    "kind": "pivot_edge",
    "dist_pct": 0.0,
    "margin_pct": 0.0,
+   "stop_price": 12.39,
    "time": "2019-06-06",
    "bars_ago": 1781,
    "recent": false,
@@ -464,38 +333,6 @@
    }
   },
   {
-   "symbol": "平均股价",
-   "level": "daily",
-   "type": "ZD_B",
-   "price": 13.79,
-   "zg": 18.18,
-   "zd": 13.8,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 0.07246376811595334,
-   "margin_pct": 0.07246376811594901,
-   "time": "2012-03-27",
-   "bars_ago": 3530,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 2.7,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 2.21,
-    "raw_total": 2.71,
-    "capped": false
-   }
-  },
-  {
    "symbol": "上证指数",
    "level": "daily",
    "type": "ZD_B",
@@ -506,6 +343,7 @@
    "kind": "pivot_edge",
    "dist_pct": 0.10233282619721339,
    "margin_pct": -0.10233282619720452,
+   "stop_price": 3213.34,
    "time": "2025-05-06",
    "bars_ago": 349,
    "recent": false,
@@ -524,38 +362,6 @@
     "freshness": -4.0,
     "quality": 2.09,
     "raw_total": 2.59,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "daily",
-   "type": "ZD_B",
-   "price": 11.09,
-   "zg": 13.15,
-   "zd": 11.1,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 0.09009009009008817,
-   "margin_pct": 0.09009009009008917,
-   "time": "2002-10-08",
-   "bars_ago": 5830,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 2.6,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 2.14,
-    "raw_total": 2.64,
     "capped": false
    }
   },
@@ -873,6 +679,7 @@
    "kind": "pivot_edge",
    "dist_pct": 0.21978021978021509,
    "margin_pct": -0.219780219780219,
+   "stop_price": 4.41,
    "time": "2005-12-06",
    "bars_ago": 5062,
    "recent": false,
@@ -925,38 +732,6 @@
    }
   },
   {
-   "symbol": "平均股价",
-   "level": "daily",
-   "type": "ZD_B",
-   "price": 9.31,
-   "zg": 9.77,
-   "zd": 9.33,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 0.2143622722400812,
-   "margin_pct": 0.2143622722400762,
-   "time": "2004-04-14",
-   "bars_ago": 5463,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 2.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 1.54,
-    "raw_total": 2.04,
-    "capped": false
-   }
-  },
-  {
    "symbol": "银行指数",
    "level": "daily",
    "type": "3B",
@@ -983,134 +758,6 @@
     "freshness": -4.0,
     "quality": 0.93,
     "raw_total": 1.93,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "daily",
-   "type": "ZD_B",
-   "price": 10.68,
-   "zg": 11.74,
-   "zd": 10.65,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 0.2816901408450644,
-   "margin_pct": -0.28169014084507005,
-   "time": "2013-07-01",
-   "bars_ago": 3228,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 1.9,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 1.37,
-    "raw_total": 1.87,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "daily",
-   "type": "ZD_B",
-   "price": 17.29,
-   "zg": 25.11,
-   "zd": 17.34,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 0.2883506343713997,
-   "margin_pct": 0.28835063437140374,
-   "time": "2018-05-25",
-   "bars_ago": 2032,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 1.9,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 1.35,
-    "raw_total": 1.85,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "daily",
-   "type": "ZD_B",
-   "price": 4761.69,
-   "zg": 5522.78,
-   "zd": 4778.73,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 0.3565800955483981,
-   "margin_pct": 0.35658009554839776,
-   "time": "2008-01-25",
-   "bars_ago": 4543,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 1.6,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 1.07,
-    "raw_total": 1.57,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "银行指数",
-   "level": "daily",
-   "type": "ZD_B",
-   "price": 6268.92,
-   "zg": 6684.21,
-   "zd": 6295.59,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 0.4236298742453062,
-   "margin_pct": 0.4236298742453015,
-   "time": "2020-07-03",
-   "bars_ago": 1520,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 1.3,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.81,
-    "raw_total": 1.31,
     "capped": false
    }
   },
@@ -1151,104 +798,9 @@
    "kind": "pivot_edge",
    "dist_pct": 15.197104820990038,
    "margin_pct": -15.197104820990038,
+   "stop_price": 375.24,
    "time": "1994-08-01",
    "bars_ago": 7819,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 1.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": 1.0,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "daily",
-   "type": "ZD_B",
-   "price": 1863.78,
-   "zg": 2114.52,
-   "zd": 1874.21,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 0.5565011391466305,
-   "margin_pct": 0.5565011391466257,
-   "time": "2001-09-11",
-   "bars_ago": 6081,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 1.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": 1.0,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "daily",
-   "type": "ZD_B",
-   "price": 1338.81,
-   "zg": 1439.85,
-   "zd": 1353.14,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 1.059018283400103,
-   "margin_pct": 1.0590182834001038,
-   "time": "2004-12-09",
-   "bars_ago": 5302,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 1.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": 1.0,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "daily",
-   "type": "ZD_B",
-   "price": 2866.02,
-   "zg": 3181.66,
-   "zd": 2912.89,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 1.6090549248340957,
-   "margin_pct": 1.6090549248340968,
-   "time": "2011-05-04",
-   "bars_ago": 3750,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
@@ -1279,40 +831,9 @@
    "kind": "pivot_edge",
    "dist_pct": 0.8202271398233362,
    "margin_pct": -0.8202271398233263,
+   "stop_price": 1890.98,
    "time": "2013-07-09",
    "bars_ago": 3222,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 1.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": 1.0,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "daily",
-   "type": "ZD_B",
-   "price": 2824.53,
-   "zg": 3684.57,
-   "zd": 2850.71,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 0.9183677048875486,
-   "margin_pct": 0.918367704887546,
-   "time": "2018-08-01",
-   "bars_ago": 1985,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
@@ -1343,6 +864,7 @@
    "kind": "pivot_edge",
    "dist_pct": 2.681283684468401,
    "margin_pct": -2.681283684468405,
+   "stop_price": 2375.72,
    "time": "2019-01-04",
    "bars_ago": 1881,
    "recent": false,
@@ -1394,38 +916,6 @@
    "symbol": "科创50",
    "level": "daily",
    "type": "ZD_B",
-   "price": 1240.55,
-   "zg": 1520.27,
-   "zd": 1272.84,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 2.5368467364319134,
-   "margin_pct": 2.536846736431908,
-   "time": "2022-01-27",
-   "bars_ago": 1136,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 1.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": 1.0,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "科创50",
-   "level": "daily",
-   "type": "ZD_B",
    "price": 1069.81,
    "zg": 1121.45,
    "zd": 1052.95,
@@ -1433,72 +923,9 @@
    "kind": "pivot_edge",
    "dist_pct": 1.6012156322712283,
    "margin_pct": -1.6012156322712245,
+   "stop_price": 1021.36,
    "time": "2025-08-12",
    "bars_ago": 280,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 1.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": 1.0,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "银行指数",
-   "level": "daily",
-   "type": "ZD_B",
-   "price": 5417.43,
-   "zg": 6160.5,
-   "zd": 5370.03,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 0.8826766330914455,
-   "margin_pct": -0.8826766330914504,
-   "time": "2016-06-24",
-   "bars_ago": 2499,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 1.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": 1.0,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "银行指数",
-   "level": "daily",
-   "type": "ZD_B",
-   "price": 6649.2,
-   "zg": 7405.95,
-   "zd": 6804.82,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 2.286908397283101,
-   "margin_pct": 2.286908397283105,
-   "time": "2022-02-14",
-   "bars_ago": 1129,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
@@ -1529,6 +956,7 @@
    "kind": "pivot_edge",
    "dist_pct": 1.5664652798279068,
    "margin_pct": -1.566465279827911,
+   "stop_price": 6998.52,
    "time": "2026-08-20",
    "bars_ago": 32,
    "recent": false,
@@ -1561,6 +989,7 @@
    "kind": "pivot_edge",
    "dist_pct": 2.186588921282813,
    "margin_pct": -2.186588921282806,
+   "stop_price": 19.96,
    "time": "2025-06-23",
    "bars_ago": 316,
    "recent": false,
@@ -1623,6 +1052,7 @@
    "kind": "pivot_edge",
    "dist_pct": 1.3491752622187505,
    "margin_pct": -1.3491752622187603,
+   "stop_price": 5349.05,
    "time": "2024-02-02",
    "bars_ago": 646,
    "recent": false,
@@ -1641,71 +1071,6 @@
     "freshness": -4.0,
     "quality": 0.33,
     "raw_total": 0.83,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "daily",
-   "type": "ZD_B",
-   "price": 24.42,
-   "zg": 25.65,
-   "zd": 25.0,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 2.319999999999993,
-   "margin_pct": 2.3199999999999887,
-   "time": "2022-08-24",
-   "bars_ago": 998,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.7,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.22,
-    "raw_total": 0.72,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "30m",
-   "type": "ZD_B",
-   "price": 3894.64,
-   "zg": 3958.12,
-   "zd": 3916.49,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 0.5578975051640604,
-   "margin_pct": 0.5578975051640622,
-   "time": "2026-09-24 14:00",
-   "bars_ago": 53,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "strong",
-   "resonance_vs": [
-    "daily",
-    "weekly"
-   ],
-   "score": 0.6,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.09,
-    "raw_total": 0.59,
     "capped": false
    }
   },
@@ -1784,36 +1149,9 @@
    "kind": "pivot_edge",
    "dist_pct": 3.8359762995915694,
    "margin_pct": -3.835976299591559,
+   "stop_price": 1011.73,
    "time": "2005-07-29",
    "bars_ago": 1082,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 0.0,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -0.5,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "weekly",
-   "type": "ZG_S",
-   "price": 1440.22,
-   "zg": 1429.01,
-   "zd": 1043.02,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.7844591710344949,
-   "margin_pct": 0.7844591710344906,
-   "time": "2006-04-28",
-   "bars_ago": 1045,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
@@ -1840,6 +1178,7 @@
    "kind": "pivot_edge",
    "dist_pct": 7.004568431865485,
    "margin_pct": -7.004568431865477,
+   "stop_price": 1794.16,
    "time": "2013-06-28",
    "bars_ago": 682,
    "recent": false,
@@ -1854,98 +1193,6 @@
     "freshness": -4.0,
     "quality": 0.5,
     "raw_total": -0.5,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "weekly",
-   "type": "ZG_S",
-   "price": 3238.23,
-   "zg": 3186.72,
-   "zd": 1849.65,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 1.6163955414972202,
-   "margin_pct": 1.6163955414972175,
-   "time": "2025-04-11",
-   "bars_ago": 78,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 0.0,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -0.5,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 1440.72,
-   "zg": 1429.01,
-   "zd": 386.85,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.8194484293321976,
-   "margin_pct": 0.8194484293321924,
-   "time": "2000-01-19",
-   "bars_ago": 6474,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 2094.0,
-   "zg": 2114.52,
-   "zd": 1874.21,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.9704330060722993,
-   "margin_pct": -0.9704330060723021,
-   "time": "2001-07-26",
-   "bars_ago": 6114,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
     "capped": true
    }
   },
@@ -1982,38 +1229,6 @@
   {
    "symbol": "上证指数",
    "level": "daily",
-   "type": "ZG_S",
-   "price": 1413.15,
-   "zg": 1439.85,
-   "zd": 1353.14,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 1.854359829148857,
-   "margin_pct": -1.854359829148855,
-   "time": "2004-10-11",
-   "bars_ago": 5345,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "daily",
    "type": "3S",
    "price": 1223.56,
    "zg": 1439.85,
@@ -2038,38 +1253,6 @@
     "freshness": -4.0,
     "quality": 1.5,
     "raw_total": -0.5,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 5497.9,
-   "zg": 5522.78,
-   "zd": 4778.73,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.4504977565646307,
-   "margin_pct": -0.4504977565646273,
-   "time": "2008-01-14",
-   "bars_ago": 4552,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.7,
-    "raw_total": -1.8,
     "capped": true
    }
   },
@@ -2106,38 +1289,6 @@
   {
    "symbol": "上证指数",
    "level": "daily",
-   "type": "ZG_S",
-   "price": 3147.74,
-   "zg": 3181.66,
-   "zd": 2912.89,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 1.066110143761435,
-   "margin_pct": -1.066110143761434,
-   "time": "2010-11-11",
-   "bars_ago": 3865,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "daily",
    "type": "3S",
    "price": 2444.8,
    "zg": 3181.66,
@@ -2162,70 +1313,6 @@
     "freshness": -4.0,
     "quality": 1.5,
     "raw_total": -0.5,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 2288.63,
-   "zg": 2270.27,
-   "zd": 1949.46,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.808714381989813,
-   "margin_pct": 0.8087143819898168,
-   "time": "2014-09-03",
-   "bars_ago": 2938,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 3636.09,
-   "zg": 3684.57,
-   "zd": 2850.71,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 1.3157573339629867,
-   "margin_pct": -1.3157573339629858,
-   "time": "2015-12-23",
-   "bars_ago": 2621,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
     "capped": true
    }
   },
@@ -2260,103 +1347,6 @@
    }
   },
   {
-   "symbol": "上证指数",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 2722.44,
-   "zg": 2703.51,
-   "zd": 2449.2,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.7002008500060971,
-   "margin_pct": 0.7002008500061052,
-   "time": "2020-03-24",
-   "bars_ago": 1587,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 3765.88,
-   "zg": 3723.85,
-   "zd": 3312.72,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 1.128670596291478,
-   "margin_pct": 1.12867059629147,
-   "time": "2025-09-04",
-   "bars_ago": 263,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "上证指数",
-   "level": "30m",
-   "type": "ZG_S",
-   "price": 3942.24,
-   "zg": 3958.12,
-   "zd": 3916.49,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.40120056996756315,
-   "margin_pct": -0.4012005699675636,
-   "time": "2026-09-23 10:30",
-   "bars_ago": 65,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "daily",
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.48,
-    "raw_total": -2.02,
-    "capped": true
-   }
-  },
-  {
    "symbol": "科创50",
    "level": "weekly",
    "type": "ZD_B",
@@ -2367,6 +1357,7 @@
    "kind": "pivot_edge",
    "dist_pct": 2.245637064732008,
    "margin_pct": -2.245637064731998,
+   "stop_price": 827.61,
    "time": "2024-09-30",
    "bars_ago": 105,
    "recent": false,
@@ -2381,66 +1372,6 @@
     "freshness": -4.0,
     "quality": 0.5,
     "raw_total": -0.5,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "科创50",
-   "level": "weekly",
-   "type": "ZG_S",
-   "price": 1247.86,
-   "zg": 1176.06,
-   "zd": 853.21,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 6.105130690611019,
-   "margin_pct": 6.105130690611027,
-   "time": "2025-08-22",
-   "bars_ago": 59,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 0.0,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -0.5,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "科创50",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 1497.34,
-   "zg": 1520.27,
-   "zd": 1272.84,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 1.5082847125839531,
-   "margin_pct": -1.5082847125839516,
-   "time": "2021-08-26",
-   "bars_ago": 1238,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
     "capped": true
    }
   },
@@ -2475,71 +1406,6 @@
    }
   },
   {
-   "symbol": "科创50",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 1148.15,
-   "zg": 1121.45,
-   "zd": 1052.95,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 2.380846225868299,
-   "margin_pct": 2.380846225868294,
-   "time": "2025-08-20",
-   "bars_ago": 274,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "科创50",
-   "level": "30m",
-   "type": "ZG_S",
-   "price": 1689.11,
-   "zg": 1707.67,
-   "zd": 1516.2,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 1.086861044581223,
-   "margin_pct": -1.0868610445812221,
-   "time": "2026-09-22 10:30",
-   "bars_ago": 73,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "daily",
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
-    "capped": true
-   }
-  },
-  {
    "symbol": "银行指数",
    "level": "weekly",
    "type": "ZG_S",
@@ -2550,6 +1416,7 @@
    "kind": "pivot_edge",
    "dist_pct": 2.092974282713369,
    "margin_pct": -2.092974282713367,
+   "stop_price": 7923.67,
    "time": "2025-12-12",
    "bars_ago": 43,
    "recent": false,
@@ -2578,6 +1445,7 @@
    "kind": "pivot_edge",
    "dist_pct": 2.3403336842344453,
    "margin_pct": -2.3403336842344524,
+   "stop_price": 6403.99,
    "time": "2026-07-03",
    "bars_ago": 15,
    "recent": false,
@@ -2592,102 +1460,6 @@
     "freshness": -4.0,
     "quality": 0.5,
     "raw_total": -0.5,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "银行指数",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 6197.34,
-   "zg": 6160.5,
-   "zd": 5370.03,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.598003408814222,
-   "margin_pct": 0.5980034088142183,
-   "time": "2017-08-14",
-   "bars_ago": 2221,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "银行指数",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 6835.22,
-   "zg": 6684.21,
-   "zd": 6295.59,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 2.2592049022996017,
-   "margin_pct": 2.2592049022996052,
-   "time": "2020-07-06",
-   "bars_ago": 1519,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.47,
-    "raw_total": -2.03,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "银行指数",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 7329.79,
-   "zg": 7405.95,
-   "zd": 6804.82,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 1.0283623302884823,
-   "margin_pct": -1.0283623302884792,
-   "time": "2021-06-04",
-   "bars_ago": 1296,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
     "capped": true
    }
   },
@@ -2723,65 +1495,35 @@
   },
   {
    "symbol": "银行指数",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 5789.03,
-   "zg": 5733.22,
-   "zd": 5514.48,
-   "edge": "ZG",
+   "level": "30m",
+   "type": "ZD_B",
+   "price": 7511.19,
+   "zg": 7646.28,
+   "zd": 7462.47,
+   "edge": "ZD",
    "kind": "pivot_edge",
-   "dist_pct": 0.973449475164035,
-   "margin_pct": 0.9734494751640455,
-   "time": "2024-09-19",
-   "bars_ago": 496,
+   "dist_pct": 0.65286694619877,
+   "margin_pct": -0.6528669461987713,
+   "stop_price": 7238.6,
+   "time": "2026-09-29 13:30",
+   "bars_ago": 43,
    "recent": false,
    "confirmed": true,
    "repaint_warning": null,
-   "resonance": "conflict",
+   "resonance": "partial",
    "resonance_vs": [
+    "daily",
     "weekly"
    ],
    "score": 0.0,
    "score_breakdown": {
     "base": 3.0,
     "divergence": 0.0,
-    "resonance": -1.5,
+    "resonance": 0.75,
     "confirmed": 0.0,
     "freshness": -4.0,
-    "quality": 0.31,
-    "raw_total": -2.19,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "银行指数",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 7867.07,
-   "zg": 7952.06,
-   "zd": 7214.97,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 1.0687796621252945,
-   "margin_pct": -1.0687796621252965,
-   "time": "2025-11-20",
-   "bars_ago": 214,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
+    "quality": 0.2,
+    "raw_total": -0.05,
     "capped": true
    }
   },
@@ -2796,6 +1538,7 @@
    "kind": "pivot_edge",
    "dist_pct": 6.981740064446834,
    "margin_pct": -6.981740064446829,
+   "stop_price": 9.03,
    "time": "2012-12-07",
    "bars_ago": 710,
    "recent": false,
@@ -2811,66 +1554,6 @@
     "quality": 0.5,
     "raw_total": -0.5,
     "capped": true
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "weekly",
-   "type": "ZG_S",
-   "price": 22.6,
-   "zg": 22.34,
-   "zd": 9.31,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 1.1638316920322362,
-   "margin_pct": 1.1638316920322467,
-   "time": "2025-07-18",
-   "bars_ago": 64,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 0.0,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -0.5,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 13.15,
-   "zg": 13.15,
-   "zd": 11.1,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.0,
-   "margin_pct": 0.0,
-   "time": "2001-12-04",
-   "bars_ago": 6026,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 2.5,
-    "raw_total": 0.0,
-    "capped": false
    }
   },
   {
@@ -2900,38 +1583,6 @@
     "freshness": -4.0,
     "quality": 1.5,
     "raw_total": -0.5,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 9.75,
-   "zg": 9.77,
-   "zd": 9.33,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.2047082906857684,
-   "margin_pct": -0.20470829068577334,
-   "time": "2004-04-07",
-   "bars_ago": 5468,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 1.56,
-    "raw_total": -0.94,
     "capped": true
    }
   },
@@ -2968,70 +1619,6 @@
   {
    "symbol": "平均股价",
    "level": "daily",
-   "type": "ZG_S",
-   "price": 5.53,
-   "zg": 5.53,
-   "zd": 4.55,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.0,
-   "margin_pct": 0.0,
-   "time": "2006-04-20",
-   "bars_ago": 4974,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 2.5,
-    "raw_total": 0.0,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 18.14,
-   "zg": 18.18,
-   "zd": 13.8,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.22002200220021534,
-   "margin_pct": -0.22002200220021528,
-   "time": "2011-05-16",
-   "bars_ago": 3742,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 1.62,
-    "raw_total": -0.88,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "daily",
    "type": "3S",
    "price": 11.74,
    "zg": 18.18,
@@ -3056,70 +1643,6 @@
     "freshness": -4.0,
     "quality": 1.5,
     "raw_total": -0.5,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 11.74,
-   "zg": 11.74,
-   "zd": 10.65,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.0,
-   "margin_pct": 0.0,
-   "time": "2013-11-11",
-   "bars_ago": 3140,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 2.5,
-    "raw_total": 0.0,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 25.06,
-   "zg": 25.11,
-   "zd": 17.34,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.19912385503783636,
-   "margin_pct": -0.19912385503784158,
-   "time": "2015-12-30",
-   "bars_ago": 2616,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 1.7,
-    "raw_total": -0.8,
     "capped": true
    }
   },
@@ -3156,70 +1679,6 @@
   {
    "symbol": "平均股价",
    "level": "daily",
-   "type": "ZG_S",
-   "price": 15.26,
-   "zg": 15.22,
-   "zd": 12.77,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.26281208935610473,
-   "margin_pct": 0.26281208935610145,
-   "time": "2019-12-13",
-   "bars_ago": 1652,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 1.45,
-    "raw_total": -1.05,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 25.07,
-   "zg": 25.65,
-   "zd": 25.0,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 2.261208576998044,
-   "margin_pct": -2.2612085769980417,
-   "time": "2022-08-19",
-   "bars_ago": 1001,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.22,
-    "raw_total": -2.28,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "daily",
    "type": "3S",
    "price": 24.9,
    "zg": 25.65,
@@ -3244,71 +1703,6 @@
     "freshness": -4.0,
     "quality": 0.32,
     "raw_total": -1.68,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "daily",
-   "type": "ZG_S",
-   "price": 21.81,
-   "zg": 21.72,
-   "zd": 20.58,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.4143646408839773,
-   "margin_pct": 0.4143646408839796,
-   "time": "2025-07-07",
-   "bars_ago": 306,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.78,
-    "raw_total": -1.72,
-    "capped": true
-   }
-  },
-  {
-   "symbol": "平均股价",
-   "level": "30m",
-   "type": "ZG_S",
-   "price": 28.75,
-   "zg": 28.9,
-   "zd": 26.85,
-   "edge": "ZG",
-   "kind": "pivot_edge",
-   "dist_pct": 0.5190311418685072,
-   "margin_pct": -0.519031141868509,
-   "time": "2026-09-24 14:30",
-   "bars_ago": 52,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "conflict",
-   "resonance_vs": [
-    "daily",
-    "weekly"
-   ],
-   "score": 0.0,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": -1.5,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.5,
-    "raw_total": -2.0,
     "capped": true
    }
   }
