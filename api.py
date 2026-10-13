@@ -6,7 +6,6 @@ import json
 import os
 import subprocess
 import secrets
-import shutil
 import sys
 import logging
 from datetime import datetime, timedelta, timezone
@@ -71,8 +70,7 @@ ibkr_status = {
 
 def run_pipeline():
     """Run the data pipeline synchronously. Called by scheduler and manual trigger."""
-    git_commit_push_data()  # commit+push last cycle's site/data (cleans tree)
-    git_pull_ff()            # fresh code; ff-only, never diverges
+    git_pull_ff()      # keep code fresh for self-update; ff-only, never diverges
     check_self_update()
     if job_status["running"]:
         log.warning("pipeline already running, skip")
@@ -94,7 +92,6 @@ def run_pipeline():
         if r.returncode == 0:
             job_status["last_result"] = "ok"
             log.info(f"pipeline ok in {dur:.1f}s")
-            sync_site_data()  # stage api_data -> site/data for next cycle's commit
         else:
             err = (r.stderr or "")[-800:]
             job_status["last_result"] = f"failed(rc={r.returncode}): {err}"
@@ -145,7 +142,8 @@ def fetch_ibkr_positions():
     """Pull IBKR open positions via Flex Web Service (every 6h).
 
     Writes api_data/data/positions_ibkr.json (served at /api/positions) and
-    mirrors to repo site/data/positions_ibkr.json (static site + run2.py SYMS).
+    a symbols-only copy to repo site/data/positions_ibkr.json (run2.py SYMS
+    merge + web badge; public-safe).
     """
     if ibkr_status["running"]:
         log.warning("ibkr fetch already running, skip")
@@ -192,27 +190,6 @@ def _git(*args, timeout=120):
                           capture_output=True, text=True, timeout=timeout, env=GIT_ENV)
 
 
-def git_commit_push_data():
-    """Commit+push site/data/ if changed. Backend is the sole writer now
-    (cron retired); commit message tagged '(backend)' to tell apart in log."""
-    r = _git("status", "--porcelain", "site/data", timeout=30)
-    if not r.stdout.strip():
-        return False
-    _git("add", "site/data", timeout=60)
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
-    r = _git("-c", "user.name=chan-vps-bot", "-c", "user.email=vps@local",
-             "commit", "-m", f"chore: update signals (backend) {ts}", "--quiet", timeout=60)
-    if r.returncode != 0:
-        log.warning(f"git commit failed: {(r.stderr or '')[:200]}")
-        return False
-    r = _git("push", "-q", "origin", "main", timeout=120)
-    if r.returncode != 0:
-        log.warning(f"git push failed: {(r.stderr or '')[:200]}")
-        return False
-    log.info("git push ok (site/data)")
-    return True
-
-
 def git_pull_ff():
     """Fast-forward pull only. NEVER rebases/resets/force-pushes, so it cannot
     cause divergence (the interrupted-rebase + detached HEAD incident must not
@@ -228,31 +205,6 @@ def git_pull_ff():
         return False
     log.info("git pull --ff-only ok")
     return True
-
-
-def sync_site_data():
-    """Mirror api_data outputs into repo site/data/ for the Pages backup.
-    (API_MODE writes to api_data only; the repo copy feeds GitHub Pages.)"""
-    pairs = [
-        (DATA_DIR / "data" / "signals.json", "data/signals.json"),
-        (DATA_DIR / "data" / "signals_cn.json", "data/signals_cn.json"),
-        (DATA_DIR / "data" / "charts", "data/charts"),
-        (DATA_DIR / "data" / "charts_cn", "data/charts_cn"),
-        (DATA_DIR / "img", "img"),
-        (DATA_DIR / "img_cn", "img_cn"),
-    ]
-    for src, rel in pairs:
-        if not src.exists():
-            continue
-        dst = REPO / "site" / rel
-        try:
-            if src.is_dir():
-                shutil.copytree(src, dst, dirs_exist_ok=True)
-            else:
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                dst.write_bytes(src.read_bytes())
-        except Exception as e:
-            log.warning(f"sync {rel} failed: {e}")
 
 
 # ---- scheduler ----
