@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-13T11:45:12.509941Z",
+ "generated": "2026-10-13T12:00:15.858778Z",
  "market": "us",
  "failures": {
   "SPCX/weekly": "too few bars: 19",
@@ -350,8 +350,8 @@
      }
     },
     "30m": {
-     "bars": 672,
-     "first": "2026-08-13 08:00",
+     "bars": 671,
+     "first": "2026-08-13 08:30",
      "last": "2026-10-12 15:30",
      "last_close": 101.33,
      "state": {
@@ -775,8 +775,8 @@
      }
     },
     "30m": {
-     "bars": 643,
-     "first": "2026-08-13 08:00",
+     "bars": 642,
+     "first": "2026-08-13 08:30",
      "last": "2026-10-12 16:30",
      "last_close": 265.15,
      "state": {
@@ -1540,8 +1540,8 @@
      }
     },
     "30m": {
-     "bars": 698,
-     "first": "2026-08-13 08:00",
+     "bars": 697,
+     "first": "2026-08-13 08:30",
      "last": "2026-10-12 15:30",
      "last_close": 9.9,
      "state": {
@@ -1625,15 +1625,15 @@
      }
     },
     "30m": {
-     "bars": 619,
-     "first": "2026-08-13 08:00",
+     "bars": 618,
+     "first": "2026-08-13 08:30",
      "last": "2026-10-12 16:00",
      "last_close": 348.98,
      "state": {
       "direction": "up",
       "pivot_pos": "above",
       "zg": 340.31,
-      "zd": 336.2,
+      "zd": 330.475,
       "last_seg": "down"
      },
      "last_segment": {
@@ -2363,6 +2363,40 @@
    }
   },
   {
+   "symbol": "GOOG",
+   "level": "30m",
+   "type": "ZD_B",
+   "price": 330.43,
+   "zg": 340.31,
+   "zd": 330.475,
+   "edge": "ZD",
+   "kind": "pivot_edge",
+   "dist_pct": 0.013616763749153767,
+   "margin_pct": 0.01361676374915799,
+   "stop_price": 320.56,
+   "time": "2026-09-10 15:30",
+   "bars_ago": 333,
+   "recent": false,
+   "confirmed": true,
+   "repaint_warning": null,
+   "resonance": "partial",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 1.9,
+   "score_breakdown": {
+    "base": 3.0,
+    "divergence": 0.0,
+    "resonance": 0.75,
+    "confirmed": 0.0,
+    "freshness": -4.0,
+    "quality": 2.19,
+    "raw_total": 1.94,
+    "capped": false
+   }
+  },
+  {
    "symbol": "TSM",
    "level": "daily",
    "type": "ZD_B",
@@ -2392,6 +2426,38 @@
     "freshness": -4.0,
     "quality": 1.17,
     "raw_total": 1.67,
+    "capped": false
+   }
+  },
+  {
+   "symbol": "GOOG",
+   "level": "30m",
+   "type": "PRE_3B",
+   "price": 343.54,
+   "zg": 340.31,
+   "zd": 330.475,
+   "margin_pct": 0.9491346125591438,
+   "pre": true,
+   "kind": "chan",
+   "time": "2026-10-08 14:00",
+   "bars_ago": 31,
+   "recent": true,
+   "confirmed": false,
+   "repaint_warning": "unconfirmed: last segment not yet confirmed by feature-sequence fractal; may repaint",
+   "resonance": "partial",
+   "resonance_vs": [
+    "daily",
+    "weekly"
+   ],
+   "score": 1.5,
+   "score_breakdown": {
+    "base": 1.75,
+    "divergence": 0.0,
+    "resonance": 0.75,
+    "confirmed": -1.5,
+    "freshness": 0.0,
+    "quality": 0.48,
+    "raw_total": 1.48,
     "capped": false
    }
   },
@@ -2492,38 +2558,6 @@
     "freshness": 0.5,
     "quality": 1.28,
     "raw_total": 1.3,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "GOOG",
-   "level": "30m",
-   "type": "PRE_3B",
-   "price": 343.54,
-   "zg": 340.31,
-   "zd": 336.2,
-   "margin_pct": 0.9491346125591438,
-   "pre": true,
-   "kind": "chan",
-   "time": "2026-10-08 14:00",
-   "bars_ago": 31,
-   "recent": true,
-   "confirmed": false,
-   "repaint_warning": "unconfirmed: last segment not yet confirmed by feature-sequence fractal; may repaint",
-   "resonance": "partial",
-   "resonance_vs": [
-    "daily",
-    "weekly"
-   ],
-   "score": 1.3,
-   "score_breakdown": {
-    "base": 1.75,
-    "divergence": 0.0,
-    "resonance": 0.75,
-    "confirmed": -1.5,
-    "freshness": 0.0,
-    "quality": 0.34,
-    "raw_total": 1.34,
     "capped": false
    }
   },
@@ -3284,40 +3318,6 @@
    "resonance": "partial",
    "resonance_vs": [
     "30m",
-    "daily",
-    "weekly"
-   ],
-   "score": 0.6,
-   "score_breakdown": {
-    "base": 3.0,
-    "divergence": 0.0,
-    "resonance": 0.75,
-    "confirmed": 0.0,
-    "freshness": -4.0,
-    "quality": 0.86,
-    "raw_total": 0.61,
-    "capped": false
-   }
-  },
-  {
-   "symbol": "GOOG",
-   "level": "30m",
-   "type": "ZD_B",
-   "price": 337.24,
-   "zg": 340.31,
-   "zd": 336.2,
-   "edge": "ZD",
-   "kind": "pivot_edge",
-   "dist_pct": 0.3093396787626474,
-   "margin_pct": -0.30933967876265456,
-   "stop_price": 326.11,
-   "time": "2026-09-29 15:30",
-   "bars_ago": 134,
-   "recent": false,
-   "confirmed": true,
-   "repaint_warning": null,
-   "resonance": "partial",
-   "resonance_vs": [
     "daily",
     "weekly"
    ],
