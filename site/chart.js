@@ -2,7 +2,15 @@
 (function (global) {
   "use strict";
   var SUPPORTED = null; // null = try any symbol via data/charts/{SYM}.json
-  var CHART_BASE = "data/charts/"; // 市场切换时改为 data/charts_cn/
+  // API_BASE: 与 app.js 一致，后端API地址。为空则用相对路径(静态模式)。
+  var API_BASE = (typeof localStorage !== "undefined" && localStorage.getItem("chan.apiBase")) || "";
+  var CHART_BASE = "data/charts/"; // 市场切换时改为 data/charts_cn/ (API模式: /api/charts/ 或 /api/charts_cn/)
+  function chartBase() {
+    if (API_BASE) {
+      return API_BASE + (CHART_BASE.indexOf("charts_cn") >= 0 ? "/api/charts_cn/" : "/api/charts/");
+    }
+    return CHART_BASE;
+  }
   var LV_LABEL = { weekly: "周线", daily: "日线", "30m": "30分钟", "5m": "5分钟" };
   var LV_ORDER = ["weekly", "daily", "30m", "5m"];
   var TYPE_NAME = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_S": "上沿卖", "ZD_B": "下沿买" };
@@ -293,7 +301,7 @@
     state.symbol = symbol;
     state.level = opts.level || "daily";
     root.innerHTML = '<div class="ichart-loading muted small">加载交互图数据…</div>';
-    return fetch(CHART_BASE + symbol + ".json", { cache: "no-cache" })
+    return fetch(chartBase() + symbol + ".json", { cache: "no-cache" })
       .then(function (r) {
         if (!r.ok) throw new Error("HTTP " + r.status);
         return r.json();

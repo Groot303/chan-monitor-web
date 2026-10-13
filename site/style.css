@@ -442,3 +442,34 @@ button.kpi,button.card,button.sym-card{font:inherit;color:inherit;text-align:lef
   .ichart-host{height:min(48vh,360px);min-height:240px}
   .ichart-toolbar{flex-direction:column;align-items:stretch}
 }
+
+/* ---------- iOS 风格设置面板 ---------- */
+.sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90;opacity:0;transition:opacity .25s}
+.sheet-scrim:not([hidden]){opacity:1}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:91;background:var(--surface);border-radius:20px 20px 0 0;padding:12px 20px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -8px 40px rgba(0,0,0,.3);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.7,.2,1);max-height:80vh;overflow-y:auto}
+.sheet:not([hidden]){transform:translateY(0)}
+.sheet-handle{width:36px;height:5px;border-radius:3px;background:var(--text-3);opacity:.4;margin:4px auto 12px}
+.sheet-title{font-size:20px;font-weight:700;text-align:center;margin:0 0 16px}
+.ios-group{background:var(--surface-2);border-radius:14px;margin-bottom:16px;overflow:hidden}
+.ios-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;gap:12px}
+.ios-row + .ios-row{border-top:1px solid var(--border)}
+.ios-row-main{display:flex;flex-direction:column;gap:2px;flex:1}
+.ios-label{font-size:16px;font-weight:500}
+.ios-sub{font-size:13px;color:var(--text-3)}
+.ios-slider{-webkit-appearance:none;width:120px;height:28px;background:transparent}
+.ios-slider::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--border-strong)}
+.ios-slider::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25);margin-top:-11px}
+.ios-slider::-moz-range-track{height:4px;border-radius:2px;background:var(--border-strong)}
+.ios-slider::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:none;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.ios-switch{position:relative;width:51px;height:31px;border-radius:16px;background:var(--border-strong);border:none;cursor:pointer;transition:background .2s;flex:none}
+.ios-switch[aria-checked="true"]{background:#34c759}
+.ios-knob{position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25);transition:left .2s}
+.ios-switch[aria-checked="true"] .ios-knob{left:22px}
+.ios-btn{display:block;width:100%;padding:14px;border:none;border-radius:14px;background:var(--accent);color:#fff;font-size:17px;font-weight:600;cursor:pointer;margin-top:8px}
+.ios-btn:active{opacity:.8}
+
+/* iOS 风格卡片优化 */
+.kpi{background:var(--surface);border-radius:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.signal-card{background:var(--surface);border-radius:16px;border:none;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:12px}
+.ios-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:15px}
+.ios-input:focus{outline:none;border-color:var(--accent)}

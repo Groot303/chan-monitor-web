@@ -3,9 +3,9 @@
   "use strict";
 
   // ---------- 常量 ----------
-  var LV = { weekly: "周线", daily: "日线", "30m": "30分钟" };
-  var LV_ORDER = ["weekly", "daily", "30m"];
-  var RECENT_WIN = { weekly: 4, daily: 10, "30m": 40 };
+  var LV = { weekly: "周线", daily: "日线", "30m": "30分钟", "5m": "5分钟" };
+  var LV_ORDER = ["weekly", "daily", "30m", "5m"];
+  var RECENT_WIN = { weekly: 4, daily: 10, "30m": 40, "5m": 120 };
   var TY = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_S": "中枢上沿卖", "ZD_B": "中枢下沿买", "BC_B": "盘整背驰买", "BC_S": "盘整背驰卖" };
   var BK = [
     ["base", "基础分"], ["divergence", "背驰"], ["resonance", "共振"],
@@ -16,18 +16,24 @@
   var POS = { above: "中枢上方", below: "中枢下方", inside: "中枢内", none: "无中枢" };
   var TIER = [[5, "hi", "高"], [2.5, "mid", "中"], [-Infinity, "lo", "低"]];
   // 市场配置:美股(us) / A股指数(cn)
+  // API_BASE: 后端API地址 (Cloudflare Tunnel HTTPS)。为空则用相对路径(静态模式)。
+  var API_BASE = localStorage.getItem("chan.apiBase") || "";
   var MK = {
-    us: { label: "美股", signals: "data/signals.json", tz: "ET", src: "Alpaca(IEX 免费版)", delay: "Alpaca 可能延迟",
+    us: { label: "美股", signals: "data/signals.json", api: "/api/signals", tz: "ET", src: "Alpaca(IEX 免费版)", delay: "Alpaca 可能延迟",
           watch: ["AAOI","AAPL","AMD","AVGO","GOOG","INTC","LITE","META","MRNA","MRVL","MU","NOK","NVDA","ORCL","PLTR","SKHY","SNDK","SPCX","TSLA","TSM"],
           searchPh: "搜索代码,如 NVDA" },
-    cn: { label: "A股", signals: "data/signals_cn.json", tz: "北京时间", src: "东方财富", delay: "东财数据可能延迟",
+    cn: { label: "A股", signals: "data/signals_cn.json", api: "/api/signals_cn", tz: "北京时间", src: "东方财富", delay: "东财数据可能延迟",
           watch: ["上证指数","科创50","银行指数","平均股价"],
           searchPh: "搜索指数,如 上证指数" }
   };
+  function signalsURL() {
+    var m = MK[MARKET];
+    return API_BASE ? API_BASE + m.api : m.signals;
+  }
   var MARKET = lsGet("chan.market") === "cn" ? "cn" : "us";
-  var DEFAULT_F = { q: "", level: "", type: "", conf: "", min: 0, recent: false, sort: "score", dir: "desc" };
+  var DEFAULT_F = { q: "", level: "", type: "", conf: "", min: 3, recent: false, sort: "score", dir: "desc" };
   // filters.v2:旧版默认 recent=true 已写入 localStorage,换键后首次加载回落到新默认(显示全部信号)
-  var LS = { theme: "chan.theme", color: "chan.color", mode: "chan.mode", filters: "chan.filters.v2" };
+  var LS = { theme: "chan.theme", mode: "chan.mode", filters: "chan.filters.v2" };
 
   // ---------- 工具 ----------
   var $ = function (id) { return document.getElementById(id); };
@@ -118,14 +124,10 @@
     return Object.keys(set).sort();
   }
 
-  // ---------- 主题/配色 ----------
+  // ---------- 主题 ----------
   var root = document.documentElement;
-  function applyColorLabel() {
-    var cn = root.getAttribute("data-color") !== "us";
-    $("color-label").textContent = cn ? "红买绿卖" : "绿买红卖";
-    var cnote = $("color-note"); if (cnote) cnote.innerHTML = '配色:<b class="t-buy">' + (cn ? "红" : "绿") + '=买</b> <b class="t-sell">' + (cn ? "绿" : "红") + '=卖</b>(' + (cn ? "中文习惯" : "美股习惯") + ',右上角可切换)';
-    $("btn-color").setAttribute("aria-label", "当前配色:" + (cn ? "红色买点、绿色卖点(中文习惯)" : "绿色买点、红色卖点(美股习惯)") + ",点击切换");
-  }
+  // 配色固定为绿买红卖(美股习惯),2026-10-13 起不再提供切换
+  root.setAttribute("data-color", "us");
   function applyThemeMeta() {
     var m = document.querySelector('meta[name="theme-color"]');
     if (m) m.setAttribute("content", root.getAttribute("data-theme") === "light" ? "#f4f6fa" : "#0b0f17");
@@ -137,19 +139,75 @@
     if (window.ChanInteractive) ChanInteractive.refreshTheme();
     toast(t === "light" ? "已切换为浅色主题" : "已切换为深色主题");
   });
-  $("btn-color").addEventListener("click", function () {
-    var c = root.getAttribute("data-color") === "us" ? "cn" : "us";
-    root.setAttribute("data-color", c); lsSet(LS.color, c); applyColorLabel();
-    if (window.ChanInteractive) ChanInteractive.refreshTheme();
-    toast(c === "cn" ? "配色:红色 = 买点,绿色 = 卖点(中文习惯)" : "配色:绿色 = 买点,红色 = 卖点(美股习惯)");
-  });
-  applyColorLabel(); applyThemeMeta();
+  applyThemeMeta();
 
   var toastTimer;
   function toast(msg) {
     var t = $("toast"); t.textContent = msg; t.hidden = false;
     clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 2200);
   }
+
+  // ---------- 设置面板 (iOS 风格) ----------
+  var SCORE_KEY = "chan.scoreThreshold", SHOWLOW_KEY = "chan.showLow";
+  function getThreshold() {
+    var v = parseFloat(localStorage.getItem(SCORE_KEY));
+    return isNaN(v) ? 3 : v;
+  }
+  function getShowLow() {
+    return localStorage.getItem(SHOWLOW_KEY) === "1";
+  }
+  function applyScoreFilter() {
+    var th = getThreshold(), showLow = getShowLow();
+    F.min = showLow ? 0 : th;
+    $("score-threshold").value = th;
+    $("score-val").textContent = th.toFixed(1) + " 分以下隐藏";
+    $("score-filter-toggle").setAttribute("aria-checked", showLow ? "true" : "false");
+    renderSignals();
+  }
+  function openSettings() {
+    $("settings-sheet").hidden = false;
+    $("settings-scrim").hidden = false;
+    // force reflow for transition
+    void $("settings-sheet").offsetWidth;
+  }
+  function closeSettings() {
+    $("settings-sheet").hidden = true;
+    $("settings-scrim").hidden = true;
+  }
+  $("btn-settings").addEventListener("click", openSettings);
+  $("settings-close").addEventListener("click", closeSettings);
+  $("settings-scrim").addEventListener("click", closeSettings);
+  $("score-threshold").addEventListener("input", function () {
+    var v = parseFloat(this.value);
+    localStorage.setItem(SCORE_KEY, v);
+    // 如果用户拖动滑块，自动开启过滤（关闭"显示低分"）
+    if (getShowLow()) {
+      localStorage.setItem(SHOWLOW_KEY, "0");
+    }
+    applyScoreFilter();
+  });
+  $("score-filter-toggle").addEventListener("click", function () {
+    var showLow = !getShowLow();
+    localStorage.setItem(SHOWLOW_KEY, showLow ? "1" : "0");
+    applyScoreFilter();
+    toast(showLow ? "已显示全部信号" : "已隐藏低分信号");
+  });
+  // 初始化：应用保存的阈值
+  (function initScoreFilter() {
+    F.min = getShowLow() ? 0 : getThreshold();
+  })();
+  // API 地址设置
+  (function initApiBase() {
+    var input = $("api-base-input");
+    input.value = API_BASE;
+    input.addEventListener("change", function () {
+      var v = this.value.trim().replace(/\/+$/, "");
+      localStorage.setItem("chan.apiBase", v);
+      API_BASE = v;
+      toast(v ? "API 地址已保存，重新加载数据" : "已切换为静态模式");
+      loadData();
+    });
+  })();
 
   // ---------- 导航 ----------
   function setView(v, noHash) {
@@ -250,7 +308,7 @@
   function load() {
     showLoading();
     $("meta-short").textContent = "加载中…";
-    fetch(MK[MARKET].signals + "?t=" + Date.now(), { cache: "no-store" })
+    fetch(signalsURL() + "?t=" + Date.now(), { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) {
         if (!d || !Array.isArray(d.signals) || !d.symbols) throw new Error("数据格式不正确");
@@ -266,7 +324,7 @@
         $("meta-short").textContent = "数据加载失败";
         qsa("#meta-sub .dot").forEach(function (x) { x.className = "dot err"; });
         $("kpis").innerHTML = "";
-        $("sig-results").innerHTML = stateHTML("err", "数据加载失败", "无法读取 " + esc(MK[MARKET].signals) + "(" + esc(e.message || e) + ")。若直接用 file:// 打开页面,请改用本地服务器,例如 <code>python3 -m http.server</code>。", '<button type="button" class="btn primary" id="retry">重试</button>');
+        $("sig-results").innerHTML = stateHTML("err", "数据加载失败", "无法读取 " + esc(signalsURL()) + "(" + esc(e.message || e) + ")。若直接用 file:// 打开页面,请改用本地服务器,例如 <code>python3 -m http.server</code>。", '<button type="button" class="btn primary" id="retry">重试</button>');
         var r = $("retry"); if (r) r.addEventListener("click", load);
       });
   }
