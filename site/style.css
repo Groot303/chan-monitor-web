@@ -194,8 +194,6 @@ select option{background:var(--surface);color:var(--text)}
 .chip-ok::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
 .chip-un{color:var(--warn);border-color:var(--warn-bd);background:var(--warn-bg);border-style:dashed}
 .chip-un::before{content:"!";font-weight:800;font-size:11px}
-.chip-pre{color:var(--warn);border-color:var(--warn);background:var(--warn-bg);font-weight:800}
-.chip-pre::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--warn)}
 .chip-stale{color:var(--text-3)}
 .chip-res-strong,.chip-res-partial{color:var(--text-2)}
 .chip-res-conflict,.chip-res-mixed{color:var(--text-3)}
@@ -475,3 +473,5 @@ button.kpi,button.card,button.sym-card{font:inherit;color:inherit;text-align:lef
 .signal-card{background:var(--surface);border-radius:16px;border:none;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:12px}
 .ios-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:15px}
 .ios-input:focus{outline:none;border-color:var(--accent)}
+/* PRE 预信号徽标 */
+.pre-badge{display:inline-block;background:#ffcc00;color:#333;font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:middle}

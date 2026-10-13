@@ -49,6 +49,8 @@
   function isEdge(g) { return (g && g.kind === "pivot_edge") || g.type === "ZG_S" || g.type === "ZD_B"; }
   function tier(score) { for (var i = 0; i < TIER.length; i++) if (score >= TIER[i][0]) return { k: TIER[i][1], label: TIER[i][2] }; return { k: "lo", label: "低" }; }
   function typeName(t) { return TY[t] || t; }
+  function isPre(g) { return g.type && g.type.indexOf("PRE_") === 0; }
+  function preBadge(g) { return isPre(g) ? '<span class="pre-badge">预</span>' : ''; }
   function fmtTime(t, level) { if (!t) return "—"; return level === "30m" ? t + " " + MK[MARKET].tz : t; }
   var uid = 0;
 
@@ -453,7 +455,7 @@
       return '<button type="button" class="card ' + cardCls + (g.recent ? "" : " stale") + '" data-sig="' + g._id + '" style="animation-delay:' + Math.min(i * 35, 400) + 'ms" ' +
         'aria-label="' + esc(g.symbol + " " + (LV[g.level] || g.level) + " " + typeName(g.type) + ",分数 " + g.score.toFixed(1) + "," + (g.confirmed ? "已确认" : "未确认,可能重绘")) + '">' +
         '<div class="card-top">' + ringHTML(g.score) +
-        '<div class="card-id"><div class="sym">' + esc(g.symbol) + '<span class="side-tag ' + sideCls + '">' + (edge ? (buy ? "下沿买" : "上沿卖") : ((buy ? "买" : "卖") + " · " + typeName(g.type))) + '</span></div>' +
+        '<div class="card-id"><div class="sym">' + esc(g.symbol) + '<span class="side-tag ' + sideCls + '">' + (edge ? (buy ? "下沿买" : "上沿卖") : ((buy ? "买" : "卖") + " · " + typeName(g.type))) + preBadge(g) + '</span></div>' +
         '<div class="card-price">信号价 <span class="num">' + fmtPrice(g.price) + '</span></div></div></div>' +
         chipsHTML(g) +
         '<div class="card-meta">' +
@@ -480,7 +482,7 @@
       return '<tr tabindex="0" data-sig="' + g._id + '" aria-label="' + esc(g.symbol + " " + typeName(g.type) + " 分数 " + g.score.toFixed(1) + ",按回车查看详情") + '">' +
         '<td>' + sbarHTML(g.score) + '</td>' +
         '<td class="t-sym">' + esc(g.symbol) + '</td>' +
-        '<td><span class="chip ' + (isEdge(g) ? (buy ? "chip-edge-buy" : "chip-edge-sell") : (buy ? "chip-buy" : "chip-sell")) + '">' + esc(typeName(g.type)) + '</span></td>' +
+        '<td><span class="chip ' + (isEdge(g) ? (buy ? "chip-edge-buy" : "chip-edge-sell") : (buy ? "chip-buy" : "chip-sell")) + '">' + esc(typeName(g.type)) + '</span>' + preBadge(g) + '</td>' +
         '<td><span class="chip chip-lv">' + esc(LV[g.level] || g.level) + '</span></td>' +
         '<td>' + (g.confirmed ? '<span class="chip chip-ok">已确认</span>' : '<span class="chip chip-un" title="可能重绘">未确认</span>') + (g.recent ? "" : ' <span class="chip chip-stale">过期</span>') + '</td>' +
         '<td class="num">' + esc(fmtTime(g.time, g.level)) + '</td>' +
