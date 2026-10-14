@@ -16,18 +16,17 @@
   var POS = { above: "中枢上方", below: "中枢下方", inside: "中枢内", none: "无中枢" };
   var TIER = [[5, "hi", "高"], [2.5, "mid", "中"], [-Infinity, "lo", "低"]];
   // 市场配置:美股(us) / A股指数(cn)
-  // API_BASE: 后端API地址 (Cloudflare Tunnel HTTPS)。localStorage 可覆盖。
-  var API_BASE = localStorage.getItem("chan.apiBase") || ""; // default same-origin: backend serves frontend
+  // API_BASE: 恒为空串 = 同源后端(api.py 同源托管 site/ + /api/*)。设置面板的 API 地址输入已删除。
+  var API_BASE = "";
   var MK = {
-    us: { label: "美股", signals: "data/signals.json", api: "/api/signals", tz: "ET", src: "Alpaca(IEX 免费版)", delay: "Alpaca 可能延迟",
+    us: { label: "美股", api: "/api/signals", tz: "ET", src: "Alpaca(IEX 免费版)", delay: "Alpaca 可能延迟",
           watch: ["AAOI","AAPL","AMD","AVGO","GOOG","INTC","LITE","META","MRNA","MRVL","MU","NOK","NVDA","ORCL","PLTR","SKHY","SNDK","SPCX","TSLA","TSM"],
           searchPh: "搜索代码,如 NVDA" },
-    cn: { label: "A股", signals: "data/signals_cn.json", api: "/api/signals_cn", tz: "北京时间", src: "东方财富", delay: "东财数据可能延迟",
+    cn: { label: "A股", api: "/api/signals_cn", tz: "北京时间", src: "东方财富", delay: "东财数据可能延迟",
           watch: ["上证指数","科创50","银行指数","平均股价"],
           searchPh: "搜索指数,如 上证指数" }
   };
   function apiURL() { var m = MK[MARKET]; return (API_BASE || "") + m.api; }
-  function staticURL() { return MK[MARKET].signals; }
   function signalsURL() { return apiURL(); }
   var MARKET = lsGet("chan.market") === "cn" ? "cn" : "us";
   var DEFAULT_F = { q: "", level: "", type: "", conf: "", min: 3, recent: false, sort: "score", dir: "desc" };
@@ -198,19 +197,6 @@
   (function initScoreFilter() {
     F.min = getShowLow() ? 0 : getThreshold();
   })();
-  // API 地址设置
-  (function initApiBase() {
-    var input = $("api-base-input");
-    input.value = API_BASE;
-    input.addEventListener("change", function () {
-      var v = this.value.trim().replace(/\/+$/, "");
-      localStorage.setItem("chan.apiBase", v);
-      API_BASE = v;
-      toast(v ? "API 地址已保存，重新加载数据" : "已切换为静态模式");
-      loadData();
-    });
-  })();
-
   // ---------- 导航 ----------
   function setView(v, noHash) {
     if (["signals", "symbols", "holdings", "about"].indexOf(v) < 0) v = "signals";
@@ -323,21 +309,19 @@
     $("meta-short").textContent = "数据加载失败";
     qsa("#meta-sub .dot").forEach(function (x) { x.className = "dot err"; });
     $("kpis").innerHTML = "";
-    $("sig-results").innerHTML = stateHTML("err", "数据加载失败", "无法读取 " + esc(url) + "(" + esc(e.message || e) + ")。若直接用 file:// 打开页面,请改用本地服务器,例如 <code>python3 -m http.server</code>。", '<button type="button" class="btn primary" id="retry">重试</button>');
+    $("sig-results").innerHTML = stateHTML("err", "数据加载失败", "后端接口不可用（" + esc(e.message || e) + "）—— 已不再回落到本地静态数据，以免展示过期行情。请检查后端 chan-api 与 /api 状态（请求地址：" + esc(url) + "）。", '<button type="button" class="btn primary" id="retry">重试</button>');
     var r = $("retry"); if (r) r.addEventListener("click", load);
   }
   function load() {
     showLoading();
     $("meta-short").textContent = "加载中…";
-    var apiU = apiURL() + "?t=" + Date.now(), staticU = staticURL() + "?t=" + Date.now();
+    var apiU = apiURL() + "?t=" + Date.now();
     function getJSON(u) {
       return fetch(u, { cache: "no-store" })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
     }
-    // 先走同源 API,失败时回落到静态 JSON(Cloudflare Pages 部署)
-    getJSON(apiU).then(handleData).catch(function () {
-      getJSON(staticU).then(handleData).catch(function (e) { showLoadErr(e, apiU); });
-    });
+    // 只请求后端 API；失败直接报错，不再回落到本地静态 JSON，以免展示过期行情
+    getJSON(apiU).then(handleData).catch(function (e) { showLoadErr(e, apiU); });
   }
 
   function stateHTML(kind, title, text, action) {
