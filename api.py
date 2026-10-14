@@ -81,6 +81,39 @@ ibkr_status = {
 }
 
 
+def notify_telegram():
+    """Send Telegram notifications for new signals (US + CN) after a pipeline run.
+
+    Runs scripts/notify_telegram.py twice (US signals.json, CN signals_cn.json),
+    sharing one state file for dedup. Token/chat come from env (VPS .env).
+    Also delivers the one-off announcement file (state/announcement.txt) if
+    present. Never raises; failures are logged only.
+    """
+    script = REPO / "scripts" / "notify_telegram.py"
+    if not script.exists():
+        return
+    state_file = REPO / "state" / "notified.json"
+    announce_file = REPO / "state" / "announcement.txt"
+    for name in ("signals.json", "signals_cn.json"):
+        try:
+            env = {
+                **os.environ,
+                "SIGNALS_FILE": str(DATA_DIR / "data" / name),
+                "STATE_FILE": str(state_file),
+                "ANNOUNCE_FILE": str(announce_file),
+            }
+            r = subprocess.run(
+                [sys.executable, str(script)],
+                capture_output=True, text=True, timeout=120,
+                cwd=str(REPO), env=env,
+            )
+            out = (r.stdout or "").strip()
+            if out:
+                log.info(f"notify[{name}]: {out[:300]}")
+        except Exception as e:
+            log.warning(f"notify[{name}] failed: {e}")
+
+
 def run_pipeline():
     """Run the data pipeline synchronously. Called by scheduler and manual trigger."""
     git_pull_ff()      # keep code fresh for self-update; ff-only, never diverges
@@ -105,6 +138,7 @@ def run_pipeline():
         if r.returncode == 0:
             job_status["last_result"] = "ok"
             log.info(f"pipeline ok in {dur:.1f}s")
+            notify_telegram()
         else:
             err = (r.stderr or "")[-800:]
             job_status["last_result"] = f"failed(rc={r.returncode}): {err}"
