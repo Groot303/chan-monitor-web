@@ -499,3 +499,15 @@ button.kpi,button.card,button.sym-card{font:inherit;color:inherit;text-align:lef
 .cm-mark-p{background:var(--buy)}
 .cm-mark-n{background:var(--sell)}
 .cm-val{font-size:12px;min-width:66px;text-align:right;flex:none}
+
+/* 公司简介弹窗 */
+.mini-btn{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:99px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text-2);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.mini-btn:hover{color:var(--text);border-color:var(--accent)}
+.drawer-head h2 .mini-btn{margin-left:2px}
+.profile-modal{position:fixed;inset:0;z-index:130;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:20px;animation:fade .2s ease both}
+.pf-card{width:min(480px,100%);max-height:80vh;overflow:auto;background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:20px;animation:pop .22s var(--ease) both}
+@keyframes pop{from{transform:scale(.96) translateY(8px);opacity:0}}
+.pf-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.pf-head h3{font-size:17px}
+.pf-name{font-weight:700;font-size:15px;margin-bottom:8px;color:var(--text)}
+.pf-body p{line-height:1.75;color:var(--text-2);font-size:14px}
