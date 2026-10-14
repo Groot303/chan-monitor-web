@@ -127,8 +127,8 @@ API_PY_MTIME = API_PY.stat().st_mtime if API_PY.exists() else None
 def check_self_update():
     """Restart via systemd if api.py changed on disk.
 
-    The APScheduler auto-deploy job keeps the repo fresh; this backend is
-    a long-running process, so it must reload itself to pick up api.py
+    CI/CD (GitHub Actions -> deploy.sh) keeps the repo fresh; this backend
+    is a long-running process, so it must reload itself to pick up api.py
     changes. py_compile gate prevents restart-loops on broken pushes.
     """
     global API_PY_MTIME
@@ -149,21 +149,6 @@ def check_self_update():
         os._exit(42)
     log.error("new api.py does NOT compile, staying on current version")
     API_PY_MTIME = mtime  # don't spam the log
-
-
-def auto_deploy():
-    """Fast self-deploy: git pull every 2 min; restart if api.py changed.
-
-    Previously the pull only happened inside run_pipeline (15-min cadence),
-    so new code took up to 15 min to land and users pulled manually.
-    This job closes that gap: site/ files are served from disk (live right
-    after pull); api.py changes trigger check_self_update -> systemd restart.
-    The restart is skipped while a pipeline run is in flight, to avoid
-    killing it mid-run; the next cycle picks it up.
-    """
-    git_pull_ff()
-    if not job_status["running"]:
-        check_self_update()
 
 
 def fetch_ibkr_positions():
@@ -246,13 +231,11 @@ async def on_startup():
         scheduler = AsyncIOScheduler(timezone="UTC")
         scheduler.add_job(run_pipeline, "interval", minutes=15, id="pipeline",
                           max_instances=1, coalesce=True)
-        scheduler.add_job(auto_deploy, "interval", minutes=2, id="auto-deploy",
-                          max_instances=1, coalesce=True)
         scheduler.add_job(fetch_ibkr_positions, "interval", hours=6, id="ibkr",
                           max_instances=1, coalesce=True,
                           next_run_time=datetime.now(timezone.utc) + timedelta(minutes=2))
         scheduler.start()
-        log.info("APScheduler started (pipeline 15m, ibkr 6h, auto-deploy 2m)")
+        log.info("APScheduler started (pipeline 15m, ibkr 6h); deploys via CI/CD")
         # Run once on startup (in background thread to not block)
         import threading
         threading.Thread(target=run_pipeline, daemon=True).start()
