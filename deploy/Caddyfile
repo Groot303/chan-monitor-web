@@ -3,3 +3,5 @@
 groot303.duckdns.org {
 	reverse_proxy 127.0.0.1:8000
 }
+
+# 本文件变更时 deploy.sh 会自动安装到 /etc/caddy/Caddyfile 并 reload caddy

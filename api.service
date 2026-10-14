@@ -15,3 +15,5 @@ StandardError=append:/opt/chan-monitor/logs/api.log
 
 [Install]
 WantedBy=multi-user.target
+
+# 本文件变更时 deploy.sh 会自动安装到 /etc/systemd/system 并 daemon-reload
