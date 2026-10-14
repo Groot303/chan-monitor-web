@@ -852,7 +852,7 @@
     }
     h += '<section class="d-block"><h3>多级别状态</h3>' + levelsHTML(sym) + '</section>';
     var interactive = !!(window.ChanInteractive && ChanInteractive.isSupported(sym));
-    h += '<section class="d-block"><h3>交互缠论图 <span class="muted small">可缩放拖动 · Lightweight Charts</span></h3>' +
+    h += '<section class="d-block"><h3>交互缠论图</h3>' +
       '<div id="ichart-root" class="ichart-root"></div></section>';
     if (s.image) {
       h += '<section class="d-block"><h3>静态对照图(可选)<span class="muted small">周 / 日 / 30分钟 PNG</span></h3>';

@@ -317,10 +317,6 @@
           state.level = LV_ORDER.find(function (l) { return data.levels[l]; }) || "daily";
         }
         root.innerHTML = "";
-        var note = document.createElement("p");
-        note.className = "ichart-note muted small";
-        note.textContent = "可缩放拖动 · 灰线=笔 · 蓝线=线段(虚线未确认) · 橙块=中枢 · 箭头=缠论买卖点 · 圆点=中枢沿(青/橙)。";
-        root.appendChild(note);
         buildToolbar(root, data.levels);
         var host = document.createElement("div");
         host.className = "ichart-host";
