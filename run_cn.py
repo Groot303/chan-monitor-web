@@ -2,12 +2,14 @@
 """A-share major indices chan-analysis pipeline (mirrors run2.py for US stocks).
 
 Data: East Money kline API directly (no API key needed).
+Sina K-line API as fallback when East Money returns nothing
+(平均股价 has no Sina code and stays East Money-only).
   secid 1.xxxxxx = Shanghai, 0.xxxxxx = Shenzhen
   klt: 101=daily, 102=weekly, 30=30min
 Output: out_cn/signals.json + out_cn/<name>_chan2.png (+ out_cn/signals_summary.md)
 Then: python scripts/build_data.py out_cn --market cn
 """
-import json, datetime, warnings, time
+import json, datetime, warnings, time, re
 warnings.filterwarnings("ignore")
 import pandas as pd
 import matplotlib; matplotlib.use("Agg")
@@ -110,6 +112,61 @@ def fetch_em_kline(secid, klt, lmt="1000"):
     return df
 
 
+SINA_URL = "http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData"
+SINA_SYMS = {"上证指数": "sh000001", "科创50": "sh000688", "银行指数": "sz399986"}
+SINA_SCALE = {"daily": 240, "30m": 30, "5m": 5}  # 新浪无原生周线: weekly 由 daily 按 W-FRI 重采样
+
+
+def fetch_sina_kline(name, lv):
+    """Sina fallback for one index/level. Returns df with the same
+    contract as fetch_em_kline (tz-aware Asia/Shanghai index,
+    Open/High/Low/Close/Volume), or None. Only called when East Money
+    returns nothing; 平均股价 has no Sina code and stays EM-only."""
+    sym = SINA_SYMS.get(name)
+    if sym is None:
+        return None
+    if lv == "weekly":
+        daily = fetch_sina_kline(name, "daily")
+        if daily is None or not len(daily):
+            return None
+        w = daily.resample("W-FRI").agg({"Open": "first", "High": "max", "Low": "min", "Close": "last", "Volume": "sum"}).dropna()
+        return w[["Open", "High", "Low", "Close", "Volume"]].sort_index()
+    scale = SINA_SCALE[lv]
+    rows = None
+    for attempt in range(2):
+        try:
+            r = requests.get(SINA_URL, params={"symbol": sym, "scale": scale, "ma": "no", "datalen": 1000}, timeout=20)
+            r.raise_for_status()
+            raw = r.text.strip()
+            if not raw.startswith("["):
+                m = re.search(r"\[.*\]", raw, re.S)
+                raw = m.group(0) if m else "[]"
+            rows = json.loads(raw)
+            if rows:
+                break
+            print(f"Sina empty klines symbol={sym} scale={scale} attempt={attempt} http={r.status_code} body={r.text[:200]!r}")
+            rows = None
+        except Exception as e:
+            print(f"Sina fetch fail symbol={sym} scale={scale} attempt={attempt}: {type(e).__name__}: {e}")
+            rows = None
+        if attempt < 1:
+            time.sleep(2)
+    else:
+        return None
+    if not rows:
+        return None
+    df = pd.DataFrame(rows)
+    df = df.rename(columns={"day": "ts", "open": "Open", "high": "High", "low": "Low", "close": "Close", "volume": "Volume"})
+    for c in ("Open", "High", "Low", "Close", "Volume"):
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+    df["ts"] = pd.to_datetime(df["ts"], errors="coerce")
+    df = df.dropna(subset=["ts"]).set_index("ts")
+    df.index = df.index.tz_localize(SH_TZ)
+    df = df[["Open", "High", "Low", "Close", "Volume"]].sort_index()
+    df = df[~df.index.duplicated(keep="last")]
+    return df
+
+
 def fetch_em_frames():
     """Fetch OHLC bars for all indices/levels. Returns {level: {name: df}}."""
     frames = {}
@@ -120,6 +177,10 @@ def fetch_em_frames():
                 # 5m 级别多取一些 K 线 (2000根 ≈ 40个交易日)
                 _lmt = "2000" if lv == "5m" else "1000"
                 df = fetch_em_kline(secid, klt, lmt=_lmt)
+                if (df is None or not len(df)) and name in SINA_SYMS:
+                    df = fetch_sina_kline(name, lv)
+                    if df is not None and len(df):
+                        print(f"  {name} {lv}: fallback: sina ({len(df)} bars, last={df.index[-1]})")
                 if df is not None and len(df):
                     per[name] = df
                     print(f"  {name} {lv}: {len(df)} bars, last={df.index[-1]}")
@@ -215,7 +276,7 @@ for s, secid in CN_SYMS:
             else:
                 df = FRAMES[lv].get(s)
                 if df is None or len(df) == 0:
-                    raise ValueError("no bars from East Money")
+                    raise ValueError("no bars from East Money or Sina fallback")
             df = df.dropna(subset=["High", "Low", "Open", "Close"])
             if len(df) < 40:
                 raise ValueError(f"too few bars: {len(df)}")
