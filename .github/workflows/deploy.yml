@@ -15,7 +15,7 @@ jobs:
           set -e
           echo "secret length: ${#KEY_B64}"
           printf %s "$KEY_B64" | tr -d '\r\n\t ' | base64 -d > "$GITHUB_WORKSPACE/deploy_key"
-          chmod 600 "$GITHUB_WORKSPACE/deploy_key"
+          chmod 644 "$GITHUB_WORKSPACE/deploy_key"
           echo "decoded bytes: $(wc -c < "$GITHUB_WORKSPACE/deploy_key")"
           ssh-keygen -y -f "$GITHUB_WORKSPACE/deploy_key" > /tmp/dk.pub
           ssh-keygen -lf /tmp/dk.pub
