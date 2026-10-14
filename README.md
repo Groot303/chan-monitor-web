@@ -5,12 +5,20 @@
 ## 信号类型
 缠论 1/2/3 买卖点 + 中枢沿(ZG_S 上沿卖 / ZD_B 下沿买,`kind=pivot_edge`)。详情默认交互 K 线。
 
+## 自动部署（CI/CD）
+push 到 main → GitHub Actions「Deploy to VPS」→ SSH 到 VPS 执行 `/opt/chan-monitor/deploy.sh`：
+1. `git pull --ff-only` 拉取最新代码（只快进，绝不 rebase/reset/force）
+2. 只在 `api.py` / `api.service` 变更时才重启 `chan-api`；只改 `site/` 等静态内容时不重启
+3. 健康检查通过才算部署成功；失败自动回滚
+
+通常 30 秒内生效。**不需要任何人再去 VPS 上手动 `git pull`。**
+
 ## 结构
 - `site/` 静态网页(无需构建):`index.html`、`style.css`、`app.js`、`chart.js`、`vendor/lightweight-charts.min.js`、`data/signals.json`、`data/charts/*.json`、`img/*.png`
 - `scripts/build_data.py` 把分析输出(`out/signals.json`、`out/*_chan2.png`)整理进 `site/data` 与 `site/img`,并在有 CSV 时导出交互图 JSON
 - `scripts/export_chart.py` 从 `data2_SYM_*.csv` + chan2 导出 `site/data/charts/{SYM}.json`(OHLC + 笔/线段/中枢/买卖点)。目前样例为 NVDA
 - `chan.py` / `chan2.py` / `run2.py` 分析代码(从 chan-monitor 复制,GitHub Actions 需要它们才能在 runner 里重新计算)
-- `.github/workflows/update.yml` 美股交易时段工作日每 15 分钟(UTC 13–21 点;run2.py 内按 America/New_York 9:30–16:05 判断交易时段并过滤节假日,自动适配夏令/冬令时)及手动触发,安装依赖、运行分析、重建 `site/` 并提交回仓库
+- `.github/workflows/deploy.yml` 部署工作流（push main / 手动触发 → SSH 到 VPS 执行 `deploy.sh`）。旧的定时分析工作流 `update.yml` 已删除：调度由 VPS 后端 APScheduler 接管（pipeline 每 15 分钟，IBKR Flex 每 6 小时）。
 - `DOCS_chan2.md` 规则与评分说明
 
 ## 本地预览
@@ -25,12 +33,9 @@
 
 交互 K 线目前先支持 **NVDA**(详情抽屉内可缩放拖动,叠加笔/线段/中枢/买卖点);其他标的仍用静态 PNG。
 
-## 部署到 Cloudflare Pages
-1. Cloudflare 控制台 → Workers & Pages → Create → Pages → Connect to Git,授权并选择本仓库(私有仓库可用)。
-2. Framework preset: None;**Build command: 留空**;**Build output directory: `site`**。
-3. 保存部署。之后 Actions 每次把更新提交到主分支,Cloudflare 会自动重新部署。
+## 部署（已迁移，不再用 Cloudflare Pages）
+Cloudflare Pages 已于 2026-10-13 停用。现由阿里云 VPS（FastAPI + Caddy，域名 `groot303.duckdns.org`）直接提供服务，部署见上文「自动部署（CI/CD）」。
 
 ## GitHub Actions 注意
-- 仓库 Settings → Actions → General → Workflow permissions 需为 "Read and write permissions"(workflow 已声明 `contents: write`,但仓库/组织级默认若更严格会覆盖)。
-- 定时任务可能延迟几分钟;仓库 60 天无活动时 GitHub 会暂停定时任务(本流程会提交所以通常不会)。
-- 行情来自 Alpaca(IEX 免费实时);需在仓库 Settings → Secrets and variables → Actions 配置 `ALPACA_API_KEY` / `ALPACA_SECRET_KEY`。失败标的记录在 `failures`。
+- 部署工作流所需 Secrets（仓库 Settings → Secrets and variables → Actions）：`VPS_HOST`、`VPS_USER`、`VPS_SSH_KEY_B64`。
+- 行情来自 Alpaca(IEX 免费实时)，API Key 放在 VPS `/opt/chan-monitor/.env`，不在 GitHub Secrets 里。失败标的记录在 `failures`。
