@@ -830,8 +830,10 @@
     var s = D.symbols[sym] || {};
     current = { sym: sym, g: g };
     if (opener && !$("drawer").contains(opener)) lastFocus = opener;
-    var head = '<h2 id="dr-title">' + esc(sym) + (g ? ' <span class="side-tag ' + (isEdge(g) ? (isBuy(g) ? "edge-buy" : "edge-sell") : (isBuy(g) ? "buy" : "sell")) + '">' + (isEdge(g) ? esc(typeName(g.type)) : ((isBuy(g) ? "买" : "卖") + " · " + typeName(g.type))) + '</span>' : ' <span class="chip">暂无信号</span>') + '</h2>' + (g ? chipsHTML(g, { res: true }) : "");
+    var head = '<h2 id="dr-title">' + esc(sym) + (g ? ' <span class="side-tag ' + (isEdge(g) ? (isBuy(g) ? "edge-buy" : "edge-sell") : (isBuy(g) ? "buy" : "sell")) + '">' + (isEdge(g) ? esc(typeName(g.type)) : ((isBuy(g) ? "买" : "卖") + " · " + typeName(g.type))) + '</span>' : ' <span class="chip">暂无信号</span>') + '</h2><button type="button" class="mini-btn" id="dr-profile" data-sym="' + esc(sym) + '">简介</button>' + (g ? chipsHTML(g, { res: true }) : "");
     $("dr-headline").innerHTML = head;
+    var pfb = $("dr-profile");
+    if (pfb) pfb.addEventListener("click", function () { openProfile(sym, pfb); });
     var h = "";
     if (g) {
       h += '<div class="d-hero">' + ringHTML(g.score, true) + '<div class="d-hero-stats">' +
@@ -952,6 +954,36 @@
     $("lightbox").hidden = true;
     if (LB.opener && document.body.contains(LB.opener)) LB.opener.focus();
   }
+  // ---------- 公司简介 ----------
+  var PROFILE_CACHE = null, pfOpener = null;
+  function loadProfiles(cb) {
+    if (PROFILE_CACHE) { cb(PROFILE_CACHE); return; }
+    fetch("data/company_profiles.json", { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (d) { PROFILE_CACHE = d || {}; cb(PROFILE_CACHE); })
+      .catch(function () { PROFILE_CACHE = {}; cb(PROFILE_CACHE); });
+  }
+  function openProfile(sym, opener) {
+    pfOpener = opener || null;
+    var m = $("profile-modal");
+    if (!m) return;
+    $("pf-title").textContent = sym + " 简介";
+    $("pf-body").innerHTML = '<p class="muted">加载中…</p>';
+    m.hidden = false;
+    loadProfiles(function (P) {
+      var p = P[sym];
+      $("pf-body").innerHTML = p
+        ? '<div class="pf-name">' + esc(p.name) + '</div><p>' + esc(p.desc) + '</p>'
+        : '<p class="muted">暂无该标的的简介。</p>';
+    });
+    setTimeout(function () { $("pf-close").focus(); }, 30);
+  }
+  function closeProfile() {
+    $("profile-modal").hidden = true;
+    if (pfOpener && document.body.contains(pfOpener)) pfOpener.focus();
+  }
+  $("pf-close").addEventListener("click", closeProfile);
+  $("profile-modal").addEventListener("click", function (e) { if (e.target === this) closeProfile(); });
   $("lb-close").addEventListener("click", closeLightbox);
   $("lb-in").addEventListener("click", function () { lbZoom(1.25); });
   $("lb-out").addEventListener("click", function () { lbZoom(0.8); });
@@ -998,7 +1030,7 @@
   }
   document.addEventListener("keydown", function (e) {
     var lbOpen = !$("lightbox").hidden, drOpen = !$("drawer").hidden;
-    if (e.key === "Escape") { if (lbOpen) closeLightbox(); else if (drOpen) closeDrawer(); }
+    if (e.key === "Escape") { if (!$("profile-modal").hidden) closeProfile(); else if (lbOpen) closeLightbox(); else if (drOpen) closeDrawer(); }
     else if (e.key === "Tab") { if (lbOpen) trap($("lightbox"), e); else if (drOpen) trap($("drawer"), e); }
     else if (e.key === "/" && !lbOpen && !drOpen && document.activeElement.tagName !== "INPUT") {
       e.preventDefault(); setView("signals"); var fs = $("filters"); fs.classList.add("open"); $("btn-filters").setAttribute("aria-expanded", "true"); $("f-q").focus();
