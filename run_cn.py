@@ -7,7 +7,7 @@ Data: East Money kline API directly (no API key needed).
 Output: out_cn/signals.json + out_cn/<name>_chan2.png (+ out_cn/signals_summary.md)
 Then: python scripts/build_data.py out_cn --market cn
 """
-import json, datetime, warnings
+import json, datetime, warnings, time
 warnings.filterwarnings("ignore")
 import pandas as pd
 import matplotlib; matplotlib.use("Agg")
@@ -63,16 +63,39 @@ if not CACHED and not FORCE_RUN and not in_cn_session():
     raise SystemExit(0)
 
 
+EM_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+    "Referer": "https://quote.eastmoney.com/",
+    "Accept": "application/json, text/plain, */*",
+}
+
+
 def fetch_em_kline(secid, klt, lmt="1000"):
     """Fetch one index/level from East Money. Returns df with tz-aware
-    Asia/Shanghai index, columns Open/High/Low/Close/Volume, or None."""
+    Asia/Shanghai index, columns Open/High/Low/Close/Volume, or None.
+    Browser-like headers + 3 attempts with backoff; empty/error responses
+    are logged with a snippet so the cause is visible in the backend log
+    (previously a silent None -> opaque 'no bars from East Money')."""
     params = {"secid": secid, "ut": EM_UT,
               "fields1": "f1,f2,f3,f4,f5,f6", "fields2": "f51,f52,f53,f54,f55,f56,f57,f58",
               "klt": klt, "fqt": "1", "beg": "0", "end": "20500000", "lmt": lmt}
-    r = requests.get(EM_URL, params=params, timeout=30)
-    r.raise_for_status()
-    data = r.json().get("data") or {}
-    klines = data.get("klines") or []
+    for attempt in range(3):
+        try:
+            r = requests.get(EM_URL, params=params, headers=EM_HEADERS, timeout=30)
+            r.raise_for_status()
+            data = r.json().get("data") or {}
+            klines = data.get("klines") or []
+            if klines:
+                break
+            print(f"EM empty klines secid={secid} klt={klt} attempt={attempt} "
+                  f"http={r.status_code} body={r.text[:200]!r}")
+        except Exception as e:
+            print(f"EM fetch fail secid={secid} klt={klt} attempt={attempt}: {type(e).__name__}: {e}")
+            klines = []
+        if attempt < 2:
+            time.sleep(2 * (attempt + 1))
+    else:
+        return None
     if not klines:
         return None
     rows = [k.split(",") for k in klines]
