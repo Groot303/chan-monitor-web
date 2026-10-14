@@ -545,6 +545,22 @@
             lastValueVisible: false, priceLineVisible: false
           });
           candle.setData(lv.ohlc);
+          // 缠论买卖点标记(与详情图同一套逻辑):箭头=一二三类,圆点=中枢沿,黄色=预信号
+          try {
+            if (lv.signals && lv.signals.length && candle.setMarkers) {
+              var markers = lv.signals.map(function (s) {
+                var buy = isBuy(s);
+                var edge = isEdge(s);
+                var pre = isPre(s);
+                var base = String(s.type || "").replace(/^PRE_/, "");
+                var label = (pre ? "【预】" : "") + typeName(base) + (s.confirmed ? "" : "?") + (s.score != null ? " " + Number(s.score).toFixed(1) : "") + (s.price != null ? " @" + Number(s.price).toFixed(2) : "");
+                var mc = pre ? "#ffcc00" : (edge ? (buy ? "#22d3ee" : "#f59e0b") : (buy ? th.up : th.down));
+                return { time: s.time, position: buy ? "belowBar" : "aboveBar", color: mc, shape: edge ? "circle" : (buy ? "arrowUp" : "arrowDown"), text: label };
+              });
+              markers.sort(function (a, b) { return (a.time > b.time) - (a.time < b.time); });
+              candle.setMarkers(markers);
+            }
+          } catch (e2) {}
           var u = num(p.unrealized, 0);
           if (num(p.cost) != null) candle.createPriceLine({ price: p.cost, color: "#f59e0b", lineWidth: 2, lineStyle: LC.LineStyle.Dashed, axisLabelVisible: true, title: "成本 " + fmtPrice(p.cost) });
           if (num(p.mark) != null) candle.createPriceLine({ price: p.mark, color: u >= 0 ? th.up : th.down, lineWidth: 2, lineStyle: LC.LineStyle.Solid, axisLabelVisible: true, title: "现价 " + fmtPrice(p.mark) });
