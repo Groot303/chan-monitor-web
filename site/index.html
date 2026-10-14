@@ -293,6 +293,19 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
   <div class="drawer-body" id="dr-body"></div>
 </aside>
 
+<!-- 公司简介弹窗 -->
+<div class="profile-modal" id="profile-modal" role="dialog" aria-modal="true" aria-labelledby="pf-title" hidden>
+  <div class="pf-card" role="document">
+    <div class="pf-head">
+      <h3 id="pf-title">公司简介</h3>
+      <button type="button" class="icon-btn sm" id="pf-close" aria-label="关闭公司简介">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="pf-body" id="pf-body"></div>
+  </div>
+</div>
+
 <!-- 图片全屏 -->
 <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="缠论图全屏查看" hidden>
   <div class="lb-bar">
