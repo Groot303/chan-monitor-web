@@ -411,6 +411,7 @@
     var body = $("macro-body"); if (!body) return;
     if (!MACRO && !macroLoading) { loadMacro(); return; }
     if (!MACRO) { body.innerHTML = '<p class="muted">宏观数据未就绪（后端 pipeline 正在拉取或数据源暂不可用）。</p>'; return; }
+    if (MACRO.error) { body.innerHTML = '<div class="panel"><h3>宏观抓取失败</h3><p class="muted">后端 pipeline 已运行，但抓取宏观数据时出错（信号不受影响）：</p><p style="word-break:break-all">' + esc(MACRO.error) + '</p><p class="muted small">更新于 ' + esc((MACRO.generated || "").slice(0, 16).replace("T", " ")) + '</p></div>'; return; }
     var upd = $("macro-updated");
     if (upd) upd.textContent = MACRO.generated ? ("更新于 " + MACRO.generated.slice(0, 16).replace("T", " ")) : "";
     var html = "";

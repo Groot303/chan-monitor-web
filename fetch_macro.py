@@ -140,7 +140,31 @@ def _regime(indicators):
     return {"label": label, "risk_off_count": n, "reasons": reasons}
 
 
+def _write_error(reason):
+    """Write a diagnostic macro.json so a fetch failure is VISIBLE via the API
+    (instead of a bare 404 that hides the cause). Never raises."""
+    try:
+        out = {"generated": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+               "source": "Yahoo Finance (yfinance)", "indicators": {},
+               "regime": {"label": "未知", "risk_off_count": 0, "reasons": ["宏观抓取失败"]},
+               "failures": {"_fatal": str(reason)[:500]}, "error": str(reason)[:500]}
+        os.makedirs(os.path.dirname(OUT), exist_ok=True)
+        with open(OUT, "w", encoding="utf-8") as f:
+            json.dump(out, f, ensure_ascii=False, indent=1)
+        print(f"[macro] wrote error snapshot -> {OUT}: {str(reason)[:200]}")
+    except Exception:
+        pass
+
+
 def main():
+    try:
+        return _run()
+    except Exception as e:
+        _write_error(e)
+        return None
+
+
+def _run():
     indicators = {}
     failures = {}
     try:
@@ -157,7 +181,7 @@ def main():
         out = {"generated": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                "source": "Yahoo Finance (yfinance)", "indicators": indicators,
                "regime": {"label": "未知", "risk_off_count": 0, "reasons": ["宏观数据源不可用"]},
-               "failures": failures}
+               "failures": failures, "error": failures.get("yfinance", "")[:500]}
         os.makedirs(os.path.dirname(OUT), exist_ok=True)
         with open(OUT, "w", encoding="utf-8") as f:
             json.dump(out, f, ensure_ascii=False, indent=1)

@@ -237,8 +237,22 @@ for s,e in out["symbols"].items():
 open("out/signals_summary.md","w").write("\n".join(L))
 
 # ---- 大环境快照 (best-effort: 失败只记录, 绝不影响信号) ----
+# 失败也要写一份带 error 字段的 macro.json, 让原因能从 API 上看到,
+# 而不是只剩一个 404 猜不到。
 try:
     from fetch_macro import main as _fetch_macro_main
     _fetch_macro_main()
 except Exception as _e:
     print(f"[macro] skipped: {_e}")
+    try:
+        import json as _json, datetime as _dt
+        _root = os.path.dirname(os.path.abspath(__file__))
+        os.makedirs(os.path.join(_root, "out"), exist_ok=True)
+        with open(os.path.join(_root, "out", "macro.json"), "w", encoding="utf-8") as _f:
+            _json.dump({"generated": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+                        "source": "Yahoo Finance (yfinance)", "indicators": {},
+                        "regime": {"label": "未知", "risk_off_count": 0, "reasons": ["宏观抓取未执行"]},
+                        "failures": {"_fatal": str(_e)[:500]}, "error": str(_e)[:500]},
+                       _f, ensure_ascii=False, indent=1)
+    except Exception:
+        pass
