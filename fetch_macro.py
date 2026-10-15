@@ -9,9 +9,19 @@ are recorded in the output file instead of raising.
 Output (out/macro.json):
   generated: UTC ISO timestamp
   source: "Yahoo Finance (yfinance)"
-  indicators: {key: {name, value, unit, kind, change, change_label, read, asof, status}}
+  indicators: {key: {name, value, unit, kind, change, change_label, read, asof, status,
+                     series, window_chg, window_label, range}}
+    series: [[date, close], ...] sampled to <= 60 points over ~90 days (for sparklines)
+    window_chg: change over the series window (pp for yields, % otherwise)
+    range: [window low, window high]
   regime: {label, risk_off_count, reasons}
   failures: {key: error}
+
+Extension points (NOT yet wired — the frontend marks them 待接入, never fakes them):
+  2Y yield (^FVX exists on Yahoo but has no clean series), CPI/core CPI, PCE/core PCE,
+  NFP actuals, unemployment rate, initial claims, GDP, ISM PMI, Fed funds target rate.
+  Adding one = new SYMBOLS-style entry + a dedicated fetcher (BLS/BEA/ISM/FRED),
+  not a new macro.json schema.
 """
 import json, os, datetime
 
@@ -140,6 +150,47 @@ def _regime(indicators):
     return {"label": label, "risk_off_count": n, "reasons": reasons}
 
 
+def _series_list(df):
+    """Extract [[date, close], ...] from a yfinance download, sampled to <= 60 pts.
+    Handles both Series and single-column DataFrame Close (newer yfinance)."""
+    try:
+        closes = df["Close"]
+        if hasattr(closes, "columns"):  # DataFrame: take first column
+            closes = closes.iloc[:, 0]
+        vals = []
+        for ts, v in closes.items():
+            try:
+                f = float(v)
+            except Exception:
+                continue
+            if f != f:  # NaN
+                continue
+            vals.append([str(ts.date()) if hasattr(ts, "date") else str(ts), round(f, 4)])
+        if len(vals) > 60:
+            m = 60
+            idx = sorted(set(int(round(i * (len(vals) - 1) / (m - 1))) for i in range(m)))
+            vals = [vals[i] for i in idx]
+        return vals
+    except Exception:
+        return []
+
+
+def _window_stats(series, kind):
+    """(window_chg, window_label, [lo, hi]) over the series window."""
+    if not series or len(series) < 2:
+        return None, "", None
+    first, last = series[0][1], series[-1][1]
+    lo = min(p[1] for p in series)
+    hi = max(p[1] for p in series)
+    if kind == "yield":
+        chg = round(last - first, 4)
+        label = f"{chg * 100:+.0f}bp"
+    else:
+        chg = round((last - first) / first * 100, 2) if first else None
+        label = f"{chg:+.2f}%" if chg is not None else ""
+    return chg, label, [round(lo, 2), round(hi, 2)]
+
+
 def _write_error(reason):
     """Write a diagnostic macro.json so a fetch failure is VISIBLE via the API
     (instead of a bare 404 that hides the cause). Never raises."""
@@ -174,10 +225,12 @@ def _run():
         for key, (_, name, unit, kind) in SYMBOLS.items():
             indicators[key] = {"name": name, "value": None, "unit": unit, "kind": kind,
                                "change": None, "change_label": "", "read": "暂无数据",
-                               "asof": None, "status": "unavailable"}
+                               "asof": None, "status": "unavailable",
+                               "series": None, "window_chg": None, "window_label": "", "range": None}
         indicators["spread"] = {"name": "10Y−3M 利差", "value": None, "unit": "百分点",
                                 "kind": "spread", "change": None, "change_label": "",
-                                "read": "暂无数据", "asof": None, "status": "unavailable"}
+                                "read": "暂无数据", "asof": None, "status": "unavailable",
+                                "series": None, "window_chg": None, "window_label": "", "range": None}
         out = {"generated": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                "source": "Yahoo Finance (yfinance)", "indicators": indicators,
                "regime": {"label": "未知", "risk_off_count": 0, "reasons": ["宏观数据源不可用"]},
@@ -190,7 +243,7 @@ def _run():
 
     for key, (sym, name, unit, kind) in SYMBOLS.items():
         try:
-            df = yf.download(sym, period="10d", interval="1d", progress=False, auto_adjust=False)
+            df = yf.download(sym, period="90d", interval="1d", progress=False, auto_adjust=False)
             if df is None or df.empty or len(df) < 1:
                 raise ValueError("empty data")
             closes = df["Close"]
@@ -199,6 +252,8 @@ def _run():
             if len(df) >= 2:
                 prev = float(closes.iloc[-2].iloc[0]) if hasattr(closes.iloc[-2], "iloc") else float(closes.iloc[-2])
             asof = str(df.index[-1].date())
+            series = _series_list(df)
+            wchg, wlabel, wrange = _window_stats(series, kind)
             if kind == "yield":
                 change = (value - prev) if prev is not None else None
                 change_label = "" if change is None else f"{change * 100:+.0f}bp"
@@ -212,12 +267,14 @@ def _run():
                                "change_pct": (round(change_pct, 2) if change_pct is not None else None),
                                "change_label": change_label,
                                "read": _read(key, value, prev),
-                               "asof": asof, "status": "ok"}
+                               "asof": asof, "status": "ok",
+                               "series": series, "window_chg": wchg, "window_label": wlabel, "range": wrange}
         except Exception as e:
             failures[key] = str(e)[:200]
             indicators[key] = {"name": name, "value": None, "unit": unit, "kind": kind,
                                "change": None, "change_pct": None, "change_label": "",
-                               "read": "暂无数据", "asof": None, "status": "unavailable"}
+                               "read": "暂无数据", "asof": None, "status": "unavailable",
+                               "series": None, "window_chg": None, "window_label": "", "range": None}
     # 10Y-3M spread (computed; the NY Fed's preferred recession indicator)
     y10 = indicators["us10y"]["value"]
     m3 = indicators["us3m"]["value"]
@@ -226,16 +283,22 @@ def _run():
         prev_sp = None
         if indicators["us10y"]["change"] is not None and indicators["us3m"]["change"] is not None:
             prev_sp = sp - (indicators["us10y"]["change"] - indicators["us3m"]["change"])
+        s10 = {d: v for d, v in (indicators["us10y"].get("series") or [])}
+        s3 = {d: v for d, v in (indicators["us3m"].get("series") or [])}
+        sps = [[d, round(s10[d] - s3[d], 4)] for d in sorted(set(s10) & set(s3))]
+        wchg, wlabel, wrange = _window_stats(sps, "yield")
         indicators["spread"] = {"name": "10Y−3M 利差", "value": sp, "unit": "百分点", "kind": "spread",
                                 "change": None, "change_pct": None,
                                 "change_label": "", "read": _read("spread", sp, prev_sp),
-                                "asof": indicators["us10y"]["asof"], "status": "ok"}
+                                "asof": indicators["us10y"]["asof"], "status": "ok",
+                                "series": sps, "window_chg": wchg, "window_label": wlabel, "range": wrange}
     else:
         failures["spread"] = "missing us10y/us3m"
         indicators["spread"] = {"name": "10Y−3M 利差", "value": None, "unit": "百分点",
                                 "kind": "spread", "change": None, "change_pct": None,
                                 "change_label": "", "read": "暂无数据",
-                                "asof": None, "status": "unavailable"}
+                                "asof": None, "status": "unavailable",
+                                "series": None, "window_chg": None, "window_label": "", "range": None}
     out = {"generated": datetime.datetime.now(datetime.timezone.utc).isoformat(),
            "source": "Yahoo Finance (yfinance)", "indicators": indicators,
            "regime": _regime(indicators), "failures": failures}
