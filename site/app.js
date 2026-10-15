@@ -371,11 +371,238 @@
   }
   // ---------- 大环境 ----------
   var MACRO = null, EVENTS = null, macroLoading = false;
-  var MACRO_GROUPS = [
-    { title: "利率与债", keys: ["us10y", "us3m", "spread"] },
-    { title: "恐慌与波动", keys: ["vix"] },
-    { title: "避险与大宗", keys: ["gold", "silver", "oil", "copper", "dxy"] }
+  var TX_SEL = { node: null, edge: -1, theme: "all" };
+  var TX_THEMES = [
+    { id: "rate", label: "利率" }, { id: "infl", label: "通胀" }, { id: "jobs", label: "就业" },
+    { id: "usd", label: "美元" }, { id: "liq", label: "流动性" }, { id: "growth", label: "增长" }
   ];
+  // 传导画布：节点。kind: src=源头变量 / mech=传导机制 / asset=资产。
+  // live: 对应 macro.json 里的 indicator key（有则显示实时值），null = 理论框架节点（暂无实时数据）。
+  var TX_NODES = [
+    { id: "n_infl", label: "通胀超预期", layer: 0, x: 100, y: 70, theme: "infl", kind: "src",
+      def: "CPI / PCE 实际值高于市场预期。",
+      meaning: "通胀高于预期会压缩美联储的降息空间，是利率与债券定价的关键变量。注意区分 headline 与核心分项：食品能源波动常主导 headline，核心分项更能反映持续性。",
+      live: null, liveNote: "CPI / PCE 实际值未接入（接口扩展点），本节点为理论传导框架。" },
+    { id: "n_jobs", label: "就业数据走弱", layer: 0, x: 100, y: 190, theme: "jobs", kind: "src",
+      def: "非农就业低于预期，或失业率上升。",
+      meaning: "就业走弱有两条相反的链：降息预期增强（支撑估值）与盈利预期下降（压制股价）。哪条主导取决于通胀是否构成约束，以及走弱是降温还是衰退信号。",
+      live: null, liveNote: "NFP 实际值未接入，下次公布见下方数据日历。" },
+    { id: "n_yield", label: "美债收益率上行", layer: 0, x: 100, y: 310, theme: "rate", kind: "src",
+      def: "10 年期美债收益率上升。",
+      meaning: "美债收益率是全球资产定价的锚。10Y 上行直接抬高无风险利率，并通过利差吸引资金流向美元。",
+      live: "us10y", liveNote: "" },
+    { id: "n_liq", label: "流动性收紧", layer: 0, x: 100, y: 430, theme: "liq", kind: "src",
+      def: "资金成本上升、信用利差走阔、融资可得性下降。",
+      meaning: "流动性收紧通过融资成本传导到企业扩张、回购与高杠杆主体；信用利差是比政策利率更直接的观测指标。",
+      live: null, liveNote: "流动性指标未接入（接口扩展点：准备金余额 / 逆回购 / 信用利差）。" },
+    { id: "n_growth", label: "经济增长放缓", layer: 0, x: 100, y: 540, theme: "growth", kind: "src",
+      def: "GDP 增速放缓、PMI 跌破荣枯线。",
+      meaning: "增长放缓压制企业盈利预期；但若同时缓解通胀压力，也可能打开降息空间。铜价是常用代理指标，但不是增长本身。",
+      live: "copper", liveNote: "以铜价为代理指标（非 GDP 本身）。" },
+    { id: "n_cut", label: "降息预期下调", layer: 1, x: 350, y: 100, theme: "rate", kind: "mech",
+      def: "市场下调未来 12 个月降息次数 / 幅度预期。",
+      meaning: "降息预期是连接通胀与利率的枢纽：它同时影响远端利率、美元与估值。",
+      live: null, liveNote: "降息概率（CME FedWatch）未接入，需手动查看。" },
+    { id: "n_cutup", label: "降息预期增强", layer: 1, x: 350, y: 250, theme: "rate", kind: "mech",
+      def: "市场提高未来降息预期。",
+      meaning: "降息预期增强降低折现率、支撑估值；但如果源于衰退担忧，盈利端的压力可能更大。",
+      live: null, liveNote: "降息概率（CME FedWatch）未接入，需手动查看。" },
+    { id: "n_dxy", label: "美元走强", layer: 1, x: 350, y: 400, theme: "usd", kind: "mech",
+      def: "美元指数 DXY 上行。",
+      meaning: "美元走强通常与美债收益率上行同步（利差驱动），对以美元计价的商品与跨国公司盈利构成压力。",
+      live: "dxy", liveNote: "" },
+    { id: "n_rf", label: "无风险利率提高", layer: 1, x: 350, y: 540, theme: "rate", kind: "mech",
+      def: "折现公式中的无风险利率上升。",
+      meaning: "折现率 = 无风险利率 + 风险溢价。前者上升时，即使风险溢价不变，估值也会承压。",
+      live: "us10y", liveNote: "以 10Y 收益率为代理。" },
+    { id: "n_disc", label: "折现价值下降", layer: 2, x: 620, y: 110, theme: "rate", kind: "mech",
+      def: "未来现金流按更高折现率折现，现值下降。",
+      meaning: "远期现金流占比越高的资产对折现率越敏感——这是成长股、科技股对利率最敏感的数学原因。",
+      live: null, liveNote: "机制节点，无直接实时数据。" },
+    { id: "n_earn", label: "盈利预期下降", layer: 2, x: 620, y: 260, theme: "growth", kind: "mech",
+      def: "市场下调企业未来盈利预期。",
+      meaning: "盈利预期是股价的核心支撑。增长放缓与就业走弱都会压制盈利预期；需结合营收、利润率与指引一起看。",
+      live: null, liveNote: "盈利预期（分析师一致预期）未接入。" },
+    { id: "n_safe", label: "避险需求上升", layer: 2, x: 620, y: 410, theme: "liq", kind: "mech",
+      def: "资金从风险资产流向避险资产。",
+      meaning: "避险升温时黄金、美元、日元与美债通常受益；但若避险源于利率冲击，美债价格也可能下跌（股债双杀）。",
+      live: "gold", liveNote: "以黄金涨幅为代理信号。" },
+    { id: "n_fin", label: "融资成本上升", layer: 2, x: 620, y: 540, theme: "liq", kind: "mech",
+      def: "企业与居民的融资利率上升。",
+      meaning: "融资成本上升压制资本开支、回购与高杠杆主体；信用利差走阔是融资条件恶化的直接信号。",
+      live: null, liveNote: "信用利差未接入（接口扩展点）。" },
+    { id: "n_tech", label: "科技成长股（纳指）", layer: 3, x: 880, y: 70, theme: "growth", kind: "asset",
+      def: "纳斯达克 100 为代表的高成长科技股。",
+      meaning: "对折现率与风险偏好双重敏感：利率上行压制估值，盈利预期下调压制股价；两者叠加时跌幅放大。",
+      live: null, liveNote: "指数实时行情未接入；本站美股信号页有成分股信号。" },
+    { id: "n_spx", label: "标普 500", layer: 3, x: 880, y: 170, theme: "growth", kind: "asset",
+      def: "标普 500 指数，覆盖全市场大盘股。",
+      meaning: "盈利预期与估值的综合反映；行业结构决定它对利率与增长的敏感度介于成长与价值之间。",
+      live: null, liveNote: "指数实时行情未接入。" },
+    { id: "n_semi", label: "半导体（NVDA / MU）", layer: 3, x: 880, y: 270, theme: "growth", kind: "asset",
+      def: "半导体板块，本站覆盖 NVDA、MU 等。",
+      meaning: "资本开支大、盈利周期长，对折现率敏感；AI 资本开支周期可部分对冲利率压力，但订单与库存周期仍主导中期走势。",
+      live: null, liveNote: "个股信号见本站美股页。" },
+    { id: "n_gold", label: "黄金", layer: 3, x: 880, y: 370, theme: "liq", kind: "asset",
+      def: "COMEX 黄金期货。",
+      meaning: "避险与通胀对冲资产，但受实际利率与美元压制：避险升温利多，实际利率上行利空，两者常同时出现，需看哪边更强。",
+      live: "gold", liveNote: "" },
+    { id: "n_bond", label: "美债价格", layer: 3, x: 880, y: 470, theme: "rate", kind: "asset",
+      def: "美国国债价格（与收益率反向变动）。",
+      meaning: "收益率上行 → 价格下跌；久期越长跌幅越大。避险买入通常支撑债价，但利率冲击引发的避险可能出现股债双杀。",
+      live: "us10y", liveNote: "以 10Y 收益率反向推断（收益率↑ → 价格↓）。" },
+    { id: "n_acn", label: "A股成长（科创50）", layer: 3, x: 880, y: 550, theme: "growth", kind: "asset",
+      def: "科创 50 为代表的 A 股高成长板块。",
+      meaning: "传导是间接的：全球估值锚与风险偏好影响外资与情绪，但国内政策、流动性与基本面往往起更大作用。不能把美债传导直接等同于 A 股涨跌。",
+      live: null, liveNote: "指数信号见本站 A 股页。" }
+  ];
+  // 传导边。sign: plus=促进 / minus=抑制 / unk=不确定。dir: 对目标端资产的方向提示（— = 机制边，无直接资产方向）。
+  var TX_EDGES = [
+    { from: "n_infl", to: "n_cut", sign: "plus", mech: "通胀高于预期，美联储缺乏降息空间。", cond: "核心分项同样走强时更成立；若仅食品能源波动，持续性存疑。", dir: "—" },
+    { from: "n_cut", to: "n_rf", sign: "plus", mech: "降息预期下调 → 远端利率上行。", cond: "市场定价已充分反映时，影响减弱。", dir: "—" },
+    { from: "n_yield", to: "n_rf", sign: "plus", mech: "10Y 上行直接抬高无风险利率。", cond: "—", dir: "—" },
+    { from: "n_cut", to: "n_dxy", sign: "plus", mech: "降息预期下调 → 美债相对吸引力上升 → 资金流入美元。", cond: "利差扩大是关键中介。", dir: "—" },
+    { from: "n_yield", to: "n_dxy", sign: "plus", mech: "美债收益率上行扩大与他国利差。", cond: "—", dir: "—" },
+    { from: "n_yield", to: "n_bond", sign: "minus", mech: "收益率与债券价格反向变动。", cond: "久期越长，价格跌幅越大。", dir: "利空（债价）" },
+    { from: "n_jobs", to: "n_cutup", sign: "plus", mech: "就业降温降低通胀压力，增强降息预期。", cond: "通胀不构成约束时；若通胀仍高，就业降温未必换来降息。", dir: "—" },
+    { from: "n_jobs", to: "n_earn", sign: "plus", mech: "就业走弱 → 消费与企业盈利预期下调。", cond: "走弱是降温还是衰退信号，决定幅度。", dir: "—" },
+    { from: "n_jobs", to: "n_safe", sign: "plus", mech: "增长担忧 → 避险需求。", cond: "避险情绪主导时。", dir: "—" },
+    { from: "n_cutup", to: "n_disc", sign: "minus", mech: "降息预期增强 → 折现率下行 → 抑制折现价值下降。", cond: "若衰退担忧同时推高风险溢价，对冲甚至反转。", dir: "—" },
+    { from: "n_rf", to: "n_disc", sign: "plus", mech: "折现率 = 无风险利率 + 风险溢价。", cond: "风险溢价不变时。", dir: "—" },
+    { from: "n_disc", to: "n_tech", sign: "minus", mech: "成长股远期现金流占比高，对折现率最敏感。", cond: "风险溢价同步回落可对冲。", dir: "利空" },
+    { from: "n_disc", to: "n_semi", sign: "minus", mech: "半导体资本开支大、盈利周期长，折现敏感。", cond: "AI 资本开支周期可部分对冲。", dir: "利空" },
+    { from: "n_disc", to: "n_acn", sign: "minus", mech: "全球估值锚同步上移时传导。", cond: "A 股还受国内政策与流动性影响，传导不完全。", dir: "不确定" },
+    { from: "n_earn", to: "n_spx", sign: "minus", mech: "盈利预期是股价的核心支撑。", cond: "估值已提前下调时，影响减弱。", dir: "利空" },
+    { from: "n_earn", to: "n_tech", sign: "minus", mech: "科技股盈利预期下调 → 估值与盈利双杀风险。", cond: "个股指引分化时需逐个看。", dir: "利空" },
+    { from: "n_safe", to: "n_gold", sign: "plus", mech: "避险资金流向黄金。", cond: "实际利率同步上行时会削弱黄金吸引力。", dir: "利多（黄金）" },
+    { from: "n_safe", to: "n_spx", sign: "minus", mech: "风险偏好下降 → 风险资产承压。", cond: "避险情绪主导时。", dir: "利空" },
+    { from: "n_dxy", to: "n_gold", sign: "minus", mech: "美元走强 → 以美元计价的黄金承压。", cond: "实际利率同步上行时更明显。", dir: "利空（黄金）" },
+    { from: "n_dxy", to: "n_tech", sign: "minus", mech: "美元走强 → 跨国公司汇兑压力 + 全球流动性收紧。", cond: "持续走强时。", dir: "利空" },
+    { from: "n_growth", to: "n_earn", sign: "plus", mech: "增长放缓 → 盈利预期下调。", cond: "需看是需求放缓还是供给冲击。", dir: "—" },
+    { from: "n_liq", to: "n_fin", sign: "plus", mech: "流动性收紧 → 融资成本上升。", cond: "信用利差走阔是直接信号。", dir: "—" },
+    { from: "n_fin", to: "n_tech", sign: "minus", mech: "高投入、高杠杆企业承压。", cond: "现金流充裕的龙头相对抗压。", dir: "利空" },
+    { from: "n_fin", to: "n_spx", sign: "minus", mech: "融资成本上升压制回购与扩张。", cond: "信用利差同步走阔时。", dir: "利空" }
+  ];
+  // 数据公布解读：next: events=从 events.json 取排期 / nfp=规则生成 / none=见官方日历。
+  var RELEASES = [
+    { id: "cpi", name: "CPI / 核心 CPI", next: "events", nextType: "CPI",
+      measures: "衡量居民消费价格水平；核心 CPI 剔除食品与能源，更能反映持续性通胀。",
+      why: "美联储 2% 通胀目标的参考锚；债券与股票的定价都受它影响。",
+      up: "通胀压力可能持续 → 降息预期可能减弱 → 利率可能上行 → 美元可能走强、成长股可能承压",
+      upNote: "核心分项同步走强时更可信。",
+      mid: "观察市场是否已提前定价 → 关注核心分项趋势与前值修正",
+      down: "通胀压力可能缓和 → 降息预期可能增强 → 利率可能下行",
+      reversals: ["headline 与核心分项背离（如仅食品能源波动）", "前值大幅修正改变趋势判断", "市场已提前定价或仓位拥挤 → 公布后反向波动"],
+      watch: ["核心 CPI", "PCE", "10Y 收益率反应", "美联储官员表态"] },
+    { id: "pce", name: "PCE / 核心 PCE", next: "none", nextNote: "BEA 官方日历（每月下旬）",
+      measures: "个人消费支出价格指数；美联储首选的通胀指标，权重与统计方法与 CPI 不同。",
+      why: "美联储政策框架直接盯住 PCE；比 CPI 更能反映消费者替代行为。",
+      up: "通胀粘性可能超预期 → 降息预期可能减弱 → 利率可能上行",
+      upNote: "与 CPI 背离时，以 PCE 为准。",
+      mid: "关注核心 PCE 的 3 个月年化趋势，比单月 headline 更有信息量",
+      down: "通胀压力缓和 → 降息预期可能增强",
+      reversals: ["与 CPI 背离", "权重调整与历史修正"],
+      watch: ["核心 PCE", "CPI", "美联储表态"] },
+    { id: "nfp", name: "非农就业（NFP）", next: "nfp", nextType: "",
+      measures: "新增非农就业人数、失业率、平均时薪。",
+      why: "增长与通胀的双重信号：就业韧性支撑盈利，但也限制降息空间。",
+      up: "增长韧性 → 降息预期可能减弱（利空利率敏感资产），但盈利预期获支撑（利多股价）→ 净方向取决于哪条链主导",
+      upNote: "高于预期不是单向利空。",
+      mid: "关注失业率与时薪是否同步",
+      down: "双链并行：降息预期增强（支撑估值）与盈利预期下降（压制股价）→ 净方向看通胀约束与衰退担忧",
+      reversals: ["失业率与新增就业背离", "前值大幅修正", "平均时薪超预期 → 通胀担忧盖过就业降温"],
+      watch: ["失业率", "平均时薪", "劳动参与率", "前值修正"] },
+    { id: "unemp", name: "失业率", next: "nfp", nextType: "",
+      measures: "劳动力中失业人口占比。",
+      why: "就业市场松紧的核心指标；萨姆规则（Sahm Rule）用失业率变化预警衰退。",
+      up: "失业率上升 → 增长担忧 → 盈利预期承压",
+      upNote: "失业率上升是本项的“差”方向。",
+      mid: "关注失业率变化的方向与幅度，而非单月绝对值",
+      down: "失业率下降 → 就业韧性 → 降息空间受限",
+      reversals: ["劳动参与率变化扭曲失业率（分母效应）", "失业率上升但新增就业仍强"],
+      watch: ["新增就业", "劳动参与率", "平均时薪"] },
+    { id: "gdp", name: "GDP", next: "none", nextNote: "BEA 官方日历（季度）",
+      measures: "国内生产总值，衡量经济总产出。",
+      why: "增长动能的最终验证；决定盈利预期与衰退判断。",
+      up: "超预期 → 增长韧性 → 利率上行压力",
+      upNote: "",
+      mid: "区分 headline 与最终销售：库存与净出口常扭曲单季读数",
+      down: "低于预期 → 衰退担忧 → 降息预期增强但盈利承压",
+      reversals: ["库存与净出口扭曲 headline，应看最终销售", "提前值 / 修正值差异"],
+      watch: ["个人消费支出", "最终销售", "PMI"] },
+    { id: "pmi", name: "ISM 制造业 / 服务业 PMI", next: "none", nextNote: "ISM 官方日历（每月初）",
+      measures: "采购经理人指数；50 为荣枯线。",
+      why: "领先于 GDP 的景气信号；新订单分项比 headline 更领先。",
+      up: "高于 50 且回升 → 扩张 → 增长预期改善",
+      upNote: "",
+      mid: "在 50 附近徘徊时，关注新订单分项的方向",
+      down: "跌破 50 → 收缩 → 增长担忧",
+      reversals: ["新订单与 headline 背离", "价格分项走强 → 通胀压力"],
+      watch: ["新订单分项", "价格分项", "就业分项"] },
+    { id: "fomc", name: "美联储利率决议", next: "events", nextType: "FOMC",
+      measures: "政策利率决定 + 声明 + 点阵图 + 新闻发布会。",
+      why: "直接决定利率路径；声明措辞与点阵图常比决议本身更重要。",
+      up: "鹰派（higher for longer）→ 降息预期下调 → 利率上行",
+      upNote: "“鹰派”对应本项的“超预期紧缩”方向。",
+      mid: "符合预期 → 关注声明措辞与点阵图变化",
+      down: "鸽派 → 降息预期增强 → 利率下行",
+      reversals: ["声明措辞与发布会口径背离", "点阵图变化超预期", "市场已提前定价"],
+      watch: ["点阵图", "鲍威尔发布会", "10Y 与美元反应"] }
+  ];
+  // 影响矩阵：dir: neg=偏利空 / pos=偏利多 / unk=不确定 / na=不适用。均为理论传导方向（条件成立时），非预测。
+  var MATRIX_FACTORS = [
+    { id: "rate", label: "利率上行", live: "us10y" },
+    { id: "infl", label: "通胀超预期", live: null },
+    { id: "jobs", label: "就业走弱", live: null },
+    { id: "dxy", label: "美元走强", live: "dxy" },
+    { id: "safe", label: "避险升温", live: "gold" }
+  ];
+  var MATRIX_ASSETS = [
+    { id: "nasdaq", label: "纳指 100", cells: {
+      rate: { dir: "neg", note: "折现敏感" }, infl: { dir: "neg", note: "降息预期下调" },
+      jobs: { dir: "unk", note: "降息支撑 vs 盈利压力" }, dxy: { dir: "neg", note: "汇兑 + 流动性" },
+      safe: { dir: "neg", note: "风险偏好下降" } } },
+    { id: "spx", label: "标普 500", cells: {
+      rate: { dir: "neg", note: "估值承压" }, infl: { dir: "neg", note: "降息预期下调" },
+      jobs: { dir: "unk", note: "降息支撑 vs 盈利压力" }, dxy: { dir: "neg", note: "汇兑压力" },
+      safe: { dir: "neg", note: "风险偏好下降" } } },
+    { id: "semi", label: "半导体 NVDA / MU", cells: {
+      rate: { dir: "neg", note: "折现 + 资本开支" }, infl: { dir: "neg", note: "降息预期下调" },
+      jobs: { dir: "unk", note: "需求 vs 降息" }, dxy: { dir: "neg", note: "汇兑压力" },
+      safe: { dir: "neg", note: "风险偏好下降" } } },
+    { id: "sse", label: "上证指数", cells: {
+      rate: { dir: "unk", note: "间接：全球风险偏好 + 汇率" }, infl: { dir: "unk", note: "输入性通胀 vs 国内需求" },
+      jobs: { dir: "unk", note: "外需" }, dxy: { dir: "neg", note: "汇率 + 外资流出压力" },
+      safe: { dir: "unk", note: "外资流出，但国内政策可对冲" } } },
+    { id: "star", label: "科创 50", cells: {
+      rate: { dir: "unk", note: "全球估值锚 + 国内流动性" }, infl: { dir: "unk", note: "间接" },
+      jobs: { dir: "unk", note: "外需" }, dxy: { dir: "neg", note: "汇率 + 外资" },
+      safe: { dir: "unk", note: "风险偏好 + 国内政策" } } },
+    { id: "gold", label: "黄金", cells: {
+      rate: { dir: "neg", note: "实际利率上行压制" }, infl: { dir: "pos", note: "通胀对冲（长期；短期受实际利率主导）" },
+      jobs: { dir: "pos", note: "避险 + 降息预期" }, dxy: { dir: "neg", note: "美元计价" },
+      safe: { dir: "pos", note: "避险首选" } } },
+    { id: "usd", label: "美元", cells: {
+      rate: { dir: "pos", note: "利差驱动" }, infl: { dir: "pos", note: "降息预期下调" },
+      jobs: { dir: "neg", note: "降息预期增强" }, dxy: { dir: "na", note: "—" },
+      safe: { dir: "pos", note: "避险货币" } } },
+    { id: "bond", label: "美债价格", cells: {
+      rate: { dir: "neg", note: "收益率↑ → 价格↓" }, infl: { dir: "neg", note: "降息预期下调" },
+      jobs: { dir: "pos", note: "降息预期增强" }, dxy: { dir: "unk", note: "间接" },
+      safe: { dir: "unk", note: "避险买入 vs 利率冲击（股债双杀时失效）" } } }
+  ];
+  // 待接入指标：接口扩展点，不展示任何数值。
+  var MACRO_PENDING = [
+    { name: "2 年期美债收益率", note: "扩展点：Yahoo 无干净标的，需 FRED 等来源" },
+    { name: "CPI / 核心 CPI", note: "扩展点：BLS 公布值与市场预期" },
+    { name: "PCE / 核心 PCE", note: "扩展点：BEA 公布值与市场预期" },
+    { name: "非农就业 / 失业率 / 初请失业金", note: "扩展点：BLS 公布值与市场预期" },
+    { name: "GDP", note: "扩展点：BEA 季度值" },
+    { name: "ISM 制造业 / 服务业 PMI", note: "扩展点：ISM 公布值" },
+    { name: "美联储政策利率 / 降息预期", note: "扩展点：FOMC 决议 + CME FedWatch" },
+    { name: "流动性（准备金 / 逆回购 / 信用利差）", note: "扩展点：美联储 H.4.1 / 信用利差" }
+  ];
+
   function loadMacro() {
     if (macroLoading) return; macroLoading = true;
     function gj(u) { return fetch(u, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }); }
@@ -390,6 +617,11 @@
     var v = ind.value;
     var s = (ind.kind === "yield" || ind.kind === "spread") ? v.toFixed(2) : (Math.abs(v) >= 1000 ? v.toLocaleString("en-US", { maximumFractionDigits: 2 }) : v.toFixed(2));
     return s + (ind.unit ? " " + ind.unit : "");
+  }
+  function fmtMacroRange(ind) {
+    if (!ind || !ind.range || ind.value == null) return "";
+    var lo = Math.min(ind.range[0], ind.value), hi = Math.max(ind.range[1], ind.value);
+    return lo.toFixed(2) + " – " + hi.toFixed(2);
   }
   function nextFirstFridays() {
     // 非农就业: 每月第一个周五 (BLS 固定排期), 返回未来两个
@@ -407,36 +639,83 @@
     var t = new Date(ds + "T00:00:00"), now = new Date(); now.setHours(0, 0, 0, 0);
     return Math.round((t - now) / 86400000);
   }
-  function renderMacro() {
-    var body = $("macro-body"); if (!body) return;
-    if (!MACRO && !macroLoading) { loadMacro(); return; }
-    if (!MACRO) { body.innerHTML = '<p class="muted">宏观数据未就绪（后端 pipeline 正在拉取或数据源暂不可用）。</p>'; return; }
-    if (MACRO.error) { body.innerHTML = '<div class="panel"><h3>宏观抓取失败</h3><p class="muted">后端 pipeline 已运行，但抓取宏观数据时出错（信号不受影响）：</p><p style="word-break:break-all">' + esc(MACRO.error) + '</p><p class="muted small">更新于 ' + esc((MACRO.generated || "").slice(0, 16).replace("T", " ")) + '</p></div>'; return; }
-    var upd = $("macro-updated");
-    if (upd) upd.textContent = MACRO.generated ? ("更新于 " + MACRO.generated.slice(0, 16).replace("T", " ")) : "";
-    var html = "";
-    var reg = MACRO.regime || {};
-    var rc = { "乐观": "regime-opt", "中性": "regime-neutral", "谨慎": "regime-caution", "风险": "regime-risk", "未知": "regime-neutral" }[reg.label] || "regime-neutral";
-    html += '<div class="regime-banner ' + rc + '"><div class="regime-label">大环境：' + esc(reg.label || "未知") + '</div>';
-    if (reg.reasons && reg.reasons.length) html += '<div class="regime-reasons">' + reg.reasons.map(function (r) { return esc(r); }).join("；") + '</div>';
-    else html += '<div class="regime-reasons">暂无风险信号</div>';
-    html += '<p class="muted small" style="margin:6px 0 0">定性为启发式汇总（见下方规则），不是预测，不构成投资建议。</p></div>';
-    var inds = MACRO.indicators || {};
-    MACRO_GROUPS.forEach(function (g) {
-      html += '<h3 class="macro-group-title">' + esc(g.title) + '</h3><div class="macro-grid">';
-      g.keys.forEach(function (k) {
-        var ind = inds[k];
-        if (!ind) return;
-        var chg = "", chgCls = "";
-        if (ind.change_label) { chg = ind.change_label; chgCls = (ind.change_label.charAt(0) === "+") ? "mc-up" : (ind.change_label.charAt(0) === "-") ? "mc-down" : ""; }
-        html += '<article class="panel macro-card"><h4>' + esc(ind.name) + '</h4>' +
-          '<div class="macro-val">' + esc(fmtMacroVal(ind)) + (chg ? ' <span class="' + chgCls + '">' + esc(chg) + '</span>' : '') + '</div>' +
-          '<p class="macro-read">' + esc(ind.read || "") + '</p>' +
-          '<p class="muted small">' + (ind.asof ? ("截至 " + esc(ind.asof)) : "暂无数据") + '</p></article>';
-      });
-      html += '</div>';
+  function macroInd(key) {
+    var inds = (MACRO && MACRO.indicators) || {};
+    return inds[key] || null;
+  }
+  function macroSparkline(ind) {
+    var s = ind && ind.series;
+    if (!s || s.length < 2) return '<span class="muted small">历史走势待更新</span>';
+    var w = 120, h = 28, vals = s.map(function (p) { return p[1]; });
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    var span = (hi - lo) || 1;
+    var pts = s.map(function (p, i) {
+      var x = (i / (s.length - 1)) * w;
+      var y = h - 3 - ((p[1] - lo) / span) * (h - 6);
+      return x.toFixed(1) + "," + y.toFixed(1);
+    }).join(" ");
+    var last = s[s.length - 1], first = s[0];
+    var arrow = last[1] >= first[1] ? "▲" : "▼";
+    return '<svg class="mspark" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="近 90 日走势">' +
+      '<polyline class="mspark-poly" points="' + esc(pts) + '"/>' +
+      '<circle class="mspark-dot" cx="' + w + '" cy="' + (h - 3 - ((last[1] - lo) / span) * (h - 6)).toFixed(1) + '" r="2"/></svg>' +
+      '<span class="mspark-arrow muted small">' + arrow + '</span>';
+  }
+  function macroRowHTML(key) {
+    var ind = macroInd(key);
+    if (!ind) return "";
+    if (ind.status !== "ok" || ind.value == null) {
+      return '<div class="mrow" data-ind="' + esc(key) + '"><span class="mrow-name">' + esc(ind.name) + '</span>' +
+        '<span class="mrow-val muted">暂无数据</span><span class="mrow-spark muted small">—</span>' +
+        '<span class="mrow-range muted small">—</span><span class="mrow-read">' + esc(ind.read || "") + '</span>' +
+        '<span class="mrow-asof muted small">—</span></div>';
+    }
+    var chg = ind.change_label ? '<span class="mrow-chg">' + esc(ind.change_label) + ' 日</span>' : "";
+    var wchg = ind.window_label ? '<span class="mrow-chg">' + esc(ind.window_label) + " 90日</span>" : "";
+    return '<div class="mrow" data-ind="' + esc(key) + '"><span class="mrow-name">' + esc(ind.name) + '</span>' +
+      '<span class="mrow-val">' + esc(fmtMacroVal(ind)) + " " + chg + " " + wchg + '</span>' +
+      '<span class="mrow-spark">' + macroSparkline(ind) + '</span>' +
+      '<span class="mrow-range muted small">90日 ' + esc(fmtMacroRange(ind)) + '</span>' +
+      '<span class="mrow-read">' + esc(ind.read || "") + '</span>' +
+      '<span class="mrow-asof muted small">' + (ind.asof ? ("截至 " + esc(ind.asof)) : "") + '</span></div>';
+  }
+  function macroSectionA() {
+    var upd = MACRO.generated ? MACRO.generated.slice(0, 16).replace("T", " ") : "";
+    var h = '<section class="msec" id="msec-overview"><h3 class="msec-title">A · 宏观数据总览' +
+      '<span class="msec-sub">更新于 ' + esc(upd) + ' · 来源：Yahoo Finance（yfinance）· 变化为较上一交易日 / 近 90 日</span></h3>' +
+      '<p class="msec-note">以下为实时抓取的市场指标。每个指标同时给出最新值、日变化、90 日走势与区间。没有可靠来源的指标列在文末“待接入”，不展示数值。</p>';
+    var groups = [
+      { title: "利率与债", keys: ["us10y", "us3m", "spread"] },
+      { title: "恐慌与波动", keys: ["vix"] },
+      { title: "避险与大宗", keys: ["gold", "silver", "oil", "copper", "dxy"] }
+    ];
+    groups.forEach(function (g) {
+      h += '<h4 class="mgrp">' + esc(g.title) + '</h4><div class="mrows">' + g.keys.map(macroRowHTML).join("") + '</div>';
     });
-    // 大事件: 日历文件 + 规则生成的非农
+    h += '<h4 class="mgrp">待接入指标（接口扩展点，不展示数值）</h4><ul class="mpending">';
+    MACRO_PENDING.forEach(function (p) {
+      h += '<li><span class="mpending-name">' + esc(p.name) + '</span><span class="muted small">' + esc(p.note) + '</span></li>';
+    });
+    h += '</ul></section>';
+    return h;
+  }
+  // 当前被实时数据触发的信号（透明规则，见下方列表）。
+  function macroActiveSignals() {
+    var out = [];
+    var gold = macroInd("gold"), dxy = macroInd("dxy"), y10 = macroInd("us10y"),
+        cu = macroInd("copper"), oil = macroInd("oil"), vix = macroInd("vix"),
+        sp = macroInd("spread");
+    if (gold && gold.change_pct != null && gold.change_pct > 1) out.push({ id: "safe", label: "避险升温", detail: "黄金单日涨超 1%。" });
+    if (dxy && dxy.change_pct != null && dxy.change_pct > 0.5) out.push({ id: "usd", label: "美元走强", detail: "美元指数单日涨超 0.5%。" });
+    if (y10 && y10.change != null && y10.change > 0) out.push({ id: "rate", label: "利率上行", detail: "10Y 收益率较上一交易日上行 " + Math.round(y10.change * 100) + "bp。" });
+    if (cu && cu.change_pct != null && cu.change_pct < -1) out.push({ id: "growth", label: "增长预期转弱", detail: "铜单日跌超 1%（代理指标）。" });
+    if (oil && oil.change_pct != null && oil.change_pct > 3) out.push({ id: "infl", label: "成本侧通胀压力", detail: "原油单日涨超 3%（成本侧代理，非通胀本身）。" });
+    if (vix && vix.value != null && vix.value >= 30) out.push({ id: "panic", label: "恐慌区间", detail: "VIX ≥ 30。" });
+    else if (vix && vix.value != null && vix.value >= 20) out.push({ id: "vol", label: "波动加剧", detail: "VIX 处于 20–30 区间。" });
+    if (sp && sp.value != null && sp.value < 0) out.push({ id: "inv", label: "收益率曲线倒挂", detail: "10Y−3M 利差 < 0，衰退预警信号。" });
+    return out;
+  }
+  function macroUpcomingEvents(n) {
     var evs = [];
     if (EVENTS && Array.isArray(EVENTS.events)) {
       EVENTS.events.forEach(function (e) {
@@ -448,20 +727,396 @@
       var ds = fri.getFullYear() + "-" + String(fri.getMonth() + 1).padStart(2, "0") + "-" + String(fri.getDate()).padStart(2, "0");
       evs.push({ type: "NFP", name: "美国非农就业", date: ds, detail: "20:30 北京时间（8:30 美东）" });
     });
-    evs = evs.filter(function (e) { return daysUntil(e.date) >= 0; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).slice(0, 6);
-    html += '<h3 class="macro-group-title">大事件</h3><div class="panel"><ul class="macro-events">';
-    if (!evs.length) html += '<li class="muted">暂无排期事件</li>';
-    evs.forEach(function (e) {
-      var d = daysUntil(e.date);
-      var when = d === 0 ? "今天" : (d === 1 ? "明天" : d + " 天后");
-      html += '<li><span class="macro-ev-type">' + esc(e.type) + '</span><span class="macro-ev-name">' + esc(e.name) + '</span>' +
-        '<span class="macro-ev-date">' + esc(e.date) + ' · ' + when + '</span>' +
-        (e.detail ? '<span class="macro-ev-detail muted small">' + esc(e.detail) + '</span>' : '') + '</li>';
-    });
-    html += '</ul><p class="muted small" style="margin:10px 0 0">FOMC/CPI 为官方排期；非农为每月第一个周五（规则生成）。只覆盖可排期的经济事件，不含突发新闻与地缘事件。</p></div>';
-    html += '<p class="muted small" style="margin-top:14px">解读规则：VIX &lt;15 平静 / 15–20 正常 / 20–30 波动加剧 / ≥30 恐慌；10Y−3M 利差 &lt;0 为倒挂（衰退预警）；美元走强对美股偏负面；黄金涨 = 避险升温；铜涨 = 经济预期改善；油暴涨 = 通胀压力。数据来源：Yahoo Finance。</p>';
-    body.innerHTML = html;
+    return evs.filter(function (e) { return daysUntil(e.date) >= 0; })
+      .sort(function (a, b) { return a.date < b.date ? -1 : 1; }).slice(0, n || 6);
   }
+  function macroNextEventDate(type) {
+    var evs = macroUpcomingEvents(30);
+    for (var i = 0; i < evs.length; i++) { if (evs[i].type === type) return evs[i].date; }
+    return null;
+  }
+
+  function txNodeById(id) {
+    for (var i = 0; i < TX_NODES.length; i++) if (TX_NODES[i].id === id) return TX_NODES[i];
+    return null;
+  }
+  function txEdgesOf(id) {
+    var out = [], inn = [];
+    TX_EDGES.forEach(function (e, i) {
+      if (e.from === id) out.push(i);
+      if (e.to === id) inn.push(i);
+    });
+    return { out: out, inn: inn };
+  }
+  function txSignText(sign) {
+    return sign === "plus" ? "+ 促进" : (sign === "minus" ? "− 抑制" : "? 不确定");
+  }
+  function txLiveLine(node) {
+    var ind = node.live ? macroInd(node.live) : null;
+    if (ind && ind.value != null) return '<span class="tx-live">' + esc(fmtMacroVal(ind)) + (ind.change_label ? "（" + esc(ind.change_label) + "）" : "") + '</span>';
+    return '<span class="tx-live muted">' + esc(node.liveNote || "暂无实时数据") + '</span>';
+  }
+  function txEdgePathHTML(e, i) {
+    var a = txNodeById(e.from), b = txNodeById(e.to);
+    if (!a || !b) return "";
+    var dx = Math.max(40, (b.x - a.x) * 0.5);
+    var d = "M " + a.x + " " + a.y + " C " + (a.x + dx) + " " + a.y + ", " + (b.x - dx) + " " + b.y + ", " + b.x + " " + b.y;
+    var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    return '<g class="tx-edge" data-tx-edge="' + i + '" data-from="' + esc(e.from) + '" data-to="' + esc(e.to) + '" data-sign="' + esc(e.sign) + '">' +
+      '<path d="' + d + '" class="tx-path tx-path-' + esc(e.sign) + '"/>' +
+      '<text x="' + mx.toFixed(0) + '" y="' + (my - 6).toFixed(0) + '" class="tx-edge-label" text-anchor="middle">' + esc(txSignText(e.sign)) + '</text></g>';
+  }
+  function txNodeHTML(node) {
+    var kindCls = "tx-kind-" + node.kind;
+    return '<button type="button" class="tx-node ' + kindCls + '" data-tx-node="' + esc(node.id) + '" data-theme="' + esc(node.theme) + '" ' +
+      'style="left:' + node.x + 'px;top:' + node.y + 'px" aria-label="' + esc(node.label) + '">' +
+      '<span class="tx-node-label">' + esc(node.label) + '</span>' + txLiveLine(node) + '</button>';
+  }
+  function txDetailNodeHTML(node) {
+    var rel = txEdgesOf(node.id);
+    var h = '<h4 class="tx-detail-title">' + esc(node.label) + '</h4>' +
+      '<p class="tx-detail-def">' + esc(node.def) + '</p>' +
+      '<p><span class="tx-detail-k">经济含义</span> ' + esc(node.meaning) + '</p>' +
+      '<p><span class="tx-detail-k">当前状态</span> ' + txLiveLine(node) + '</p>';
+    if (rel.inn.length) {
+      h += '<p><span class="tx-detail-k">上游（什么影响它）</span> ' + rel.inn.map(function (i) {
+        var e = TX_EDGES[i];
+        return '<button type="button" class="tx-link" data-tx-edge-jump="' + i + '">' + esc(txNodeById(e.from).label) + " " + esc(txSignText(e.sign)) + ' → ' + esc(node.label) + '</button>';
+      }).join(" ") + '</p>';
+    }
+    if (rel.out.length) {
+      h += '<p><span class="tx-detail-k">下游（它影响什么）</span> ' + rel.out.map(function (i) {
+        var e = TX_EDGES[i];
+        return '<button type="button" class="tx-link" data-tx-edge-jump="' + i + '">' + esc(node.label) + " " + esc(txSignText(e.sign)) + ' → ' + esc(txNodeById(e.to).label) + '</button>';
+      }).join(" ") + '</p>';
+    }
+    return h;
+  }
+  function txDetailEdgeHTML(i) {
+    var e = TX_EDGES[i];
+    if (!e) return "";
+    return '<h4 class="tx-detail-title">' + esc(txNodeById(e.from).label) + " " + esc(txSignText(e.sign)) + " → " + esc(txNodeById(e.to).label) + '</h4>' +
+      '<p><span class="tx-detail-k">为什么会影响</span> ' + esc(e.mech) + '</p>' +
+      '<p><span class="tx-detail-k">成立条件</span> ' + esc(e.cond || "—") + '</p>' +
+      '<p><span class="tx-detail-k">对相关资产的方向提示</span> ' + esc(e.dir || "—") + '</p>' +
+      '<p class="muted small">方向提示为理论传导方向（条件成立时），不是预测；实际反应还受市场定价、仓位与同时发生的其他因素影响。</p>';
+  }
+  function macroSectionB() {
+    var h = '<section class="msec" id="msec-canvas"><h3 class="msec-title">B · 宏观经济传导画布' +
+      '<span class="msec-sub">点击任意节点或连线查看传导机制与成立条件</span></h3>' +
+      '<p class="msec-note">从左到右：源头变量 → 传导机制 → 资产影响。连线标注 <b>+ 促进</b> / <b>− 抑制</b> / <b>? 不确定</b>，方向提示为理论传导方向（条件成立时），不是预测。同一源头可能同时触发相反的链——例如就业走弱既可能增强降息预期（支撑估值），也可能压低盈利预期（压制股价）。</p>' +
+      '<div class="tx-tools"><span class="tx-tools-label">主题：</span>' +
+      '<button type="button" class="tx-chip' + (TX_SEL.theme === "all" ? " is-on" : "") + '" data-tx-theme="all">全部</button>' +
+      TX_THEMES.map(function (t) {
+        return '<button type="button" class="tx-chip' + (TX_SEL.theme === t.id ? " is-on" : "") + '" data-tx-theme="' + esc(t.id) + '">' + esc(t.label) + '</button>';
+      }).join("") +
+      '<span class="tx-tools-sep"></span><span class="tx-tools-label">画布：</span>' +
+      '<button type="button" class="tx-chip" data-tx-zoom="in">放大 +</button>' +
+      '<button type="button" class="tx-chip" data-tx-zoom="out">缩小 −</button>' +
+      '<button type="button" class="tx-chip" data-tx-zoom="reset">复位</button>' +
+      '<span class="tx-tools-hint muted small">桌面端可拖动平移、滚轮缩放；手机端为纵向流程。</span></div>';
+    // 桌面画布
+    h += '<div class="tx-viewport"><div class="tx-canvas" id="tx-canvas">' +
+      '<svg class="tx-svg" width="1000" height="620" viewBox="0 0 1000 620" aria-hidden="true">' +
+      '<defs>' +
+      '<marker id="tx-arrow-plus" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2e9e5b"/></marker>' +
+      '<marker id="tx-arrow-minus" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d64541"/></marker>' +
+      '<marker id="tx-arrow-unk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#c98a1b"/></marker>' +
+      '</defs>' +
+      TX_EDGES.map(txEdgePathHTML).join("") + '</svg>' +
+      TX_NODES.map(txNodeHTML).join("") + '</div></div>';
+    // 手机纵向流程：按层分组的节点链
+    h += '<div class="tx-vertical">';
+    [0, 1, 2, 3].forEach(function (layer) {
+      var nodes = TX_NODES.filter(function (n) { return n.layer === layer; });
+      var layerName = ["源头变量", "政策与预期", "传导机制", "资产影响"][layer];
+      h += '<div class="tx-vlayer"><div class="tx-vlayer-title">' + layerName + '</div>';
+      nodes.forEach(function (n, idx) {
+        var down = txEdgesOf(n.id).out.map(function (i) { return TX_EDGES[i]; });
+        h += '<button type="button" class="tx-vnode" data-tx-node="' + esc(n.id) + '" data-theme="' + esc(n.theme) + '">' +
+          '<span class="tx-vnode-label">' + esc(n.label) + '</span>' + txLiveLine(n) +
+          (down.length ? '<span class="tx-vnode-down muted small">→ ' + down.map(function (e) { return esc(txSignText(e.sign)) + " " + esc(txNodeById(e.to).label); }).join("；") + '</span>' : "") + '</button>';
+        if (idx < nodes.length - 1) h += '<div class="tx-varrow" aria-hidden="true">↓</div>';
+      });
+      h += '</div>';
+      if (layer < 3) h += '<div class="tx-vlayer-arrow" aria-hidden="true">⇓ 传导</div>';
+    });
+    h += '</div>';
+    h += '<div class="tx-detail" id="tx-detail"><p class="muted">点击任意节点查看定义、经济含义与上下游路径；点击任意连线查看“为什么会影响”与成立条件。</p></div></section>';
+    return h;
+  }
+  var TX_VIEW = { scale: 1, x: 0, y: 0, dragging: false, moved: false, sx: 0, sy: 0, ox: 0, oy: 0 };
+  function txApplyView() {
+    var cv = $("tx-canvas"); if (!cv) return;
+    cv.style.transform = "translate(" + TX_VIEW.x + "px," + TX_VIEW.y + "px) scale(" + TX_VIEW.scale + ")";
+  }
+  function txSelectNode(id) {
+    TX_SEL.node = id; TX_SEL.edge = -1;
+    var d = $("tx-detail"); if (d) d.innerHTML = txDetailNodeHTML(txNodeById(id));
+    var nodes = document.querySelectorAll("[data-tx-node]");
+    var rel = txEdgesOf(id);
+    var keep = {}; keep[id] = true;
+    rel.inn.forEach(function (i) { keep[TX_EDGES[i].from] = true; });
+    rel.out.forEach(function (i) { keep[TX_EDGES[i].to] = true; });
+    nodes.forEach(function (el) {
+      el.classList.toggle("is-sel", el.getAttribute("data-tx-node") === id);
+      el.classList.toggle("is-dim", !keep[el.getAttribute("data-tx-node")]);
+    });
+    document.querySelectorAll("[data-tx-edge]").forEach(function (el) {
+      var i = parseInt(el.getAttribute("data-tx-edge"), 10);
+      el.classList.toggle("is-hl", rel.inn.indexOf(i) >= 0 || rel.out.indexOf(i) >= 0);
+      el.classList.toggle("is-dim", !(rel.inn.indexOf(i) >= 0 || rel.out.indexOf(i) >= 0));
+    });
+  }
+  function txSelectEdge(i) {
+    TX_SEL.edge = i; TX_SEL.node = null;
+    var d = $("tx-detail"); if (d) d.innerHTML = txDetailEdgeHTML(i);
+    document.querySelectorAll("[data-tx-edge]").forEach(function (el) {
+      el.classList.toggle("is-hl", parseInt(el.getAttribute("data-tx-edge"), 10) === i);
+      el.classList.toggle("is-dim", parseInt(el.getAttribute("data-tx-edge"), 10) !== i);
+    });
+    var e = TX_EDGES[i];
+    document.querySelectorAll("[data-tx-node]").forEach(function (el) {
+      var id = el.getAttribute("data-tx-node");
+      el.classList.toggle("is-sel", id === e.from || id === e.to);
+      el.classList.toggle("is-dim", !(id === e.from || id === e.to));
+    });
+  }
+  function txClearSel() {
+    TX_SEL.node = null; TX_SEL.edge = -1;
+    var d = $("tx-detail"); if (d) d.innerHTML = '<p class="muted">点击任意节点查看定义、经济含义与上下游路径；点击任意连线查看“为什么会影响”与成立条件。</p>';
+    document.querySelectorAll("[data-tx-node], [data-tx-edge]").forEach(function (el) {
+      el.classList.remove("is-sel", "is-dim", "is-hl");
+    });
+  }
+  function txSetTheme(theme) {
+    TX_SEL.theme = theme;
+    document.querySelectorAll("[data-tx-theme]").forEach(function (el) {
+      el.classList.toggle("is-on", el.getAttribute("data-tx-theme") === theme);
+    });
+    document.querySelectorAll("[data-tx-node]").forEach(function (el) {
+      var n = txNodeById(el.getAttribute("data-tx-node"));
+      var on = theme === "all" || n.theme === theme ||
+        TX_EDGES.some(function (e) { return (e.from === n.id || e.to === n.id) && (txNodeById(e.from).theme === theme || txNodeById(e.to).theme === theme); });
+      el.classList.toggle("is-dim", !on);
+    });
+    document.querySelectorAll("[data-tx-edge]").forEach(function (el) {
+      var e = TX_EDGES[parseInt(el.getAttribute("data-tx-edge"), 10)];
+      var on = theme === "all" || txNodeById(e.from).theme === theme || txNodeById(e.to).theme === theme;
+      el.classList.toggle("is-dim", !on);
+    });
+  }
+  function txFindUp(el, attr) {
+    while (el && el !== document.body) {
+      if (el.getAttribute && el.getAttribute(attr) != null) return el;
+      el = el.parentNode;
+    }
+    return null;
+  }
+  function bindMacroEvents() {
+    var body = $("macro-body"); if (!body) return;
+    // Click delegation binds once (body survives innerHTML re-renders);
+    // viewport wheel/drag re-binds every render (the viewport element is new each time).
+    if (!body.dataset.macroBound) {
+      body.dataset.macroBound = "1";
+      body.addEventListener("click", function (ev) {
+      if (TX_VIEW.moved) { TX_VIEW.moved = false; return; }
+      var jump = txFindUp(ev.target, "data-tx-edge-jump");
+      if (jump) { txSelectEdge(parseInt(jump.getAttribute("data-tx-edge-jump"), 10)); return; }
+      var nodeEl = txFindUp(ev.target, "data-tx-node");
+      if (nodeEl) { txSelectNode(nodeEl.getAttribute("data-tx-node")); return; }
+      var edgeEl = txFindUp(ev.target, "data-tx-edge");
+      if (edgeEl) { txSelectEdge(parseInt(edgeEl.getAttribute("data-tx-edge"), 10)); return; }
+      var chip = txFindUp(ev.target, "data-tx-theme");
+      if (chip) { txSetTheme(chip.getAttribute("data-tx-theme")); return; }
+      var zoom = txFindUp(ev.target, "data-tx-zoom");
+      if (zoom) {
+        var z = zoom.getAttribute("data-tx-zoom");
+        if (z === "in") TX_VIEW.scale = Math.min(1.8, TX_VIEW.scale * 1.25);
+        else if (z === "out") TX_VIEW.scale = Math.max(0.6, TX_VIEW.scale / 1.25);
+        else { TX_VIEW.scale = 1; TX_VIEW.x = 0; TX_VIEW.y = 0; }
+        txApplyView();
+        return;
+      }
+      });
+    }
+    var vp = body.querySelector(".tx-viewport");
+    if (vp) {
+      vp.addEventListener("wheel", function (ev) {
+        ev.preventDefault();
+        TX_VIEW.scale = Math.min(1.8, Math.max(0.6, TX_VIEW.scale * Math.exp(-ev.deltaY * 0.0015)));
+        txApplyView();
+      }, { passive: false });
+      vp.addEventListener("pointerdown", function (ev) {
+        TX_VIEW.dragging = true; TX_VIEW.moved = false;
+        TX_VIEW.sx = ev.clientX; TX_VIEW.sy = ev.clientY;
+        TX_VIEW.ox = TX_VIEW.x; TX_VIEW.oy = TX_VIEW.y;
+        vp.setPointerCapture(ev.pointerId);
+      });
+      vp.addEventListener("pointermove", function (ev) {
+        if (!TX_VIEW.dragging) return;
+        TX_VIEW.x = TX_VIEW.ox + (ev.clientX - TX_VIEW.sx);
+        TX_VIEW.y = TX_VIEW.oy + (ev.clientY - TX_VIEW.sy);
+        if (Math.abs(ev.clientX - TX_VIEW.sx) > 5 || Math.abs(ev.clientY - TX_VIEW.sy) > 5) TX_VIEW.moved = true;
+        txApplyView();
+      });
+      var endDrag = function () { TX_VIEW.dragging = false; };
+      vp.addEventListener("pointerup", endDrag);
+      vp.addEventListener("pointercancel", endDrag);
+    }
+  }
+
+  function macroSectionC() {
+    var h = '<section class="msec" id="msec-releases"><h3 class="msec-title">C · 重要经济数据公布解读' +
+      '<span class="msec-sub">公布前 — 公布时 — 公布后</span></h3>' +
+      '<p class="msec-note">每个数据都给出“高于预期 / 符合预期 / 低于预期”三条基础分支。以下只是基础情景：实际结果还受核心分项、前值修正、市场仓位、经济增长预期和美联储表态等因素影响。排期来自官方日历（FOMC / CPI）与规则生成（非农：每月第一个周五）；未标注排期的请以 BEA / ISM 官方日历为准。</p>';
+    RELEASES.forEach(function (r) {
+      var nextTxt = "";
+      if (r.next === "events") {
+        var d = macroNextEventDate(r.nextType);
+        nextTxt = d ? ("下次公布：" + d + "（" + (daysUntil(d) === 0 ? "今天" : daysUntil(d) + " 天后") + "）") : "下次公布：见官方日历";
+      } else if (r.next === "nfp") {
+        var fri = nextFirstFridays()[0];
+        var ds = fri.getFullYear() + "-" + String(fri.getMonth() + 1).padStart(2, "0") + "-" + String(fri.getDate()).padStart(2, "0");
+        nextTxt = "下次公布：" + ds + "（" + (daysUntil(ds) === 0 ? "今天" : daysUntil(ds) + " 天后") + "，每月第一个周五，规则生成）";
+      } else {
+        nextTxt = "下次公布：" + (r.nextNote || "见官方日历");
+      }
+      h += '<details class="rel"><summary><span class="rel-name">' + esc(r.name) + '</span><span class="rel-next muted small">' + esc(nextTxt) + '</span></summary>' +
+        '<div class="rel-body">' +
+        '<p><span class="tx-detail-k">衡量什么</span> ' + esc(r.measures) + '</p>' +
+        '<p><span class="tx-detail-k">为什么市场关注</span> ' + esc(r.why) + '</p>' +
+        '<div class="branch"><div class="branch-root">公布</div>' +
+        '<div class="branch-arm"><span class="branch-tag">高于预期</span><div class="branch-path">' + esc(r.up) + (r.upNote ? ' <span class="muted">（' + esc(r.upNote) + '）</span>' : "") + '</div></div>' +
+        '<div class="branch-arm"><span class="branch-tag">符合预期</span><div class="branch-path">' + esc(r.mid) + '</div></div>' +
+        '<div class="branch-arm"><span class="branch-tag">低于预期</span><div class="branch-path">' + esc(r.down) + '</div></div></div>' +
+        '<p><span class="tx-detail-k">可能反向反应的情况</span> ' + r.reversals.map(esc).join("；") + '。</p>' +
+        '<p><span class="tx-detail-k">后续验证指标</span> ' + r.watch.map(esc).join("、") + '。</p>' +
+        '</div></details>';
+    });
+    h += '</section>';
+    return h;
+  }
+  function macroSectionD() {
+    var h = '<section class="msec" id="msec-assets"><h3 class="msec-title">D · 从宏观变量到市场资产' +
+      '<span class="msec-sub">影响矩阵：理论传导方向（条件成立时），非预测</span></h3>' +
+      '<p class="msec-note">单元格为“某个宏观因素出现时，对某类资产的理论传导方向”。每个判断都有条件；方向不等于必然涨跌，实际结果取决于市场是否已定价、仓位与其他同时发生的因素。A 股的传导是间接的（全球风险偏好、汇率、外资流动），不能把美债传导直接等同于 A 股涨跌。</p>';
+    h += '<div class="mx-live"><span class="tx-detail-k">各因素当前状态（实时数据触发）：</span>';
+    MATRIX_FACTORS.forEach(function (f) {
+      var state = "暂无实时数据";
+      if (f.id === "rate") { var y = macroInd("us10y"); state = y && y.value != null ? ("10Y " + fmtMacroVal(y) + "（" + (y.change_label || "—") + "）") : "暂无数据"; }
+      if (f.id === "dxy") { var d = macroInd("dxy"); state = d && d.value != null ? ("DXY " + fmtMacroVal(d) + "（" + (d.change_label || "—") + "）") : "暂无数据"; }
+      if (f.id === "safe") { var g = macroInd("gold"); state = g && g.value != null ? ("黄金 " + fmtMacroVal(g) + "（" + (g.change_label || "—") + "）") : "暂无数据"; }
+      if (f.id === "infl") state = "CPI / PCE 未接入";
+      if (f.id === "jobs") { var fri = nextFirstFridays()[0]; state = "NFP 未接入，下次公布 " + fri.getFullYear() + "-" + String(fri.getMonth() + 1).padStart(2, "0") + "-" + String(fri.getDate()).padStart(2, "0"); }
+      h += '<span class="mx-live-item"><b>' + esc(f.label) + '</b> ' + esc(state) + '</span>';
+    });
+    h += '</div>';
+    h += '<div class="mx-wrap"><table class="mx"><thead><tr><th>资产</th>' +
+      MATRIX_FACTORS.map(function (f) { return '<th>' + esc(f.label) + '</th>'; }).join("") + '</tr></thead><tbody>';
+    MATRIX_ASSETS.forEach(function (a) {
+      h += '<tr><th>' + esc(a.label) + '</th>';
+      MATRIX_FACTORS.forEach(function (f) {
+        var c = a.cells[f.id] || { dir: "na", note: "—" };
+        var dirTxt = c.dir === "neg" ? "偏利空" : (c.dir === "pos" ? "偏利多" : (c.dir === "unk" ? "不确定" : "—"));
+        h += '<td class="mx-cell mx-' + esc(c.dir) + '" data-mx-cell="' + esc(a.id + ":" + f.id) + '"><span class="mx-dir">' + dirTxt + '</span><span class="mx-note">' + esc(c.note) + '</span></td>';
+      });
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+    h += '<p class="muted small" style="margin-top:8px">数据不足时标注“不确定”，不伪造确定性结论。</p></section>';
+    return h;
+  }
+  function macroSectionE() {
+    var y10 = macroInd("us10y"), m3 = macroInd("us3m"), sp = macroInd("spread"),
+        vix = macroInd("vix"), dxy = macroInd("dxy"), gold = macroInd("gold"),
+        cu = macroInd("copper"), oil = macroInd("oil");
+    var dims = [];
+    dims.push({ name: "通胀压力", status: "暂无足够依据",
+      evidence: "CPI / PCE 实际值未接入。成本侧代理：原油 " + (oil && oil.value != null ? fmtMacroVal(oil) + "（" + (oil.change_label || "—") + "）" : "暂无数据") + "（代理指标，非通胀本身）。",
+      overturn: "核心 CPI / PCE 连续两个月超预期或低于预期。" });
+    var gStatus = "中性", gEv = "";
+    if (cu && cu.change_pct != null && cu.change_pct < -1) gStatus = "偏弱";
+    else if (cu && cu.change_pct != null && cu.change_pct > 1) gStatus = "偏强";
+    gEv = "铜 " + (cu && cu.value != null ? fmtMacroVal(cu) + "（" + (cu.change_label || "—") + "）" : "暂无数据") + "（代理指标，非 GDP 本身）；10Y−3M 利差 " + (sp && sp.value != null ? sp.value.toFixed(2) + " 百分点" : "暂无数据") + "。";
+    dims.push({ name: "增长动能", status: gStatus, evidence: gEv, overturn: "GDP 连续两季负增长，或 PMI 跌破 50。" });
+    var fri = nextFirstFridays()[0];
+    var nfpDate = fri.getFullYear() + "-" + String(fri.getMonth() + 1).padStart(2, "0") + "-" + String(fri.getDate()).padStart(2, "0");
+    dims.push({ name: "就业韧性", status: "暂无足够依据", evidence: "NFP 实际值未接入；下次公布 " + nfpDate + "。", overturn: "失业率连续上升，或 NFP 大幅低于预期。" });
+    var rStatus = "中性";
+    if (y10 && y10.window_chg != null && y10.window_chg > 0.2) rStatus = "偏紧";
+    else if (y10 && y10.window_chg != null && y10.window_chg < -0.2) rStatus = "偏松";
+    dims.push({ name: "利率环境", status: rStatus,
+      evidence: "10Y " + (y10 && y10.value != null ? fmtMacroVal(y10) + "（90日 " + (y10.window_label || "—") + "）" : "暂无数据") + "；3M " + (m3 && m3.value != null ? fmtMacroVal(m3) : "暂无数据") + "；利差 " + (sp && sp.value != null ? sp.value.toFixed(2) + " 百分点" : "暂无数据") + "。",
+      overturn: "美联储意外降息 / 加息，或点阵图大幅移动。" });
+    var uStatus = "中性";
+    if (dxy && dxy.change_pct != null && dxy.change_pct > 0.5) uStatus = "美元走强";
+    else if (dxy && dxy.change_pct != null && dxy.change_pct < -0.5) uStatus = "美元走弱";
+    dims.push({ name: "美元与全球金融条件", status: uStatus,
+      evidence: "DXY " + (dxy && dxy.value != null ? fmtMacroVal(dxy) + "（" + (dxy.change_label || "—") + "）" : "暂无数据") + "；VIX " + (vix && vix.value != null ? fmtMacroVal(vix) : "暂无数据") + "。",
+      overturn: "利差转向，或避险情绪逆转。" });
+    var kStatus = "中性";
+    if (vix && vix.value != null && vix.value < 15) kStatus = "偏高";
+    else if (vix && vix.value != null && vix.value >= 30) kStatus = "极低";
+    else if (vix && vix.value != null && vix.value >= 20) kStatus = "偏低";
+    dims.push({ name: "市场风险偏好", status: kStatus,
+      evidence: "VIX " + (vix && vix.value != null ? fmtMacroVal(vix) + "（" + (vix.read || "") + "）" : "暂无数据") + "；黄金 " + (gold && gold.value != null ? fmtMacroVal(gold) + "（" + (gold.change_label || "—") + "）" : "暂无数据") + "。",
+      overturn: "VIX 突破 30，或黄金急涨。" });
+    var h = '<section class="msec" id="msec-assess"><h3 class="msec-title">E · 当前宏观环境综合判断' +
+      '<span class="msec-sub">分项评估 + 情景（框架，非实时结论）</span></h3>' +
+      '<p class="msec-note">每项判断都标注依据与可能推翻它的条件。标注“暂无足够依据”的维度是分析框架，不是结论——不要用代理指标假装它就是该维度本身。</p>';
+    dims.forEach(function (d) {
+      h += '<div class="dim"><span class="dim-name">' + esc(d.name) + '</span><span class="dim-status">' + esc(d.status) + '</span>' +
+        '<span class="dim-ev">' + esc(d.evidence) + '</span><span class="dim-over muted small">推翻条件：' + esc(d.overturn) + '</span></div>';
+    });
+    var sigs = macroActiveSignals();
+    var contradiction = sigs.length ?
+      "当前被实时数据触发的信号：" + sigs.map(function (s) { return s.label + "（" + s.detail + "）"; }).join(" ") +
+      "。若多信号并存且指向不同方向，说明市场正处于多股力量拉扯中，单一结论不可靠。" :
+      "当前暂无强信号主导；市场处于等待数据的状态，关注下方待验证数据。";
+    var activeEdges = [];
+    sigs.forEach(function (s) {
+      var srcMap = { safe: "n_safe", usd: "n_dxy", rate: "n_yield", growth: "n_growth", infl: "n_infl", panic: null, vol: null, inv: "n_yield" };
+      var src = srcMap[s.id];
+      if (!src) return;
+      TX_EDGES.forEach(function (e) {
+        if (e.from === src) activeEdges.push(e);
+      });
+    });
+    var pathsTxt = activeEdges.length ?
+      activeEdges.map(function (e) { return txNodeById(e.from).label + " " + txSignText(e.sign) + " → " + txNodeById(e.to).label + "（" + e.mech + "）"; }).join("；") :
+      "暂无被实时数据触发的传导路径；上方画布为理论框架。";
+    var impactTxt = sigs.length ?
+      "被触发的信号对应的资产影响见上方影响矩阵的相应列；方向均为条件成立时的理论传导，不是预测。重点看多条链是否指向同一方向：同向时信号更可信，反向时需等数据验证。" :
+      "暂无被触发的信号；不对风险资产做方向判断。";
+    var upcoming = macroUpcomingEvents(3);
+    var verifyTxt = upcoming.length ?
+      upcoming.map(function (e) { return e.name + "（" + e.date + "）"; }).join("、") :
+      "暂无排期事件。";
+    h += '<div class="assess-block"><h4>当前主导的宏观矛盾</h4><p>' + esc(contradiction) + '</p></div>' +
+      '<div class="assess-block"><h4>正在发生的主要传导路径</h4><p>' + esc(pathsTxt) + '</p></div>' +
+      '<div class="assess-block"><h4>对风险资产的潜在影响</h4><p>' + esc(impactTxt) + '</p></div>' +
+      '<div class="assess-block"><h4>后续需要验证的关键数据</h4><p>' + esc(verifyTxt) + '</p></div>' +
+      '<div class="assess-block"><h4>三种情景（情景假设，需数据验证）</h4>' +
+      '<p><b>基准：</b>数据大体符合预期，利率与风险偏好维持现状，关注核心分项。触发：CPI / PCE 符合预期。</p>' +
+      '<p><b>乐观：</b>通胀降温 + 就业温和 → 降息预期增强，估值获支撑。触发：核心 CPI 低于预期且就业未恶化。</p>' +
+      '<p><b>悲观：</b>通胀反复 + 增长放缓 → 滞胀担忧，股债承压。触发：核心 CPI 超预期 + PMI 跌破 50。</p></div>' +
+      '</section>';
+    return h;
+  }
+  function renderMacro() {
+    var body = $("macro-body"); if (!body) return;
+    if (!MACRO && !macroLoading) { loadMacro(); return; }
+    if (!MACRO) { body.innerHTML = '<p class="muted">宏观数据未就绪（后端 pipeline 正在拉取或数据源暂不可用）。</p>'; return; }
+    if (MACRO.error) { body.innerHTML = '<div class="msec"><h3 class="msec-title">宏观抓取失败</h3><p class="muted">后端 pipeline 已运行，但抓取宏观数据时出错（信号不受影响）：</p><p style="word-break:break-all">' + esc(MACRO.error) + '</p><p class="muted small">更新于 ' + esc((MACRO.generated || "").slice(0, 16).replace("T", " ")) + '</p></div>'; return; }
+    var upd = $("macro-updated");
+    if (upd) upd.textContent = MACRO.generated ? ("更新于 " + MACRO.generated.slice(0, 16).replace("T", " ")) : "";
+    TX_SEL.node = null; TX_SEL.edge = -1;
+    body.innerHTML = macroSectionA() + macroSectionB() + macroSectionC() + macroSectionD() + macroSectionE() +
+      '<p class="muted small" style="margin-top:14px">方法说明：解读规则（VIX 分段、利差倒挂、美元/黄金/铜/油的定性规则）为启发式汇总，不是预测，不构成投资建议。实际公布值、市场预期、历史数据、模型推断与情景假设在文中明确区分；未标注来源的判断均为理论框架。</p>';
+    bindMacroEvents();
+  }
+
   function renderHoldings() {
    try {
     var tb = $("pos-tbody");
