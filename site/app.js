@@ -379,7 +379,7 @@
   function loadMacro() {
     if (macroLoading) return; macroLoading = true;
     function gj(u) { return fetch(u, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }); }
-    Promise.all([gj("data/macro.json").catch(function () { return null; }),
+    Promise.all([gj("/api/macro").catch(function () { return null; }),
                  gj("data/events.json").catch(function () { return null; })])
       .then(function (res) { MACRO = res[0]; EVENTS = res[1]; renderMacro(); })
       .catch(function () { renderMacro(); })

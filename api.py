@@ -363,6 +363,14 @@ def api_signals_cn():
     return _read_json("signals_cn.json")
 
 
+@app.get("/api/macro")
+def api_macro():
+    # Macro snapshot written by the pipeline to api_data/data/macro.json.
+    # (The frontend used to fetch static data/macro.json = site/data/macro.json,
+    # which API_MODE never writes -> permanent 404. See 2026-10-15 fix.)
+    return _read_json("macro.json")
+
+
 @app.get("/api/positions")
 def api_positions():
     # Public by user decision 2026-10-14: qty/cost/mark/value/unrealized.
