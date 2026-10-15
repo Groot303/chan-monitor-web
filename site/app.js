@@ -199,15 +199,16 @@
   })();
   // ---------- 导航 ----------
   function setView(v, noHash) {
-    if (["signals", "symbols", "holdings", "about"].indexOf(v) < 0) v = "signals";
+    if (["signals", "symbols", "holdings", "macro", "about"].indexOf(v) < 0) v = "signals";
     VIEW = v;
-    ["signals", "symbols", "holdings", "about"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
+    ["signals", "symbols", "holdings", "macro", "about"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
     qsa(".tab[data-view]").forEach(function (b) {
       if (b.getAttribute("data-view") === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
     if (!noHash && location.hash.slice(1) !== v) history.replaceState(null, "", "#" + v);
     if (v === "symbols" && D) renderSymbols();
     if (v === "holdings") renderHoldings();
+    if (v === "macro") renderMacro();
     var kp = $("kpis"); if (kp) kp.style.display = (v === "holdings") ? "none" : "";
   }
   qsa(".tab[data-view]").forEach(function (b) {
@@ -367,6 +368,98 @@
   function fmtReportDate(s) {
     s = String(s || "");
     return s.length === 8 ? s.slice(0, 4) + "-" + s.slice(4, 6) + "-" + s.slice(6, 8) : s;
+  }
+  // ---------- 大环境 ----------
+  var MACRO = null, EVENTS = null, macroLoading = false;
+  var MACRO_GROUPS = [
+    { title: "利率与债", keys: ["us10y", "us3m", "spread"] },
+    { title: "恐慌与波动", keys: ["vix"] },
+    { title: "避险与大宗", keys: ["gold", "silver", "oil", "copper", "dxy"] }
+  ];
+  function loadMacro() {
+    if (macroLoading) return; macroLoading = true;
+    function gj(u) { return fetch(u, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }); }
+    Promise.all([gj("data/macro.json").catch(function () { return null; }),
+                 gj("data/events.json").catch(function () { return null; })])
+      .then(function (res) { MACRO = res[0]; EVENTS = res[1]; renderMacro(); })
+      .catch(function () { renderMacro(); })
+      .finally(function () { macroLoading = false; });
+  }
+  function fmtMacroVal(ind) {
+    if (!ind || ind.value == null) return "—";
+    var v = ind.value;
+    var s = (ind.kind === "yield" || ind.kind === "spread") ? v.toFixed(2) : (Math.abs(v) >= 1000 ? v.toLocaleString("en-US", { maximumFractionDigits: 2 }) : v.toFixed(2));
+    return s + (ind.unit ? " " + ind.unit : "");
+  }
+  function nextFirstFridays() {
+    // 非农就业: 每月第一个周五 (BLS 固定排期), 返回未来两个
+    var out = [], d = new Date(); d.setHours(0, 0, 0, 0);
+    for (var m = 0; m < 3 && out.length < 2; m++) {
+      var y = d.getFullYear(), mo = d.getMonth() + m;
+      var first = new Date(y, mo, 1);
+      var off = (5 - first.getDay() + 7) % 7; // 周五=5
+      var fri = new Date(y, mo, 1 + off);
+      if (fri >= d) out.push(fri);
+    }
+    return out;
+  }
+  function daysUntil(ds) {
+    var t = new Date(ds + "T00:00:00"), now = new Date(); now.setHours(0, 0, 0, 0);
+    return Math.round((t - now) / 86400000);
+  }
+  function renderMacro() {
+    var body = $("macro-body"); if (!body) return;
+    if (!MACRO && !macroLoading) { loadMacro(); return; }
+    if (!MACRO) { body.innerHTML = '<p class="muted">宏观数据未就绪（后端 pipeline 正在拉取或数据源暂不可用）。</p>'; return; }
+    var upd = $("macro-updated");
+    if (upd) upd.textContent = MACRO.generated ? ("更新于 " + MACRO.generated.slice(0, 16).replace("T", " ")) : "";
+    var html = "";
+    var reg = MACRO.regime || {};
+    var rc = { "乐观": "regime-opt", "中性": "regime-neutral", "谨慎": "regime-caution", "风险": "regime-risk", "未知": "regime-neutral" }[reg.label] || "regime-neutral";
+    html += '<div class="regime-banner ' + rc + '"><div class="regime-label">大环境：' + esc(reg.label || "未知") + '</div>';
+    if (reg.reasons && reg.reasons.length) html += '<div class="regime-reasons">' + reg.reasons.map(function (r) { return esc(r); }).join("；") + '</div>';
+    else html += '<div class="regime-reasons">暂无风险信号</div>';
+    html += '<p class="muted small" style="margin:6px 0 0">定性为启发式汇总（见下方规则），不是预测，不构成投资建议。</p></div>';
+    var inds = MACRO.indicators || {};
+    MACRO_GROUPS.forEach(function (g) {
+      html += '<h3 class="macro-group-title">' + esc(g.title) + '</h3><div class="macro-grid">';
+      g.keys.forEach(function (k) {
+        var ind = inds[k];
+        if (!ind) return;
+        var chg = "", chgCls = "";
+        if (ind.change_label) { chg = ind.change_label; chgCls = (ind.change_label.charAt(0) === "+") ? "mc-up" : (ind.change_label.charAt(0) === "-") ? "mc-down" : ""; }
+        html += '<article class="panel macro-card"><h4>' + esc(ind.name) + '</h4>' +
+          '<div class="macro-val">' + esc(fmtMacroVal(ind)) + (chg ? ' <span class="' + chgCls + '">' + esc(chg) + '</span>' : '') + '</div>' +
+          '<p class="macro-read">' + esc(ind.read || "") + '</p>' +
+          '<p class="muted small">' + (ind.asof ? ("截至 " + esc(ind.asof)) : "暂无数据") + '</p></article>';
+      });
+      html += '</div>';
+    });
+    // 大事件: 日历文件 + 规则生成的非农
+    var evs = [];
+    if (EVENTS && Array.isArray(EVENTS.events)) {
+      EVENTS.events.forEach(function (e) {
+        var ds = e.date || e.start; if (!ds) return;
+        evs.push({ type: e.type, name: e.name, date: ds, detail: e.detail || "" });
+      });
+    }
+    nextFirstFridays().forEach(function (fri) {
+      var ds = fri.getFullYear() + "-" + String(fri.getMonth() + 1).padStart(2, "0") + "-" + String(fri.getDate()).padStart(2, "0");
+      evs.push({ type: "NFP", name: "美国非农就业", date: ds, detail: "20:30 北京时间（8:30 美东）" });
+    });
+    evs = evs.filter(function (e) { return daysUntil(e.date) >= 0; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).slice(0, 6);
+    html += '<h3 class="macro-group-title">大事件</h3><div class="panel"><ul class="macro-events">';
+    if (!evs.length) html += '<li class="muted">暂无排期事件</li>';
+    evs.forEach(function (e) {
+      var d = daysUntil(e.date);
+      var when = d === 0 ? "今天" : (d === 1 ? "明天" : d + " 天后");
+      html += '<li><span class="macro-ev-type">' + esc(e.type) + '</span><span class="macro-ev-name">' + esc(e.name) + '</span>' +
+        '<span class="macro-ev-date">' + esc(e.date) + ' · ' + when + '</span>' +
+        (e.detail ? '<span class="macro-ev-detail muted small">' + esc(e.detail) + '</span>' : '') + '</li>';
+    });
+    html += '</ul><p class="muted small" style="margin:10px 0 0">FOMC/CPI 为官方排期；非农为每月第一个周五（规则生成）。只覆盖可排期的经济事件，不含突发新闻与地缘事件。</p></div>';
+    html += '<p class="muted small" style="margin-top:14px">解读规则：VIX &lt;15 平静 / 15–20 正常 / 20–30 波动加剧 / ≥30 恐慌；10Y−3M 利差 &lt;0 为倒挂（衰退预警）；美元走强对美股偏负面；黄金涨 = 避险升温；铜涨 = 经济预期改善；油暴涨 = 通胀压力。数据来源：Yahoo Finance。</p>';
+    body.innerHTML = html;
   }
   function renderHoldings() {
    try {
