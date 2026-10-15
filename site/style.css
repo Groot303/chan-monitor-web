@@ -511,3 +511,27 @@ button.kpi,button.card,button.sym-card{font:inherit;color:inherit;text-align:lef
 .pf-head h3{font-size:17px}
 .pf-name{font-weight:700;font-size:15px;margin-bottom:8px;color:var(--text)}
 .pf-body p{line-height:1.75;color:var(--text-2);font-size:14px}
+
+/* 大环境 */
+.regime-banner{border-radius:var(--r-lg);padding:16px 18px;margin-bottom:18px;border:1px solid var(--border)}
+.regime-opt{background:rgba(46,158,91,.10);border-color:rgba(46,158,91,.35)}
+.regime-neutral{background:var(--surface);border-color:var(--border)}
+.regime-caution{background:rgba(214,158,22,.12);border-color:rgba(214,158,22,.45)}
+.regime-risk{background:rgba(214,69,65,.10);border-color:rgba(214,69,65,.45)}
+.regime-label{font-size:19px;font-weight:700}
+.regime-reasons{margin-top:6px;color:var(--text-2);font-size:14px}
+.macro-group-title{font-size:15px;margin:20px 0 10px}
+.macro-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.macro-card{padding:14px 16px}
+.macro-card h4{font-size:13px;margin:0 0 6px;color:var(--text-2);font-weight:600}
+.macro-val{font-size:22px;font-weight:700;line-height:1.2}
+.macro-read{margin:8px 0 4px;color:var(--text-2);font-size:13px}
+.mc-up{color:#d64541;font-size:14px;font-weight:600}
+.mc-down{color:#2e9e5b;font-size:14px;font-weight:600}
+.macro-events{list-style:none;margin:0;padding:0}
+.macro-events li{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--border)}
+.macro-events li:last-child{border-bottom:none}
+.macro-ev-type{font-size:12px;font-weight:700;background:var(--surface-2,#eef1f5);border-radius:6px;padding:2px 7px}
+.macro-ev-name{font-weight:600}
+.macro-ev-date{color:var(--text-2);font-size:13px}
+.macro-ev-detail{width:100%}

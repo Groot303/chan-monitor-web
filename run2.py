@@ -235,3 +235,10 @@ for s,e in out["symbols"].items():
         else: L.append("  - no signal in window")
     L.append("")
 open("out/signals_summary.md","w").write("\n".join(L))
+
+# ---- 大环境快照 (best-effort: 失败只记录, 绝不影响信号) ----
+try:
+    from fetch_macro import main as _fetch_macro_main
+    _fetch_macro_main()
+except Exception as _e:
+    print(f"[macro] skipped: {_e}")

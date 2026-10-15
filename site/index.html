@@ -33,6 +33,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
       <button class="tab" data-view="signals" aria-current="page">信号</button>
       <button class="tab" data-view="symbols">标的总览</button>
       <button class="tab" data-view="holdings">持仓</button>
+      <button class="tab" data-view="macro">大环境</button>
       <button class="tab" data-view="about">说明</button>
     </nav>
     <div class="seg market-seg" role="group" aria-label="市场切换">
@@ -182,6 +183,11 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
   </section>
 
   <!-- 说明 -->
+  <!-- 大环境视图 -->
+  <section class="view" id="view-macro" aria-labelledby="h-macro" hidden>
+    <div class="section-head"><h2 id="h-macro">大环境</h2><span class="muted small" id="macro-updated"></span></div>
+    <div id="macro-body"><p class="muted">加载中…</p></div>
+  </section>
   <section class="view" id="view-about" aria-labelledby="h-about" hidden>
     <div class="section-head"><h2 id="h-about">说明</h2></div>
     <div class="about-grid">
@@ -265,6 +271,8 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>标的</span></button>
   <button class="tab" data-view="holdings">
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="3" y="7" width="18" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 10.5h18" stroke="currentColor" stroke-width="2"/><path d="M16 14.5h2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>持仓</span></button>
+  <button class="tab" data-view="macro">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3z" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>大环境</span></button>
   <button class="tab" data-view="about">
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span>说明</span></button>
 </nav>

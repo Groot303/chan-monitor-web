@@ -45,6 +45,18 @@ with open(os.path.join(site, "data", data_name), "w", encoding="utf-8") as f:
     json.dump(out, f, ensure_ascii=False, indent=1)
 print(f"[{market}] wrote {len(signals)} signals, {len(symbols)} symbols -> data/{data_name}")
 
+# Macro snapshot (US pipeline only): out/macro.json -> site/data/macro.json
+if market == "us":
+    try:
+        _mp = os.path.join(src, "macro.json")
+        if os.path.exists(_mp):
+            shutil.copyfile(_mp, os.path.join(site, "data", "macro.json"))
+            print("[us] macro -> data/macro.json")
+        else:
+            print(f"[us] macro.json missing in {src}, skipped")
+    except Exception as _e:
+        print(f"[us] macro copy skipped: {_e}")
+
 # Optional: export interactive chart JSON for sample symbols when CSVs are present.
 try:
     import importlib.util as _ilu

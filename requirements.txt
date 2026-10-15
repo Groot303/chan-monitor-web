@@ -6,5 +6,6 @@ matplotlib
 fastapi
 uvicorn
 apscheduler
+yfinance  # 大环境指标抓取 (fetch_macro.py)
 
 # 依赖(requirements.txt)变更由 deploy.sh 自动 pip install（push 到 main 即生效）
