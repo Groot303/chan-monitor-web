@@ -78,6 +78,18 @@
     return loading;
   }
 
+  /* 术语映射（供 app.js 宏观渲染调用；无对应术语则返回原文，不包装）。 */
+  var MACRO_IND_GLOSSARY = { vix: "vix", us10y: "treasury-10y", us3m: "treasury-3m",
+    gold: "gold", silver: "silver", oil: "oil", copper: "copper", dxy: "dxy", spread: "yield-curve" };
+  var RELEASE_GLOSSARY = { cpi: "cpi", pce: "pce", nfp: "nfp", unemp: "unemployment",
+    gdp: "gdp", pmi: "pmi", fomc: "fomc" };
+  var MATRIX_GLOSSARY = { rate: "treasury-10y", dxy: "dxy", safe: "gold" };
+  function termSpan(map, key, labelHTML) {
+    var gid = map && map[key];
+    if (!gid) return labelHTML;
+    return '<span data-indicator="' + gid + '">' + labelHTML + '</span>';
+  }
+
   function getTerm(id) {
     if (!glossary) return null;
     return glossary.byId[id] || null;
@@ -336,6 +348,10 @@
     tabBodyHTML: tabBodyHTML, openTerm: openTerm, openDetail: openDetail,
     close: closeLayer, highlightCanvas: highlightCanvas,
     hintsEnabled: hintsEnabled, setHints: setHints, load: loadGlossary,
+    termSpan: termSpan,
+    MACRO_IND_GLOSSARY: MACRO_IND_GLOSSARY,
+    RELEASE_GLOSSARY: RELEASE_GLOSSARY,
+    MATRIX_GLOSSARY: MATRIX_GLOSSARY,
     FALLBACK_TERMS: FALLBACK_TERMS
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Glossary;
