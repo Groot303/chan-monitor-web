@@ -1,0 +1,1568 @@
+{
+ "version": 1,
+ "generated_note": "内容基于官方定义（BLS/BEA/美联储/ISM/CBOE/ICE/国家统计局），影响描述均为有条件表述，非涨跌预测。无实时数据、无事件结果、无历史收益率。",
+ "terms": [
+  {
+   "id": "cpi",
+   "abbreviation": "CPI",
+   "chinese_name": "消费者价格指数",
+   "english_name": "Consumer Price Index",
+   "simple_explanation": "衡量美国居民日常消费品和服务价格变化的指标，老百姓“买东西贵了还是便宜了”的官方度量。",
+   "definition": "由美国劳工统计局（BLS）每月编制，基于一篮子消费品和服务（住房、交通、食品、医疗等）的价格变化，反映居民消费价格水平。",
+   "why_it_matters": "美联储 2% 通胀目标的重要参考；直接影响利率预期、债券定价和股票估值。",
+   "frequency": "每月一次，通常为次月中旬公布（BLS）。",
+   "higher_than_expected": "通胀压力可能超预期 → 市场可能下调降息预期 → 利率可能上行 → 美元可能走强、成长股估值可能承压。",
+   "lower_than_expected": "通胀压力可能缓和 → 降息预期可能增强 → 利率可能下行 → 风险资产可能获得支撑。",
+   "transmission_paths": [
+    "CPI 超预期 → 降息预期下调 → 10Y 收益率上行 → 无风险利率上升 → 成长股折现价值下降",
+    "CPI 超预期 → 实际购买力下降 → 消费预期转弱 → 盈利预期承压"
+   ],
+   "asset_impacts": {
+    "us_stocks": "超预期通常偏利空（利率上行压制估值），但若源于需求强劲，盈利端可能部分对冲。",
+    "a_shares": "间接：通过全球风险偏好、美元汇率与外资流动传导，国内政策与流动性往往起更大作用。",
+    "bonds": "超预期通常偏利空（收益率上行 → 价格下跌）。",
+    "usd": "超预期通常偏利多（降息预期下调 → 利差驱动）。",
+    "gold": "不确定：通胀对冲属性利多，但实际利率上行利空，需看哪边更强。"
+   },
+   "exceptions": [
+    "headline 与核心分项背离（如仅食品能源波动），持续性存疑",
+    "前值大幅修正改变趋势判断",
+    "市场已提前定价或仓位拥挤 → 公布后反向波动"
+   ],
+   "trading_application": {
+    "short_term": "公布当天的波动通常较大，短线以观察反应为主，不宜在公布前重仓押注方向。",
+    "before_release": "检查市场定价（利率期货隐含的降息预期）与仓位，避免在预期高度一致时追高。",
+    "after_release": "看核心分项、看市场实际反应（10Y 与美元的即时走势）是否与预期方向一致。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要仅凭一次 CPI 读数做方向性交易；不要把 headline 读数等同于核心通胀趋势。"
+   },
+   "related_indicators": [
+    "core-cpi",
+    "pce",
+    "core-pce",
+    "ppi",
+    "fomc"
+   ],
+   "sources": [
+    "美国劳工统计局 BLS",
+    "美联储"
+   ],
+   "canvas_node_ids": [
+    "n_infl"
+   ]
+  },
+  {
+   "id": "cpi-cn",
+   "abbreviation": "中国 CPI",
+   "chinese_name": "居民消费价格指数（中国）",
+   "english_name": "Consumer Price Index (China)",
+   "simple_explanation": "衡量中国居民消费品和服务价格变化的指标，反映国内通胀水平。",
+   "definition": "由国家统计局每月编制，反映中国居民消费价格总水平变动。构成与美国 CPI 不同（食品权重更高，住房统计方法不同），不可直接横向比较数值。",
+   "why_it_matters": "判断中国通胀与货币政策空间的重要指标；影响 A 股的流动性预期与消费板块。",
+   "frequency": "每月一次，通常为次月中旬公布（国家统计局）。",
+   "higher_than_expected": "通胀压力上升 → 货币宽松空间可能收窄 → 利率敏感资产可能承压；但温和回升也可能反映需求改善。",
+   "lower_than_expected": "通缩压力 → 货币宽松预期可能增强；但持续低迷也可能反映需求不足。",
+   "transmission_paths": [
+    "中国 CPI 超预期 → 宽松预期减弱 → 利率上行压力 → A 股估值承压",
+    "中国 CPI 低迷 → 需求不足担忧 → 消费与周期板块盈利预期承压"
+   ],
+   "asset_impacts": {
+    "us_stocks": "影响较小，主要通过全球通胀预期与大宗商品价格间接传导。",
+    "a_shares": "温和回升通常偏利多（需求改善）；过高则宽松空间收窄，过低则需求担忧。",
+    "bonds": "超预期通常偏利空（收益率上行压力）；低迷则宽松预期增强。",
+    "usd": "间接：通过中美利差与人民币汇率传导。",
+    "gold": "影响有限。"
+   },
+   "exceptions": [
+    "食品（猪肉、鲜菜）波动常主导 headline，需看核心 CPI",
+    "PPI 向 CPI 的传导存在时滞",
+    "数值不可与美国 CPI 直接比较（统计口径不同）"
+   ],
+   "trading_application": {
+    "short_term": "关注核心 CPI 与食品分项的拆分，避免只看 headline 数值。",
+    "before_release": "检查市场对货币政策的预期是否已提前定价。",
+    "after_release": "看核心分项与 PPI 是否同步，确认是需求改善还是单一食品波动。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把中国 CPI 与美国 CPI 的数值直接比较；不要仅凭一次读数做方向性交易。"
+   },
+   "related_indicators": [
+    "cpi",
+    "ppi",
+    "gdp"
+   ],
+   "sources": [
+    "国家统计局"
+   ],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "core-cpi",
+   "abbreviation": "核心 CPI",
+   "chinese_name": "核心消费者价格指数",
+   "english_name": "Core Consumer Price Index",
+   "simple_explanation": "剔除食品和能源后的 CPI，更能反映持续性通胀趋势。",
+   "definition": "由 BLS 编制，剔除价格波动大的食品与能源分项，反映剔除短期波动后的消费价格趋势。",
+   "why_it_matters": "美联储与市场更看重核心通胀的持续性；食品能源波动常扭曲 headline。",
+   "frequency": "每月一次，随 CPI 同步公布。",
+   "higher_than_expected": "持续性通胀压力 → 降息预期可能明显下调 → 利率上行压力更大。",
+   "lower_than_expected": "通胀粘性缓解 → 降息预期可能增强。",
+   "transmission_paths": [
+    "核心 CPI 超预期 → 降息预期下调 → 10Y 上行 → 成长股估值承压"
+   ],
+   "asset_impacts": {
+    "us_stocks": "超预期通常偏利空（利率上行压制估值），且比 headline 更能影响政策预期。",
+    "a_shares": "间接：通过全球风险偏好与美元汇率传导。",
+    "bonds": "超预期通常偏利空（收益率上行 → 价格下跌）。",
+    "usd": "超预期通常偏利多（降息预期下调）。",
+    "gold": "不确定：通胀对冲利多 vs 实际利率上行利空。"
+   },
+   "exceptions": [
+    "住房分项（租金）存在统计滞后，可能与实时租金背离",
+    "市场已提前定价时反应减弱"
+   ],
+   "trading_application": {
+    "short_term": "核心 CPI 是判断通胀持续性的关键，短线应优先看核心而非 headline。",
+    "before_release": "检查市场对降息路径的定价，避免在预期高度一致时追高。",
+    "after_release": "看住房、服务等分项的持续性，确认是趋势还是单月波动。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把 headline 读数等同于核心通胀趋势。"
+   },
+   "related_indicators": [
+    "cpi",
+    "pce",
+    "core-pce"
+   ],
+   "sources": [
+    "美国劳工统计局 BLS",
+    "美联储"
+   ],
+   "canvas_node_ids": [
+    "n_infl"
+   ]
+  },
+  {
+   "id": "ppi",
+   "abbreviation": "PPI",
+   "chinese_name": "生产者价格指数",
+   "english_name": "Producer Price Index",
+   "simple_explanation": "衡量生产者出厂价格变化的指标，反映企业层面的成本压力。",
+   "definition": "由 BLS 编制，衡量生产者销售商品和服务的出厂价格变化，覆盖商品与服务。常被视为 CPI 的领先信号，但传导不完全。",
+   "why_it_matters": "企业成本压力可能向消费端传导；是通胀链条的上游信号。",
+   "frequency": "每月一次。",
+   "higher_than_expected": "成本压力上升 → 未来 CPI 可能承压 → 降息预期可能减弱。",
+   "lower_than_expected": "成本压力缓解 → 通胀传导压力可能减轻。",
+   "transmission_paths": [
+    "PPI 超预期 → 企业成本上升 → 利润率承压或向 CPI 传导 → 降息预期减弱"
+   ],
+   "asset_impacts": {
+    "us_stocks": "成本压力可能压制利润率；向消费端传导则利率压力上升。",
+    "a_shares": "间接：通过全球通胀预期传导。",
+    "bonds": "偏利空（通胀预期上行）。",
+    "usd": "偏利多（降息预期减弱）。",
+    "gold": "影响有限。"
+   },
+   "exceptions": [
+    "PPI 向 CPI 的传导不完全，企业可能自行消化成本",
+    "服务业 PPI 与商品 PPI 走势可能背离"
+   ],
+   "trading_application": {
+    "short_term": "PPI 更多作为通胀链条的上游确认信号，不宜单独作为交易依据。",
+    "before_release": "检查市场是否已计入成本压力。",
+    "after_release": "看 CPI 是否跟随确认传导。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要仅凭该指标一次读数做方向性交易；不要把相关关系写成确定的涨跌预测。"
+   },
+   "related_indicators": [
+    "cpi",
+    "core-cpi"
+   ],
+   "sources": [
+    "美国劳工统计局 BLS"
+   ],
+   "canvas_node_ids": [
+    "n_infl"
+   ]
+  },
+  {
+   "id": "pce",
+   "abbreviation": "PCE",
+   "chinese_name": "个人消费支出价格指数",
+   "english_name": "Personal Consumption Expenditures Price Index",
+   "simple_explanation": "美联储最看重的通胀指标，反映居民实际消费支出的价格变化。",
+   "definition": "由 BEA 编制，基于国民收入账户，权重与统计方法与 CPI 不同（能反映消费者替代行为）。美联储政策框架直接盯住 PCE（2% 目标）。",
+   "why_it_matters": "美联储首选指标；与 CPI 背离时以 PCE 为准。",
+   "frequency": "每月一次，通常为次月下旬公布（BEA）。",
+   "higher_than_expected": "通胀压力可能超预期 → 降息预期可能下调 → 利率可能上行。",
+   "lower_than_expected": "通胀压力可能缓和 → 降息预期可能增强 → 利率可能下行。",
+   "transmission_paths": [
+    "PCE 超预期 → 降息预期下调 → 利率上行 → 成长股估值承压"
+   ],
+   "asset_impacts": {
+    "us_stocks": "超预期通常偏利空（利率上行压制估值）。",
+    "a_shares": "间接：通过全球风险偏好与美元汇率传导。",
+    "bonds": "超预期通常偏利空（收益率上行 → 价格下跌）。",
+    "usd": "超预期通常偏利多（降息预期下调）。",
+    "gold": "不确定：通胀对冲利多 vs 实际利率上行利空。"
+   },
+   "exceptions": [
+    "与 CPI 背离时以 PCE 为准",
+    "权重调整与历史修正可能改变读数"
+   ],
+   "trading_application": {
+    "short_term": "PCE 是美联储的锚，短线应优先看核心 PCE 的 3 个月年化趋势。",
+    "before_release": "检查市场对降息路径的定价。",
+    "after_release": "看核心 PCE 趋势与美联储官员表态是否一致。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把 CPI 读数直接等同于 PCE 结论；两者口径不同。"
+   },
+   "related_indicators": [
+    "cpi",
+    "core-cpi",
+    "core-pce",
+    "fomc"
+   ],
+   "sources": [
+    "美国经济分析局 BEA",
+    "美联储"
+   ],
+   "canvas_node_ids": [
+    "n_infl"
+   ]
+  },
+  {
+   "id": "core-pce",
+   "abbreviation": "核心 PCE",
+   "chinese_name": "核心个人消费支出价格指数",
+   "english_name": "Core Personal Consumption Expenditures Price Index",
+   "simple_explanation": "剔除食品和能源后的 PCE，美联储最关注的核心通胀指标。",
+   "definition": "由 BEA 编制，剔除食品能源后的 PCE。美联储官员表态与点阵图常直接参考核心 PCE 趋势。",
+   "why_it_matters": "美联储首选的核心通胀指标；3 个月年化趋势比单月 headline 更有信息量。",
+   "frequency": "每月一次，随 PCE 同步公布。",
+   "higher_than_expected": "持续性通胀压力 → 降息预期可能明显下调 → 利率上行压力更大。",
+   "lower_than_expected": "通胀粘性缓解 → 降息预期可能增强。",
+   "transmission_paths": [
+    "核心 PCE 超预期 → 降息预期下调 → 利率上行 → 成长股估值承压"
+   ],
+   "asset_impacts": {
+    "us_stocks": "超预期通常偏利空（利率上行压制估值），且直接影响政策预期。",
+    "a_shares": "间接：通过全球风险偏好与美元汇率传导。",
+    "bonds": "超预期通常偏利空（收益率上行 → 价格下跌）。",
+    "usd": "超预期通常偏利多（降息预期下调）。",
+    "gold": "不确定：通胀对冲利多 vs 实际利率上行利空。"
+   },
+   "exceptions": [
+    "与 CPI 背离时以 PCE 为准",
+    "单月 headline 波动大，应看 3 个月年化趋势"
+   ],
+   "trading_application": {
+    "short_term": "核心 PCE 的 3 个月年化趋势比单月读数更有信息量。",
+    "before_release": "检查市场对降息路径的定价。",
+    "after_release": "看趋势是否连续两个月同向，确认是趋势还是噪音。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要仅凭单月核心 PCE 读数做方向性交易。"
+   },
+   "related_indicators": [
+    "pce",
+    "cpi",
+    "core-cpi"
+   ],
+   "sources": [
+    "美国经济分析局 BEA",
+    "美联储"
+   ],
+   "canvas_node_ids": [
+    "n_infl"
+   ]
+  },
+  {
+   "id": "gdp",
+   "abbreviation": "GDP",
+   "chinese_name": "国内生产总值",
+   "english_name": "Gross Domestic Product",
+   "simple_explanation": "一个国家在一定时期内生产的所有最终商品和服务的总价值，衡量经济总产出。",
+   "definition": "由 BEA 按季度编制（提前值、修正值、终值三轮）。分为名义 GDP（按当前价格）与实际 GDP（剔除价格因素）。",
+   "why_it_matters": "增长动能的最终验证；决定盈利预期与衰退判断。",
+   "frequency": "每季度一次（提前值约季后 1 个月公布）。",
+   "higher_than_expected": "增长韧性 → 利率可能上行；盈利预期可能获支撑。",
+   "lower_than_expected": "衰退担忧 → 降息预期可能增强但盈利可能承压。",
+   "transmission_paths": [
+    "GDP 超预期 → 增长韧性 → 利率上行压力",
+    "GDP 低于预期 → 衰退担忧 → 降息预期增强 + 盈利承压"
+   ],
+   "asset_impacts": {
+    "us_stocks": "超预期：盈利支撑利多 vs 利率上行利空，净方向看哪条链主导。低于预期：衰退担忧利空。",
+    "a_shares": "间接：通过全球增长预期与外需传导。",
+    "bonds": "超预期通常偏利空（利率上行压力）；低于预期则降息预期增强但衰退担忧升温。",
+    "usd": "超预期通常偏利多（利差驱动）；低于预期则避险与降息预期交织。",
+    "gold": "超预期通常偏利空（实际利率上行）；低于预期则避险属性利多。"
+   },
+   "exceptions": [
+    "库存与净出口常扭曲单季 headline，应看最终销售",
+    "提前值与修正值差异可能较大"
+   ],
+   "trading_application": {
+    "short_term": "GDP 是季度数据，更多用于确认增长方向，不宜作为短线触发信号。",
+    "before_release": "检查市场对增长与降息的定价。",
+    "after_release": "看最终销售与个人消费支出，区分 headline 与内在动能。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把单季 GDP 读数等同于衰退/复苏结论。"
+   },
+   "related_indicators": [
+    "pmi",
+    "nfp"
+   ],
+   "sources": [
+    "美国经济分析局 BEA"
+   ],
+   "canvas_node_ids": [
+    "n_growth"
+   ]
+  },
+  {
+   "id": "pmi",
+   "abbreviation": "PMI",
+   "chinese_name": "采购经理人指数",
+   "english_name": "Purchasing Managers' Index (ISM)",
+   "simple_explanation": "反映美国制造业/服务业景气程度的先行指标，50 为荣枯线。",
+   "definition": "由 ISM 每月编制，基于对采购经理人的调查（新订单、生产、就业、供应商交付、库存等）。高于 50 为扩张，低于 50 为收缩。",
+   "why_it_matters": "领先于 GDP 的景气信号；新订单分项比 headline 更领先。",
+   "frequency": "每月一次（制造业每月初，服务业随后）。",
+   "higher_than_expected": "高于 50 且回升 → 可能扩张 → 增长预期可能改善。",
+   "lower_than_expected": "跌破 50 → 可能收缩 → 增长担忧。",
+   "transmission_paths": [
+    "PMI 跌破 50 → 增长担忧 → 盈利预期下调",
+    "PMI 回升 → 增长预期改善 → 风险偏好回升"
+   ],
+   "asset_impacts": {
+    "us_stocks": "回升通常偏利多（增长预期改善）；跌破 50 通常偏利空（盈利担忧）。",
+    "a_shares": "间接：通过全球增长预期与外需传导。",
+    "bonds": "回升通常偏利空（利率上行压力）；跌破 50 则降息预期增强。",
+    "usd": "回升通常偏利多（增长预期）；跌破 50 则避险与降息预期交织。",
+    "gold": "跌破 50 通常偏利多（避险）；回升则避险需求减弱。"
+   },
+   "exceptions": [
+    "新订单与 headline 背离",
+    "价格分项走强 → 通胀压力"
+   ],
+   "trading_application": {
+    "short_term": "PMI 的新订单分项比 headline 更领先，短线应优先看新订单。",
+    "before_release": "检查市场对增长的定价。",
+    "after_release": "看新订单与价格分项是否同向，确认是需求改善还是通胀压力。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把单月 PMI 读数等同于衰退/复苏结论。"
+   },
+   "related_indicators": [
+    "gdp",
+    "nfp",
+    "pmi-cn"
+   ],
+   "sources": [
+    "美国供应管理协会 ISM"
+   ],
+   "canvas_node_ids": [
+    "n_growth"
+   ]
+  },
+  {
+   "id": "pmi-cn",
+   "abbreviation": "中国 PMI",
+   "chinese_name": "中国采购经理人指数",
+   "english_name": "China Purchasing Managers' Index",
+   "simple_explanation": "反映中国制造业/服务业景气程度的指标，50 为荣枯线。",
+   "definition": "由国家统计局（官方 PMI）与财新（Caixin PMI）分别编制。官方 PMI 覆盖大中型企业为主，财新 PMI 更侧重中小企业。两者口径不同，可能背离。",
+   "why_it_matters": "判断中国经济景气与 A 股盈利预期的重要先行指标。",
+   "frequency": "每月一次（月初）。",
+   "higher_than_expected": "高于 50 且回升 → 可能扩张 → 增长预期可能改善。",
+   "lower_than_expected": "跌破 50 → 可能收缩 → 增长担忧。",
+   "transmission_paths": [
+    "中国 PMI 跌破 50 → 增长担忧 → A 股盈利预期承压",
+    "中国 PMI 回升 → 增长预期改善 → 风险偏好回升"
+   ],
+   "asset_impacts": {
+    "us_stocks": "影响较小，主要通过全球增长预期传导。",
+    "a_shares": "回升通常偏利多（增长预期改善）；跌破 50 通常偏利空（盈利担忧）。",
+    "bonds": "回升通常偏利空（宽松预期减弱）；跌破 50 则宽松预期增强。",
+    "usd": "间接：通过中美增长预期差与汇率传导。",
+    "gold": "影响有限。"
+   },
+   "exceptions": [
+    "官方 PMI 与财新 PMI 口径不同，可能背离",
+    "新订单与 headline 背离"
+   ],
+   "trading_application": {
+    "short_term": "注意区分官方 PMI 与财新 PMI，两者样本不同。",
+    "before_release": "检查市场对增长与政策的定价。",
+    "after_release": "看新订单与生产分项是否同向。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把单月 PMI 读数等同于衰退/复苏结论。"
+   },
+   "related_indicators": [
+    "pmi",
+    "gdp"
+   ],
+   "sources": [
+    "国家统计局",
+    "财新"
+   ],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "nfp",
+   "abbreviation": "NFP",
+   "chinese_name": "非农就业",
+   "english_name": "Nonfarm Payrolls",
+   "simple_explanation": "美国每月新增非农就业人数，反映就业市场冷热。",
+   "definition": "由 BLS 在每月第一个周五公布（美国非农就业报告），包括新增就业、失业率、平均时薪。是最受关注的就业数据。",
+   "why_it_matters": "增长与通胀的双重信号：就业韧性支撑盈利，但也限制降息空间。",
+   "frequency": "每月一次（每月第一个周五）。",
+   "higher_than_expected": "增长韧性 → 降息预期可能减弱（利空利率敏感资产），但盈利预期获支撑（利多股价）→ 净方向取决于哪条链主导。",
+   "lower_than_expected": "双链并行：降息预期增强（支撑估值）与盈利预期下降（压制股价）→ 净方向看通胀约束与衰退担忧。",
+   "transmission_paths": [
+    "NFP 超预期 → 降息预期减弱 + 盈利支撑 → 净方向看哪条链主导",
+    "NFP 低于预期 → 降息预期增强（支撑估值）+ 盈利承压（压制股价）"
+   ],
+   "asset_impacts": {
+    "us_stocks": "超预期：盈利支撑利多 vs 利率上行利空，净方向不确定。低于预期：降息支撑 vs 盈利压力，净方向不确定。",
+    "a_shares": "间接：通过全球风险偏好与美元汇率传导。",
+    "bonds": "超预期通常偏利空（降息预期减弱）；低于预期则降息预期增强。",
+    "usd": "超预期通常偏利多（利差驱动）；低于预期则降息预期增强利空美元。",
+    "gold": "低于预期通常偏利多（避险 + 降息预期）；超预期则避险需求减弱。"
+   },
+   "exceptions": [
+    "失业率与新增就业背离",
+    "前值大幅修正",
+    "平均时薪超预期 → 通胀担忧盖过就业降温"
+   ],
+   "trading_application": {
+    "short_term": "NFP 不是单向信号，短线应看公布后市场实际走哪条链（利率还是盈利）。",
+    "before_release": "检查市场对降息与增长的定价，避免在预期高度一致时追高。",
+    "after_release": "看失业率、平均时薪是否同步，确认是降温还是衰退信号。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把 NFP 超预期简单等同于利空或利多；它同时触发两条相反的链。"
+   },
+   "related_indicators": [
+    "unemployment",
+    "initial-claims",
+    "fomc"
+   ],
+   "sources": [
+    "美国劳工统计局 BLS"
+   ],
+   "canvas_node_ids": [
+    "n_jobs"
+   ]
+  },
+  {
+   "id": "unemployment",
+   "abbreviation": "失业率",
+   "chinese_name": "失业率",
+   "english_name": "Unemployment Rate",
+   "simple_explanation": "劳动力中失业人口的占比，反映就业市场松紧。",
+   "definition": "由 BLS 编制，失业人口占劳动力（就业 + 失业）的比例。萨姆规则（Sahm Rule）用失业率变化预警衰退。",
+   "why_it_matters": "就业市场松紧的核心指标；失业率快速上升是衰退预警。",
+   "frequency": "每月一次，随 NFP 同步公布。",
+   "higher_than_expected": "失业率上升 → 增长担忧 → 盈利预期可能承压。（注意：失业率上升是本项的“差”方向。）",
+   "lower_than_expected": "失业率下降 → 就业韧性 → 降息空间可能受限。",
+   "transmission_paths": [
+    "失业率上升 → 增长担忧 → 盈利预期承压",
+    "失业率下降 → 就业韧性 → 降息预期减弱"
+   ],
+   "asset_impacts": {
+    "us_stocks": "上升通常偏利空（增长担忧）；下降则盈利支撑但降息空间受限。",
+    "a_shares": "间接：通过全球增长预期传导。",
+    "bonds": "上升通常偏利多（降息预期增强）；下降则降息预期减弱。",
+    "usd": "上升通常偏利空（降息预期增强）；下降则偏利多。",
+    "gold": "上升通常偏利多（避险）。"
+   },
+   "exceptions": [
+    "劳动参与率变化扭曲失业率（分母效应）",
+    "失业率上升但新增就业仍强"
+   ],
+   "trading_application": {
+    "short_term": "失业率要结合劳动参与率一起看，分母变化可能扭曲读数。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看失业率变化的方向与幅度，而非单月绝对值；结合 NFP 与时薪。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把单月失业率读数等同于衰退结论。"
+   },
+   "related_indicators": [
+    "nfp",
+    "initial-claims"
+   ],
+   "sources": [
+    "美国劳工统计局 BLS"
+   ],
+   "canvas_node_ids": [
+    "n_jobs"
+   ]
+  },
+  {
+   "id": "initial-claims",
+   "abbreviation": "初请失业金",
+   "chinese_name": "初请失业金人数",
+   "english_name": "Initial Jobless Claims",
+   "simple_explanation": "每周首次申请失业救济的人数，反映裁员情况的高频指标。",
+   "definition": "由美国劳工部每周公布（每周四）。是就业市场的高频（周度）观测指标，比月度 NFP 更及时。",
+   "why_it_matters": "高频就业信号；持续上升可能预示裁员增加与就业转弱。",
+   "frequency": "每周一次（每周四）。",
+   "higher_than_expected": "初请上升 → 裁员可能增加 → 就业转弱担忧。",
+   "lower_than_expected": "初请下降 → 就业可能稳定。",
+   "transmission_paths": [
+    "初请持续上升 → 裁员增加 → 就业转弱 → 增长担忧",
+    "初请下降 → 就业稳定 → 增长预期维持"
+   ],
+   "asset_impacts": {
+    "us_stocks": "持续上升通常偏利空（增长担忧）；下降则偏利多（就业稳定）。",
+    "a_shares": "间接：通过全球增长预期传导。",
+    "bonds": "持续上升通常偏利多（降息预期增强）；下降则降息预期减弱。",
+    "usd": "持续上升通常偏利空（降息预期增强）；下降则偏利多。",
+    "gold": "持续上升通常偏利多（避险）。"
+   },
+   "exceptions": [
+    "单周波动大，需看 4 周移动平均",
+    "季节性因素与节假日扭曲"
+   ],
+   "trading_application": {
+    "short_term": "初请要看 4 周移动平均，单周波动噪音大。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看 4 周均值趋势，确认是持续上升还是单周噪音。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把单周初请读数等同于就业转弱结论。"
+   },
+   "related_indicators": [
+    "nfp",
+    "unemployment"
+   ],
+   "sources": [
+    "美国劳工部"
+   ],
+   "canvas_node_ids": [
+    "n_jobs"
+   ]
+  },
+  {
+   "id": "fomc",
+   "abbreviation": "FOMC",
+   "chinese_name": "联邦公开市场委员会",
+   "english_name": "Federal Open Market Committee",
+   "simple_explanation": "美联储内部决定利率政策的委员会，一年开 8 次会决定加息、降息还是不动。",
+   "definition": "美联储的货币政策决策机构，由 12 名投票委员组成，每年召开 8 次议息会议，决定联邦基金目标利率区间，并发布声明、经济预测与点阵图。",
+   "why_it_matters": "直接决定利率路径；声明措辞与点阵图常比决议本身更重要。",
+   "frequency": "每年 8 次。",
+   "higher_than_expected": "鹰派（higher for longer）→ 降息预期可能下调 → 利率可能上行。",
+   "lower_than_expected": "鸽派 → 降息预期可能增强 → 利率可能下行。",
+   "transmission_paths": [
+    "FOMC 鹰派 → 降息预期下调 → 10Y 上行 → 成长股估值承压",
+    "FOMC 鸽派 → 降息预期增强 → 利率下行 → 估值获支撑"
+   ],
+   "asset_impacts": {
+    "us_stocks": "鹰派通常偏利空（利率上行压制估值）；鸽派通常偏利多（估值获支撑），但若鸽派源于衰退担忧，盈利端可能对冲。",
+    "a_shares": "间接：通过全球利率预期、美元汇率与风险偏好传导。",
+    "bonds": "鹰派通常偏利空（收益率上行 → 价格下跌）；鸽派通常偏利多。",
+    "usd": "鹰派通常偏利多（利差驱动）；鸽派通常偏利空。",
+    "gold": "鹰派通常偏利空（实际利率上行）；鸽派通常偏利多（避险 + 降息预期）。"
+   },
+   "exceptions": [
+    "声明措辞与发布会口径背离",
+    "点阵图变化超预期",
+    "市场已提前定价 → 决议符合预期时反应有限"
+   ],
+   "trading_application": {
+    "short_term": "FOMC 当天波动通常较大，短线以观察声明与点阵图为主，不宜在决议前重仓押注。",
+    "before_release": "检查市场定价（利率期货隐含的降息预期）与仓位；区分“决议本身”与“市场预期”的差别——符合预期的决议可能不产生方向。",
+    "after_release": "看声明措辞、点阵图与鲍威尔发布会是否一致，确认是鹰派、鸽派还是中性。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把 FOMC 决议本身等同于市场方向；市场反应取决于决议与预期的差距。"
+   },
+   "related_indicators": [
+    "fed-funds-rate",
+    "treasury-10y",
+    "yield-curve"
+   ],
+   "sources": [
+    "美联储"
+   ],
+   "canvas_node_ids": [
+    "n_cut",
+    "n_cutup"
+   ]
+  },
+  {
+   "id": "fed-funds-rate",
+   "abbreviation": "Fed Funds Rate",
+   "chinese_name": "联邦基金利率",
+   "english_name": "Federal Funds Rate",
+   "simple_explanation": "美国银行间隔夜拆借利率，美联储货币政策的核心工具利率。",
+   "definition": "美联储设定的目标利率区间（目前为区间制），是美国短期利率的锚，影响全市场借贷成本。",
+   "why_it_matters": "所有美元利率的起点；降息/加息通过它传导到全市场。",
+   "frequency": "随 FOMC 决议调整（每年 8 次会议）。",
+   "higher_than_expected": "加息 → 借贷成本上升 → 利率上行 → 估值承压。",
+   "lower_than_expected": "降息 → 借贷成本下降 → 估值获支撑（若非衰退驱动）。",
+   "transmission_paths": [
+    "加息 → 借贷成本上升 → 利率上行 → 成长股估值承压",
+    "降息 → 借贷成本下降 → 估值获支撑（衰退驱动的降息需看盈利端）"
+   ],
+   "asset_impacts": {
+    "us_stocks": "加息通常偏利空（估值承压）；降息通常偏利多（估值获支撑），但衰退驱动的降息需警惕盈利端。",
+    "a_shares": "间接：通过全球利率预期与汇率传导。",
+    "bonds": "加息通常偏利空（收益率上行 → 价格下跌）；降息通常偏利多。",
+    "usd": "加息通常偏利多（利差驱动）；降息通常偏利空。",
+    "gold": "加息通常偏利空（实际利率上行）；降息通常偏利多。"
+   },
+   "exceptions": [
+    "降息若源于衰退担忧，盈利端压力可能盖过利率利好",
+    "市场已提前定价时反应有限"
+   ],
+   "trading_application": {
+    "short_term": "政策利率是慢变量，短线应关注预期变化（FOMC、点阵图）而非利率本身。",
+    "before_release": "检查市场对降息路径的定价。",
+    "after_release": "看声明与点阵图，确认是预防性降息还是衰退驱动降息。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把降息简单等同于利多；需区分降息的原因。"
+   },
+   "related_indicators": [
+    "fomc",
+    "treasury-10y",
+    "real-rate"
+   ],
+   "sources": [
+    "美联储"
+   ],
+   "canvas_node_ids": [
+    "n_cut",
+    "n_cutup"
+   ]
+  },
+  {
+   "id": "treasury-10y",
+   "abbreviation": "10Y Treasury",
+   "chinese_name": "10 年期美国国债收益率",
+   "english_name": "10-Year U.S. Treasury Yield",
+   "simple_explanation": "美国政府借 10 年期钱的成本，全球资产定价的锚。",
+   "definition": "10 年期美国国债的到期收益率。被视为“无风险利率”的代表，是全球债券、股票、房地产定价的基准。",
+   "why_it_matters": "全球资产定价的锚；上行抬高折现率，压制成长股估值。",
+   "frequency": "市场实时交易（每个交易日）。",
+   "higher_than_expected": "收益率上行 → 无风险利率上升 → 折现率上升 → 成长股估值承压；美元可能走强；债价下跌。",
+   "lower_than_expected": "收益率下行 → 折现率下降 → 估值获支撑；债价上涨。",
+   "transmission_paths": [
+    "10Y 上行 → 无风险利率上升 → 折现价值下降 → 成长股估值承压",
+    "10Y 上行 → 美债相对吸引力上升 → 美元走强"
+   ],
+   "asset_impacts": {
+    "us_stocks": "上行通常偏利空（估值承压）；下行通常偏利多（估值获支撑）。",
+    "a_shares": "间接：通过全球利率锚、美元汇率与风险偏好传导。",
+    "bonds": "上行 → 价格下跌；下行 → 价格上涨（收益率与价格反向）。",
+    "usd": "上行通常偏利多（利差驱动）；下行通常偏利空。",
+    "gold": "上行通常偏利空（实际利率上行）；下行通常偏利多。"
+   },
+   "exceptions": [
+    "收益率上行若源于增长预期改善，盈利端可能对冲估值压力",
+    "市场已提前定价时反应减弱"
+   ],
+   "trading_application": {
+    "short_term": "10Y 是短线最重要的宏观变量之一，应每日关注其方向与幅度。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看 10Y 变化的原因：是增长预期、通胀预期还是政策预期驱动，不同原因对应不同资产反应。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把 10Y 上行简单等同于利空；需区分上行的原因。"
+   },
+   "related_indicators": [
+    "treasury-2y",
+    "yield-curve",
+    "real-rate",
+    "fomc"
+   ],
+   "sources": [
+    "美国财政部",
+    "美联储"
+   ],
+   "canvas_node_ids": [
+    "n_yield",
+    "n_rf",
+    "n_bond"
+   ]
+  },
+  {
+   "id": "treasury-2y",
+   "abbreviation": "2Y Treasury",
+   "chinese_name": "2 年期美国国债收益率",
+   "english_name": "2-Year U.S. Treasury Yield",
+   "simple_explanation": "美国政府借 2 年期钱的成本，对货币政策预期最敏感。",
+   "definition": "2 年期美国国债到期收益率。对未来 2 年货币政策路径预期最敏感，常被视为市场对降息/加息预期的温度计。",
+   "why_it_matters": "反映市场对近期货币政策的预期；与 10Y 的利差是收益率曲线形态的关键。",
+   "frequency": "市场实时交易。",
+   "higher_than_expected": "收益率上行 → 降息预期可能减弱 → 短端利率压力可能上升。",
+   "lower_than_expected": "收益率下行 → 降息预期可能增强 → 短端利率压力可能缓解。",
+   "transmission_paths": [
+    "2Y 上行 → 降息预期减弱 → 利率敏感资产承压",
+    "2Y 下行 → 降息预期增强 → 利率敏感资产获支撑"
+   ],
+   "asset_impacts": {
+    "us_stocks": "上行通常偏利空（降息预期减弱）；下行通常偏利多（降息预期增强）。",
+    "a_shares": "间接：通过全球利率预期传导。",
+    "bonds": "上行 → 价格下跌；下行 → 价格上涨。",
+    "usd": "上行通常偏利多（利差驱动）；下行通常偏利空。",
+    "gold": "影响有限（2Y 更多反映政策预期）。"
+   },
+   "exceptions": [
+    "2Y 受政策预期主导，与增长预期的关系弱于 10Y",
+    "市场已提前定价时反应有限"
+   ],
+   "trading_application": {
+    "short_term": "2Y 是观察降息预期变化的窗口，短线应结合 FOMC 与数据公布一起看。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看 2Y 变化是否与 10Y 同向，确认是政策预期还是增长预期驱动。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要仅凭该指标一次读数做方向性交易；不要把相关关系写成确定的涨跌预测。"
+   },
+   "related_indicators": [
+    "treasury-10y",
+    "yield-curve",
+    "fomc"
+   ],
+   "sources": [
+    "美国财政部"
+   ],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "treasury-3m",
+   "abbreviation": "3M Treasury",
+   "chinese_name": "3 个月期美国国债收益率",
+   "english_name": "3-Month U.S. Treasury Yield",
+   "simple_explanation": "美国政府借 3 个月钱的成本，接近当前政策利率水平。",
+   "definition": "3 个月期美国国债到期收益率，紧贴联邦基金利率，用于计算 10Y−3M 利差（衰退预警指标）。",
+   "why_it_matters": "与 10Y 的利差（10Y−3M）是美联储与市场关注的衰退预警指标；倒挂时需警惕。",
+   "frequency": "市场实时交易。",
+   "higher_than_expected": "收益率上行 → 短端利率压力上升；与 10Y 的利差收窄甚至倒挂时需警惕衰退风险。",
+   "lower_than_expected": "收益率下行 → 短端利率压力缓解；利差可能走阔。",
+   "transmission_paths": [
+    "3M 上行 + 10Y 不动 → 10Y−3M 利差收窄 → 衰退预警信号增强"
+   ],
+   "asset_impacts": {
+    "us_stocks": "更多通过 10Y−3M 利差影响判断；单独看 3M 意义有限。",
+    "a_shares": "间接：通过利差与增长预期传导。",
+    "bonds": "通过利差影响曲线形态判断。",
+    "usd": "通过利差影响美元判断。",
+    "gold": "影响有限。"
+   },
+   "exceptions": [
+    "3M 紧贴政策利率，单独波动意义有限，应结合 10Y 看利差"
+   ],
+   "trading_application": {
+    "short_term": "3M 单独看意义有限，短线应关注 10Y−3M 利差的变化。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看 10Y−3M 利差是否倒挂或收窄。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把 3M 单独波动等同于衰退信号；关键是利差。"
+   },
+   "related_indicators": [
+    "treasury-10y",
+    "yield-curve"
+   ],
+   "sources": [
+    "美国财政部"
+   ],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "yield-curve",
+   "abbreviation": "收益率曲线",
+   "chinese_name": "收益率曲线",
+   "english_name": "Yield Curve",
+   "simple_explanation": "不同期限国债收益率连成的曲线，反映市场对未来利率与增长的预期。",
+   "definition": "以期限为横轴、收益率为纵轴的曲线。正常形态为向上倾斜（期限越长收益率越高）；倒挂（短端高于长端）常被视为衰退预警。",
+   "why_it_matters": "10Y−3M 利差倒挂是历史统计上较可靠的衰退预警信号之一（但不是精确择时工具）。",
+   "frequency": "市场实时。",
+   "higher_than_expected": "曲线变陡 → 可能反映增长预期改善或通胀预期上升。",
+   "lower_than_expected": "曲线平坦/倒挂 → 增长担忧，衰退预警。",
+   "transmission_paths": [
+    "收益率曲线倒挂 → 衰退预期 → 风险偏好下降 → 风险资产承压"
+   ],
+   "asset_impacts": {
+    "us_stocks": "倒挂通常偏利空（衰退预期）；变陡则需区分是增长改善还是通胀担忧。",
+    "a_shares": "间接：通过全球增长预期传导。",
+    "bonds": "倒挂通常偏利多（长端收益率下行 → 价格上涨），但衰退担忧下信用风险上升。",
+    "usd": "倒挂通常偏利空（降息预期增强）；变陡则偏利多。",
+    "gold": "倒挂通常偏利多（避险）。"
+   },
+   "exceptions": [
+    "倒挂出现后衰退可能数月甚至一年多才来，不是即时卖出信号",
+    "量化宽松等政策扭曲曲线形态"
+   ],
+   "trading_application": {
+    "short_term": "收益率曲线倒挂是慢信号，用于判断环境而非短线择时。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看利差变化的趋势而非单日数值；结合增长与就业数据确认。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把曲线倒挂当作即时卖出信号；衰退可能滞后数月甚至一年以上。"
+   },
+   "related_indicators": [
+    "treasury-10y",
+    "treasury-2y",
+    "treasury-3m",
+    "fomc"
+   ],
+   "sources": [
+    "美联储",
+    "纽约联储"
+   ],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "real-rate",
+   "abbreviation": "实际利率",
+   "chinese_name": "实际利率",
+   "english_name": "Real Interest Rate",
+   "simple_explanation": "名义利率减去预期通胀，反映借钱的真实成本。",
+   "definition": "实际利率 ≈ 名义利率 − 预期通胀率。衡量扣除通胀后的资金成本与回报。TIPS（通胀保值国债）收益率是实际利率的市场度量。",
+   "why_it_matters": "实际利率上行直接压制黄金与成长股；是跨资产定价的关键变量。",
+   "frequency": "市场实时（TIPS 收益率）。",
+   "higher_than_expected": "实际利率上行 → 持有无收益资产（黄金）的机会成本可能上升 → 黄金可能承压；成长股折现压力可能加大。",
+   "lower_than_expected": "实际利率下行 → 黄金与成长股可能获支撑。",
+   "transmission_paths": [
+    "实际利率上行 → 持有黄金机会成本上升 → 金价承压",
+    "实际利率上行 → 折现率上升 → 成长股估值承压"
+   ],
+   "asset_impacts": {
+    "us_stocks": "上行通常偏利空（折现压力）；下行通常偏利多。",
+    "a_shares": "间接：通过全球实际利率与汇率传导。",
+    "bonds": "上行通常偏利空（收益率上行 → 价格下跌）。",
+    "usd": "上行通常偏利多（利差驱动）。",
+    "gold": "上行通常偏利空（机会成本上升）；下行通常偏利多。"
+   },
+   "exceptions": [
+    "实际利率受通胀预期影响，名义利率上行不等于实际利率上行"
+   ],
+   "trading_application": {
+    "short_term": "实际利率比名义利率更能解释黄金与成长股的走势，短线应结合通胀预期一起看。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看 TIPS 收益率与通胀预期的变化，区分是名义利率还是通胀预期驱动。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把名义利率上行直接等同于实际利率上行。"
+   },
+   "related_indicators": [
+    "treasury-10y",
+    "cpi",
+    "gold"
+   ],
+   "sources": [
+    "美联储",
+    "美国财政部"
+   ],
+   "canvas_node_ids": [
+    "n_rf"
+   ]
+  },
+  {
+   "id": "bp",
+   "abbreviation": "bp",
+   "chinese_name": "基点",
+   "english_name": "Basis Point",
+   "simple_explanation": "利率的最小常用单位，1 个基点 = 0.01%。",
+   "definition": "金融中衡量利率变化的单位。1bp = 0.01 个百分点。降息 25bp 即降息 0.25%。",
+   "why_it_matters": "利率决议、债券收益率变化都用基点表述；理解它才能读懂“降息 25bp”是什么意思。",
+   "frequency": "单位，不公布。",
+   "higher_than_expected": "不适用：基点是单位，不是经济指标。“收益率上升 10bp”即上升 0.10%。",
+   "lower_than_expected": "不适用：基点是单位，不是经济指标。“收益率下降 10bp”即下降 0.10%。",
+   "transmission_paths": [
+    "降息 25bp → 借贷成本下降 0.25% → 参考联邦基金利率的传导链"
+   ],
+   "asset_impacts": {
+    "us_stocks": "不适用：基点是单位。",
+    "a_shares": "不适用：基点是单位。",
+    "bonds": "不适用：基点是单位。",
+    "usd": "不适用：基点是单位。",
+    "gold": "不适用：基点是单位。"
+   },
+   "exceptions": [
+    "基点是单位，不代表方向或幅度判断；25bp 是常见单次调整幅度，但不是固定值"
+   ],
+   "trading_application": {
+    "short_term": "读利率新闻时先换算基点：25bp = 0.25%，50bp = 0.50%。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "不适用：该指标不是定时公布型数据，无“公布后”概念。",
+    "combine_with": "结合具体利率指标（如 Fed Funds Rate、10Y）理解基点变化的含义。",
+    "avoid": "不要把基点数值本身当作交易信号。"
+   },
+   "related_indicators": [
+    "fed-funds-rate",
+    "treasury-10y"
+   ],
+   "sources": [],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "vix",
+   "abbreviation": "VIX",
+   "chinese_name": "恐慌指数",
+   "english_name": "CBOE Volatility Index",
+   "simple_explanation": "衡量市场预期未来 30 天波动程度的指数，即预期波动率，常被叫做“恐慌指数”。",
+   "definition": "由芝加哥期权交易所（CBOE）基于标普 500 期权价格计算的预期波动率指数，反映市场对未来 30 天波动的预期（年化）。注意：它衡量的是预期波动率，不是确定的跌幅预测。",
+   "why_it_matters": "风险偏好的晴雨表；VIX 飙升通常伴随市场恐慌与快速下跌，但 VIX 本身不预测方向。",
+   "frequency": "市场实时交易。",
+   "higher_than_expected": "VIX 上升 → 预期波动加大 → 恐慌情绪升温 → 风险资产通常承压（但 VIX 高点常伴随市场底部，不构成买入信号）。",
+   "lower_than_expected": "VIX 下降 → 市场平静 → 风险偏好回升（但极低 VIX 也可能意味着自满）。",
+   "transmission_paths": [
+    "VIX 飙升 → 恐慌情绪 → 风险偏好下降 → 风险资产抛售",
+    "VIX 回落 → 恐慌缓解 → 风险偏好回升"
+   ],
+   "asset_impacts": {
+    "us_stocks": "飙升通常偏利空（恐慌）；回落通常偏利多（恐慌缓解）。但 VIX 高点常伴随市场底部，不构成买入信号。",
+    "a_shares": "间接：通过全球风险偏好传导。",
+    "bonds": "飙升通常偏利多（避险买入）；回落则避险需求减弱。",
+    "usd": "飙升通常偏利多（避险货币）；回落则避险需求减弱。",
+    "gold": "飙升通常偏利多（避险）。"
+   },
+   "exceptions": [
+    "VIX 是预期波动率，不是跌幅预测；VIX 20 不等于市场要跌 20%",
+    "VIX 高点常伴随市场底部，但抄底需其他确认",
+    "VIX 极低时也可能意味着自满与脆弱"
+   ],
+   "trading_application": {
+    "short_term": "VIX 是环境指标，不是买卖信号。VIX 飙升时应降低仓位、等待波动收敛，而非仅凭 VIX 抄底。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看 VIX 是否见顶回落，结合价格是否企稳，确认恐慌是否缓解。",
+    "combine_with": "结合市场趋势、成交量与已有技术信号；VIX 高位时波动大，止损需放宽。",
+    "avoid": "不要把 VIX 数值直接翻译成跌幅预测；不要仅凭 VIX 高点抄底或低点追高。"
+   },
+   "related_indicators": [
+    "risk-appetite",
+    "market-breadth"
+   ],
+   "sources": [
+    "芝加哥期权交易所 CBOE"
+   ],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "dxy",
+   "abbreviation": "DXY",
+   "chinese_name": "美元指数",
+   "english_name": "U.S. Dollar Index",
+   "simple_explanation": "衡量美元对一篮子主要货币强弱的指数，美元走强时 DXY 上涨。",
+   "definition": "衡量美元对欧元、日元、英镑、加元、瑞典克朗、瑞士法郎等一篮子货币的加权汇率（欧元权重最大，约 58%）。",
+   "why_it_matters": "美元走强影响全球流动性、商品价格与跨国公司盈利。",
+   "frequency": "市场实时交易。",
+   "higher_than_expected": "美元走强 → 以美元计价的商品（黄金、原油）可能承压；跨国公司可能面临汇兑压力；新兴市场可能面临资金流出压力。",
+   "lower_than_expected": "美元走弱 → 商品与风险资产可能获支撑；跨国公司可能获得汇兑收益。",
+   "transmission_paths": [
+    "美元走强 → 以美元计价的黄金承压",
+    "美元走强 → 跨国公司汇兑压力 + 全球流动性收紧"
+   ],
+   "asset_impacts": {
+    "us_stocks": "走强通常偏利空（汇兑压力 + 流动性收紧）；走弱通常偏利多。",
+    "a_shares": "间接：通过汇率、外资流动与全球流动性传导；走强时 A 股面临外资流出压力。",
+    "bonds": "走强通常偏利空（利差驱动的资金流出）；走弱则偏利多。",
+    "usd": "不适用：DXY 本身就是美元指数。",
+    "gold": "走强通常偏利空（美元计价）；走弱通常偏利多。"
+   },
+   "exceptions": [
+    "美元走强若源于美国增长强劲，盈利端可能部分对冲",
+    "DXY 权重以欧元为主，不完全代表美元对人民币等货币的强弱"
+   ],
+   "trading_application": {
+    "short_term": "DXY 是短线重要的环境变量，应每日关注其方向。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看 DXY 变化的原因：是利差驱动、避险驱动还是增长驱动，不同原因对应不同资产反应。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把 DXY 上涨简单等同于利空；需区分上涨的原因。"
+   },
+   "related_indicators": [
+    "treasury-10y",
+    "gold",
+    "risk-appetite"
+   ],
+   "sources": [
+    "ICE"
+   ],
+   "canvas_node_ids": [
+    "n_dxy"
+   ]
+  },
+  {
+   "id": "credit-spread",
+   "abbreviation": "信用利差",
+   "chinese_name": "信用利差",
+   "english_name": "Credit Spread",
+   "simple_explanation": "企业债收益率与同期限国债收益率之差，反映市场对企业违约风险的定价。",
+   "definition": "信用利差 = 企业债券收益率 − 同期限国债收益率。利差走阔意味着市场要求更高的风险补偿，反映信用风险上升或流动性收紧。",
+   "why_it_matters": "比政策利率更直接的融资条件观测指标；利差急剧走阔常是金融压力信号。",
+   "frequency": "市场实时。",
+   "higher_than_expected": "利差走阔 → 融资成本可能上升 → 高杠杆企业可能承压 → 风险偏好可能下降。",
+   "lower_than_expected": "利差收窄 → 融资条件可能改善 → 风险偏好可能回升。",
+   "transmission_paths": [
+    "信用利差走阔 → 融资成本上升 → 高投入/高杠杆企业承压"
+   ],
+   "asset_impacts": {
+    "us_stocks": "走阔通常偏利空（融资成本上升）；收窄则偏利多。",
+    "a_shares": "间接：通过全球融资条件与风险偏好传导。",
+    "bonds": "走阔通常偏利空（信用风险上升）；收窄则偏利多。",
+    "usd": "走阔通常偏利多（避险货币）；收窄则避险需求减弱。",
+    "gold": "走阔通常偏利多（避险）；收窄则避险需求减弱。"
+   },
+   "exceptions": [
+    "利差走阔若源于单一行业事件，未必代表系统性压力",
+    "流动性冲击时利差与利率可能同向或反向"
+   ],
+   "trading_application": {
+    "short_term": "信用利差是观察融资条件的窗口，短线应关注其变化趋势而非单日数值。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看利差走阔是系统性的还是单一行业事件，确认是否构成系统性压力。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把利差单日波动等同于金融危机信号。"
+   },
+   "related_indicators": [
+    "liquidity",
+    "treasury-10y"
+   ],
+   "sources": [
+    "美联储",
+    "ICE BofA 指数"
+   ],
+   "canvas_node_ids": [
+    "n_liq",
+    "n_fin"
+   ]
+  },
+  {
+   "id": "liquidity",
+   "abbreviation": "流动性",
+   "chinese_name": "流动性",
+   "english_name": "Liquidity",
+   "simple_explanation": "市场上资金的充裕程度，钱“好借还是难借”。",
+   "definition": "金融体系中资金的可得性与成本。流动性充裕时借贷容易、资产易变现；收紧时借贷难、变现成本上升。观测指标包括准备金余额、逆回购、信用利差等。",
+   "why_it_matters": "流动性决定资产定价的“水位”；收紧时即使基本面不变，资产价格也可能承压。",
+   "frequency": "持续变化（部分指标每周/每月公布）。",
+   "higher_than_expected": "流动性充裕 → 融资可能更容易 → 风险资产可能获支撑。",
+   "lower_than_expected": "流动性收紧 → 融资成本可能上升 → 高杠杆主体可能承压。",
+   "transmission_paths": [
+    "流动性收紧 → 融资成本上升 → 高投入/高杠杆企业承压"
+   ],
+   "asset_impacts": {
+    "us_stocks": "充裕通常偏利多；收紧通常偏利空（估值与盈利双重承压）。",
+    "a_shares": "充裕通常偏利多；收紧通常偏利空（国内流动性往往起更大作用）。",
+    "bonds": "充裕通常偏利多（收益率下行 → 价格上涨）；收紧则偏利空。",
+    "usd": "充裕通常偏利空（利差收窄）；收紧则偏利多（利差驱动）。",
+    "gold": "充裕通常偏利空（避险需求减弱）；收紧则偏利多（避险）。"
+   },
+   "exceptions": [
+    "流动性是描述性概念，无单一官方数值；需结合多个指标综合判断",
+    "流动性充裕不等于资产必然上涨（还需看增长与估值）"
+   ],
+   "trading_application": {
+    "short_term": "流动性是环境变量，用于判断仓位轻重而非具体买卖点。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看信用利差、逆回购等指标是否同步确认流动性变化。",
+    "combine_with": "结合市场趋势与波动率；流动性收紧时应降低仓位、放宽止损。",
+    "avoid": "不要把流动性充裕直接等同于买入信号。"
+   },
+   "related_indicators": [
+    "credit-spread",
+    "fomc",
+    "fed-funds-rate"
+   ],
+   "sources": [
+    "美联储"
+   ],
+   "canvas_node_ids": [
+    "n_liq"
+   ]
+  },
+  {
+   "id": "risk-appetite",
+   "abbreviation": "风险偏好",
+   "chinese_name": "风险偏好",
+   "english_name": "Risk Appetite",
+   "simple_explanation": "投资者愿意承担风险的程度，高时追涨风险资产，低时涌向避险资产。",
+   "definition": "投资者对风险资产与避险资产的相对偏好。风险偏好高时资金流向股票、高收益债；低时流向国债、黄金、美元。",
+   "why_it_matters": "风险偏好是短期市场涨跌的重要驱动；但它本身是结果，不是原因（由增长、利率、事件等多因素驱动）。",
+   "frequency": "持续变化（由市场行为推断，无官方公布值）。",
+   "higher_than_expected": "风险偏好上升 → 风险资产获支撑；避险资产相对承压。",
+   "lower_than_expected": "风险偏好下降 → 避险需求上升 → 风险资产承压；黄金、美元、国债可能受益。",
+   "transmission_paths": [
+    "风险偏好下降 → 避险需求上升 → 风险资产承压"
+   ],
+   "asset_impacts": {
+    "us_stocks": "上升通常偏利多；下降通常偏利空。",
+    "a_shares": "上升通常偏利多；下降通常偏利空。",
+    "bonds": "上升通常偏利空（避险需求减弱）；下降则偏利多（避险买入）。",
+    "usd": "上升通常偏利空（避险需求减弱）；下降则偏利多（避险货币）。",
+    "gold": "上升通常偏利空（避险需求减弱）；下降则偏利多（避险）。"
+   },
+   "exceptions": [
+    "风险偏好是描述性概念，无单一官方数值；需结合 VIX、信用利差、资金流向综合判断"
+   ],
+   "trading_application": {
+    "short_term": "风险偏好用于判断仓位与风险敞口，不宜作为具体买卖点。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看 VIX、信用利差、资金流向是否同步确认风险偏好变化。",
+    "combine_with": "结合市场趋势与已有技术信号；风险偏好下降时应降低仓位。",
+    "avoid": "不要把风险偏好本身当作原因；它是由增长、利率、事件等多因素驱动的结果。"
+   },
+   "related_indicators": [
+    "vix",
+    "liquidity",
+    "credit-spread"
+   ],
+   "sources": [],
+   "canvas_node_ids": [
+    "n_safe"
+   ]
+  },
+  {
+   "id": "market-breadth",
+   "abbreviation": "市场广度",
+   "chinese_name": "市场广度",
+   "english_name": "Market Breadth",
+   "simple_explanation": "上涨股票多还是下跌股票多，反映行情是“全面上涨”还是“少数股票撑着”。",
+   "definition": "衡量参与上涨/下跌的个股数量与比例的指标，如上涨家数与下跌家数之比、位于均线上方个股占比、创新高/新低家数。用于判断上涨的健康程度。",
+   "why_it_matters": "指数涨但广度差（少数大盘股拉动）时，上涨基础脆弱；广度改善通常意味着行情更健康。",
+   "frequency": "每个交易日。",
+   "higher_than_expected": "广度改善 → 上涨家数增多 → 行情基础更健康 → 上涨持续性可能更强。",
+   "lower_than_expected": "广度恶化 → 指数涨但上涨家数少 → 分化 → 上涨可能不可持续。",
+   "transmission_paths": [
+    "市场广度恶化 → 上涨集中于少数股票 → 行情脆弱 → 回调风险上升"
+   ],
+   "asset_impacts": {
+    "us_stocks": "改善通常偏利多（上涨更健康）；恶化则需警惕回调风险。",
+    "a_shares": "改善通常偏利多；恶化则需警惕。",
+    "bonds": "影响有限（广度更多用于股票市场判断）。",
+    "usd": "影响有限。",
+    "gold": "影响有限。"
+   },
+   "exceptions": [
+    "广度是辅助指标，需结合指数趋势一起看；广度改善不等于指数必然上涨"
+   ],
+   "trading_application": {
+    "short_term": "广度用于判断上涨的健康程度，不宜单独作为买卖信号。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看广度是否与指数趋势同步，确认上涨是否健康。",
+    "combine_with": "结合市场趋势与成交量；广度恶化时应警惕追高风险。",
+    "avoid": "不要把广度改善直接等同于买入信号。"
+   },
+   "related_indicators": [
+    "risk-appetite",
+    "vix"
+   ],
+   "sources": [],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "pe",
+   "abbreviation": "PE",
+   "chinese_name": "市盈率",
+   "english_name": "Price-to-Earnings Ratio",
+   "simple_explanation": "股价除以每股收益，衡量买 1 元盈利要付多少钱。",
+   "definition": "PE = 股价 / 每股收益（EPS）。反映市场愿意为每单位盈利支付的价格。分为静态 PE（过去 12 个月盈利）与动态 PE（预期盈利）。",
+   "why_it_matters": "估值水平的常用度量；高 PE 意味着市场对未来增长预期高（或股价贵），低 PE 则相反。但 PE 高低需结合增长、利率与行业比较。",
+   "frequency": "随股价与盈利变化。",
+   "higher_than_expected": "PE 升高 → 估值变贵（股价涨快于盈利，或盈利下滑）；若源于增长预期提升，需看增长是否兑现。",
+   "lower_than_expected": "PE 降低 → 估值变便宜（股价跌或盈利增长）；若源于盈利下滑，需警惕。",
+   "transmission_paths": [
+    "PE 处于历史高位 + 利率上行 → 估值压缩压力",
+    "PE 回落 + 盈利稳定 → 估值吸引力上升"
+   ],
+   "asset_impacts": {
+    "us_stocks": "适用于个股与指数估值判断；高 PE 需结合增长与利率看。",
+    "a_shares": "适用于个股与指数估值判断；需结合国内利率与增长看。",
+    "bonds": "不适用：PE 是股票估值指标。",
+    "usd": "不适用：PE 是股票估值指标。",
+    "gold": "不适用：PE 是股票估值指标。"
+   },
+   "exceptions": [
+    "不同行业 PE 不可直接比较（成长 vs 价值）",
+    "亏损公司 PE 为负/无意义",
+    "周期股在盈利高点时 PE 反而最低（PE 陷阱）"
+   ],
+   "trading_application": {
+    "short_term": "PE 用于估值比较，不宜单独作为买卖信号；应结合增长、利率与行业水平。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看 PE 是处于历史高位还是低位，结合盈利趋势与利率环境。",
+    "combine_with": "结合市场趋势与已有技术信号；高 PE + 趋势转弱时应警惕估值压缩。",
+    "avoid": "不要把 PE 高低直接等同于贵/便宜；需结合增长与利率。"
+   },
+   "related_indicators": [
+    "pb",
+    "eps",
+    "macd"
+   ],
+   "sources": [],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "pb",
+   "abbreviation": "PB",
+   "chinese_name": "市净率",
+   "english_name": "Price-to-Book Ratio",
+   "simple_explanation": "股价除以每股净资产，衡量买 1 元净资产要付多少钱。",
+   "definition": "PB = 股价 / 每股净资产。反映市场对公司净资产的定价。常用于金融、地产等重资产行业。",
+   "why_it_matters": "估值度量；PB 低于 1 意味着市值低于净资产（可能低估，也可能反映资产质量问题）。",
+   "frequency": "随股价与净资产变化。",
+   "higher_than_expected": "PB 升高 → 估值变贵；若源于资产质量改善，需看是否持续。",
+   "lower_than_expected": "PB 降低 → 估值变便宜；若源于资产减值，需警惕。",
+   "transmission_paths": [
+    "PB 低于 1 + 资产质量稳定 → 可能低估（需确认资产真实价值）",
+    "PB 回落 + 资产减值 → 需警惕资产质量问题"
+   ],
+   "asset_impacts": {
+    "us_stocks": "适用于重资产行业估值判断；轻资产公司意义有限。",
+    "a_shares": "适用于重资产行业估值判断。",
+    "bonds": "不适用：PB 是股票估值指标。",
+    "usd": "不适用：PB 是股票估值指标。",
+    "gold": "不适用：PB 是股票估值指标。"
+   },
+   "exceptions": [
+    "轻资产公司（科技、互联网）净资产小，PB 意义有限",
+    "资产减值可能使净资产虚高"
+   ],
+   "trading_application": {
+    "short_term": "PB 适用于重资产行业，轻资产公司应优先看 PE 与现金流。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看 PB 是否处于历史低位，结合资产质量与盈利趋势。",
+    "combine_with": "结合市场趋势与已有技术信号。",
+    "avoid": "不要把 PB 低于 1 直接等同于低估；需确认资产真实价值。"
+   },
+   "related_indicators": [
+    "pe",
+    "eps"
+   ],
+   "sources": [],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "eps",
+   "abbreviation": "EPS",
+   "chinese_name": "每股收益",
+   "english_name": "Earnings Per Share",
+   "simple_explanation": "公司净利润除以总股本，每股赚了多少钱。",
+   "definition": "EPS = 归属净利润 / 总股本。是盈利能力的核心指标。财报季市场关注实际 EPS 与预期 EPS 的差距（超预期/低于预期）。",
+   "why_it_matters": "股价长期跟随盈利；EPS 增长是股价上涨的根本支撑。",
+   "frequency": "每季度财报。",
+   "higher_than_expected": "EPS 超预期 → 盈利支撑增强 → 股价可能上涨（若估值不压缩）。",
+   "lower_than_expected": "EPS 低于预期 → 盈利压力 → 股价可能下跌。",
+   "transmission_paths": [
+    "EPS 超预期 → 盈利支撑增强 → 股价可能上涨",
+    "EPS 低于预期 → 盈利压力 → 股价可能下跌"
+   ],
+   "asset_impacts": {
+    "us_stocks": "适用于个股盈利判断；超预期通常偏利多，低于预期通常偏利空。",
+    "a_shares": "适用于个股盈利判断。",
+    "bonds": "不适用：EPS 是股票盈利指标。",
+    "usd": "不适用：EPS 是股票盈利指标。",
+    "gold": "不适用：EPS 是股票盈利指标。"
+   },
+   "exceptions": [
+    "EPS 可通过回购（减少股本）提升，未必反映经营改善",
+    "一次性损益扭曲 EPS"
+   ],
+   "trading_application": {
+    "short_term": "财报季应关注 EPS 与预期的差距，以及指引（guidance）是否上调/下调。",
+    "before_release": "检查市场对财报的预期，避免在预期高度一致时追高。",
+    "after_release": "看 EPS 增长是经营改善还是回购/一次性因素驱动，结合营收与利润率。",
+    "combine_with": "结合市场趋势与已有技术信号；财报超预期但趋势转弱时仍需谨慎。",
+    "avoid": "不要把 EPS 超预期直接等同于买入信号；需看估值与指引。"
+   },
+   "related_indicators": [
+    "pe",
+    "pb"
+   ],
+   "sources": [],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "macd",
+   "abbreviation": "MACD",
+   "chinese_name": "指数平滑异同移动平均线",
+   "english_name": "Moving Average Convergence Divergence",
+   "simple_explanation": "用快慢两条均线的差值判断趋势强弱与转折的技术指标。",
+   "definition": "MACD = DIF（快线，12 日 EMA − 26 日 EMA）与 DEA（慢线，DIF 的 9 日 EMA）之差（柱状图）。金叉/死叉、背离是常用信号。本站缠论信号体系中的背驰（BC）与 MACD 面积有关，但 MACD 本身不是缠论。",
+   "why_it_matters": "趋势跟踪工具；帮助判断趋势方向与动能变化。滞后性明显，不宜单独作为买卖依据。",
+   "frequency": "随 K 线更新。",
+   "higher_than_expected": "DIF 上穿 DEA（金叉）→ 短期动能可能转强（滞后信号，需其他确认）。",
+   "lower_than_expected": "DIF 下穿 DEA（死叉）→ 短期动能可能转弱。",
+   "transmission_paths": [
+    "MACD 顶背驰 → 上涨动能衰减 → 注意回调风险（需价格确认）",
+    "MACD 底背驰 → 下跌动能衰减 → 注意反弹可能（需价格确认）"
+   ],
+   "asset_impacts": {
+    "us_stocks": "适用于个股与指数趋势判断；不直接对应资产类别影响。",
+    "a_shares": "适用于个股与指数趋势判断。",
+    "bonds": "不适用：MACD 是技术指标。",
+    "usd": "不适用：MACD 是技术指标。",
+    "gold": "不适用：MACD 是技术指标。"
+   },
+   "exceptions": [
+    "震荡市中 MACD 频繁金叉死叉，假信号多",
+    "MACD 滞后，信号出现时行情可能已走一段",
+    "背离是动能信号，不是精确的买卖点"
+   ],
+   "trading_application": {
+    "short_term": "MACD 适用于趋势跟踪，不宜在震荡市中单独使用。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看 MACD 是否与价格同向，确认是趋势延续还是背离。",
+    "combine_with": "结合市场趋势、成交量与已有技术信号；背离需价格确认。",
+    "avoid": "不要把 MACD 金叉/死叉直接等同于买卖信号；滞后性明显。"
+   },
+   "related_indicators": [
+    "rsi",
+    "atr"
+   ],
+   "sources": [],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "rsi",
+   "abbreviation": "RSI",
+   "chinese_name": "相对强弱指数",
+   "english_name": "Relative Strength Index",
+   "simple_explanation": "衡量一段时间内涨跌力道对比的指标，判断超买超卖。",
+   "definition": "RSI = 一定时期内平均涨幅 /（平均涨幅 + 平均跌幅）× 100，取值 0–100。常用 14 周期。高于 70 常称超买，低于 30 常称超卖。",
+   "why_it_matters": "动能量度；帮助判断短期涨跌是否过热。但强趋势中 RSI 可长期停留在超买/超卖区。",
+   "frequency": "随 K 线更新。",
+   "higher_than_expected": "RSI > 70 → 超买 → 短期回调风险上升（但强趋势中可长期超买，不宜仅凭 RSI 做空）。",
+   "lower_than_expected": "RSI < 30 → 超卖 → 短期反弹可能（但下跌趋势中可长期超卖，不宜仅凭 RSI 抄底）。",
+   "transmission_paths": [
+    "RSI 超买 + 价格滞涨 → 短期回调风险上升（需价格确认）",
+    "RSI 超卖 + 价格企稳 → 短期反弹可能（需价格确认）"
+   ],
+   "asset_impacts": {
+    "us_stocks": "适用于个股与指数动能判断；不直接对应资产类别影响。",
+    "a_shares": "适用于个股与指数动能判断。",
+    "bonds": "不适用：RSI 是技术指标。",
+    "usd": "不适用：RSI 是技术指标。",
+    "gold": "不适用：RSI 是技术指标。"
+   },
+   "exceptions": [
+    "强趋势中 RSI 长期超买/超卖，逆势交易风险大",
+    "RSI 是动能指标，不是趋势指标"
+   ],
+   "trading_application": {
+    "short_term": "RSI 适用于判断短期动能过热，不宜在强趋势中逆势交易。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看 RSI 是否与价格背离，确认动能是否衰减。",
+    "combine_with": "结合市场趋势与已有技术信号；超买/超卖需价格确认。",
+    "avoid": "不要把 RSI 超买/超卖直接等同于卖出/买入信号。"
+   },
+   "related_indicators": [
+    "macd",
+    "atr"
+   ],
+   "sources": [],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "atr",
+   "abbreviation": "ATR",
+   "chinese_name": "平均真实波幅",
+   "english_name": "Average True Range",
+   "simple_explanation": "衡量市场波动幅度的指标，波动越大 ATR 越大。",
+   "definition": "ATR = 一定时期内真实波幅（True Range，考虑跳空）的平均值。反映波动幅度，不预测方向。本站止损价参考波动幅度设定。",
+   "why_it_matters": "波动度量；用于设置止损距离、仓位大小（波动大则仓位宜小）。",
+   "frequency": "随 K 线更新。",
+   "higher_than_expected": "ATR 扩大 → 波动加大 → 止损需放宽、仓位宜减小。",
+   "lower_than_expected": "ATR 收窄 → 波动收敛 → 可能酝酿突破方向选择。",
+   "transmission_paths": [
+    "ATR 扩大 → 波动加大 → 止损距离应放宽、仓位应减小",
+    "ATR 收窄 → 波动收敛 → 注意突破方向选择"
+   ],
+   "asset_impacts": {
+    "us_stocks": "适用于个股与指数波动判断；不直接对应资产类别影响。",
+    "a_shares": "适用于个股与指数波动判断。",
+    "bonds": "不适用：ATR 是技术指标。",
+    "usd": "不适用：ATR 是技术指标。",
+    "gold": "不适用：ATR 是技术指标。"
+   },
+   "exceptions": [
+    "ATR 只衡量波动幅度，不预测涨跌方向",
+    "ATR 是绝对值，需结合价格水平看相对波动"
+   ],
+   "trading_application": {
+    "short_term": "ATR 用于设置止损与仓位，不用于判断方向。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看 ATR 是否处于高位，确认波动环境。",
+    "combine_with": "结合市场趋势与已有技术信号；波动大时应减小仓位、放宽止损。",
+    "avoid": "不要把 ATR 扩大直接等同于买入/卖出信号；它不预测方向。"
+   },
+   "related_indicators": [
+    "macd",
+    "rsi"
+   ],
+   "sources": [],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "gold",
+   "abbreviation": "黄金",
+   "chinese_name": "黄金",
+   "english_name": "Gold (COMEX)",
+   "simple_explanation": "避险与通胀对冲资产，但受实际利率与美元压制。",
+   "definition": "COMEX 黄金期货价格。黄金兼具避险、通胀对冲与美元替代属性，但不产生现金流，其价格受实际利率与美元主导。",
+   "why_it_matters": "避险情绪的观测指标；黄金涨幅常被用作避险升温的代理信号。",
+   "frequency": "市场实时交易。",
+   "higher_than_expected": "黄金上涨 → 可能反映避险升温（或实际利率下行、美元走弱）。",
+   "lower_than_expected": "黄金下跌 → 可能反映避险降温（或实际利率上行、美元走强）。",
+   "transmission_paths": [
+    "避险升温 → 资金流向黄金 → 金价上涨",
+    "实际利率上行 → 持有黄金机会成本上升 → 金价承压"
+   ],
+   "asset_impacts": {
+    "us_stocks": "上涨通常偏利空（避险升温）；下跌则避险需求减弱。",
+    "a_shares": "间接：通过全球避险情绪传导。",
+    "bonds": "上涨通常偏利空（避险需求）；下跌则偏利多。",
+    "usd": "上涨通常偏利空（美元走弱）；下跌则偏利多（美元走强）。",
+    "gold": "不适用：黄金本身就是该资产。"
+   },
+   "exceptions": [
+    "黄金受实际利率与美元双重影响，两者常同时出现，需看哪边更强"
+   ],
+   "trading_application": {
+    "short_term": "黄金是避险情绪的观测指标，不宜仅凭金价涨跌做方向性交易。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看金价上涨是避险驱动、实际利率驱动还是美元驱动，不同原因对应不同资产反应。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把金价上涨直接等同于市场要跌；需区分上涨的原因。"
+   },
+   "related_indicators": [
+    "dxy",
+    "real-rate",
+    "risk-appetite"
+   ],
+   "sources": [
+    "COMEX"
+   ],
+   "canvas_node_ids": [
+    "n_gold",
+    "n_safe"
+   ]
+  },
+  {
+   "id": "silver",
+   "abbreviation": "白银",
+   "chinese_name": "白银",
+   "english_name": "Silver (COMEX)",
+   "simple_explanation": "兼具贵金属与工业金属属性的商品，波动通常大于黄金。",
+   "definition": "COMEX 白银期货价格。白银既有贵金属的避险属性，也有工业需求（光伏、电子等），波动通常大于黄金。",
+   "why_it_matters": "常跟随黄金波动，但工业需求使其对经济周期更敏感。",
+   "frequency": "市场实时交易。",
+   "higher_than_expected": "白银上涨 → 可能反映避险升温或工业需求改善。",
+   "lower_than_expected": "白银下跌 → 可能反映避险降温或工业需求转弱。",
+   "transmission_paths": [
+    "避险升温 → 资金流向贵金属 → 白银跟随黄金上涨",
+    "工业需求改善 → 白银需求上升 → 价格上涨"
+   ],
+   "asset_impacts": {
+    "us_stocks": "跟随黄金与工业需求；波动通常大于黄金。",
+    "a_shares": "间接：通过全球避险与工业需求传导。",
+    "bonds": "影响有限。",
+    "usd": "跟随黄金；美元走强通常偏利空。",
+    "gold": "跟随黄金。"
+   },
+   "exceptions": [
+    "白银波动大于黄金，不宜直接用白银涨跌判断避险情绪"
+   ],
+   "trading_application": {
+    "short_term": "白银波动大，不宜仅凭白银涨跌做方向性交易。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看白银是跟随黄金还是工业需求驱动。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把白银涨跌直接等同于避险情绪。"
+   },
+   "related_indicators": [
+    "gold",
+    "copper"
+   ],
+   "sources": [
+    "COMEX"
+   ],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "oil",
+   "abbreviation": "原油",
+   "chinese_name": "原油（WTI）",
+   "english_name": "Crude Oil (WTI)",
+   "simple_explanation": "全球最重要的能源商品，油价变化影响通胀与企业成本。",
+   "definition": "WTI 原油期货价格。油价受供需、地缘、OPEC+ 政策与美元多重影响。油价上涨推高通胀与企业成本。",
+   "why_it_matters": "成本侧通胀的代理指标；油价急涨是通胀压力信号。",
+   "frequency": "市场实时交易。",
+   "higher_than_expected": "油价急涨 → 通胀压力 → 降息预期可能减弱；企业成本上升。",
+   "lower_than_expected": "油价急跌 → 需求担忧；通胀压力缓解。",
+   "transmission_paths": [
+    "油价急涨 → 通胀压力 → 降息预期减弱 → 利率上行压力",
+    "油价急跌 → 需求担忧 → 增长预期转弱"
+   ],
+   "asset_impacts": {
+    "us_stocks": "急涨通常偏利空（通胀压力 + 成本上升）；急跌则需求担忧利空，通胀缓解利多，净方向不确定。",
+    "a_shares": "间接：通过全球通胀与成本传导。",
+    "bonds": "急涨通常偏利空（通胀预期上行）；急跌则偏利多（通胀缓解）。",
+    "usd": "急涨通常偏利多（利差驱动）；急跌则偏利空。",
+    "gold": "急涨通常偏利空（实际利率上行）；急跌则偏利多。"
+   },
+   "exceptions": [
+    "油价受供给（OPEC+、地缘）与需求双重影响，需区分上涨原因",
+    "油价急涨若源于供给冲击，通胀压力与增长担忧并存"
+   ],
+   "trading_application": {
+    "short_term": "油价是成本侧通胀的代理信号，不宜仅凭油价涨跌做方向性交易。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看油价上涨是需求驱动还是供给冲击，不同原因对应不同资产反应。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把油价上涨直接等同于通胀失控；需区分上涨的原因。"
+   },
+   "related_indicators": [
+    "cpi",
+    "gold"
+   ],
+   "sources": [
+    "NYMEX"
+   ],
+   "canvas_node_ids": []
+  },
+  {
+   "id": "copper",
+   "abbreviation": "铜",
+   "chinese_name": "铜",
+   "english_name": "Copper (COMEX)",
+   "simple_explanation": "被称为“铜博士”，价格变化常被用作经济预期的代理指标。",
+   "definition": "COMEX 铜期货价格。铜广泛用于建筑、电力、电子等领域，需求与经济活动高度相关，故价格常被视为经济预期的风向标。但铜价不是 GDP 本身。",
+   "why_it_matters": "经济预期的代理指标；铜价下跌常被解读为增长预期转弱。",
+   "frequency": "市场实时交易。",
+   "higher_than_expected": "铜价上涨 → 经济预期可能改善。",
+   "lower_than_expected": "铜价下跌 → 经济预期可能转弱。",
+   "transmission_paths": [
+    "铜价下跌 → 经济预期转弱 → 盈利预期下调",
+    "铜价上涨 → 经济预期改善 → 风险偏好回升"
+   ],
+   "asset_impacts": {
+    "us_stocks": "上涨通常偏利多（增长预期改善）；下跌则偏利空（增长担忧）。",
+    "a_shares": "间接：通过全球增长预期传导。",
+    "bonds": "上涨通常偏利空（增长预期改善 → 利率上行压力）；下跌则降息预期增强。",
+    "usd": "上涨通常偏利多（增长预期）；下跌则偏利空。",
+    "gold": "上涨通常偏利空（避险需求减弱）；下跌则偏利多（避险）。"
+   },
+   "exceptions": [
+    "铜价受供给（矿山、库存）与投机因素影响，不只是需求",
+    "铜价不是 GDP，不能等同于增长数据"
+   ],
+   "trading_application": {
+    "short_term": "铜价是经济预期的代理信号，不宜仅凭铜价涨跌做方向性交易。",
+    "before_release": "不适用：该指标不是定时公布型数据，无“公布前”概念。",
+    "after_release": "看铜价变化是否与 PMI、GDP 等增长数据同步。",
+    "combine_with": "结合市场趋势（指数相对均线位置）、成交量、波动率（VIX）与已有技术信号判断；单一数据不改变趋势时不逆势交易。",
+    "avoid": "不要把铜价涨跌直接等同于增长数据；铜价不是 GDP。"
+   },
+   "related_indicators": [
+    "gdp",
+    "pmi",
+    "gold"
+   ],
+   "sources": [
+    "COMEX"
+   ],
+   "canvas_node_ids": [
+    "n_growth"
+   ]
+  }
+ ]
+}
