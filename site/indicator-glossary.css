@@ -1,0 +1,106 @@
+/* indicator-glossary.css — 金融术语交互式知识系统样式。
+ * 全部使用站内 CSS 变量，深浅主题自动兼容；不引入框架。 */
+
+/* 术语可点击标识：仅在辅助显示开启时（body.glossary-hints）显示轻微下划线。
+ * 关闭后恢复正常文本，但 [data-indicator] 仍可点击（无障碍要求）。 */
+[data-indicator] { cursor: pointer; }
+body.glossary-hints [data-indicator] {
+  text-decoration: underline dotted var(--accent) 1.5px;
+  text-underline-offset: 3px;
+  text-decoration-skip-ink: auto;
+}
+body.glossary-hints [data-indicator]:hover { text-decoration-style: solid; }
+
+/* ---------- 第一级：桌面 Popover ---------- */
+.gl-pop {
+  position: fixed; z-index: 120; max-width: 340px; min-width: 260px;
+  background: var(--elev); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: var(--r);
+  box-shadow: var(--shadow-lg); padding: 14px 16px;
+  font-size: 13px; line-height: 1.65;
+  animation: gl-rise .18s var(--ease) both;
+}
+@keyframes gl-rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.gl-pop-head, .gl-detail-head { display: flex; align-items: baseline; gap: 8px; }
+.gl-pop-abbr { font-size: 17px; font-weight: 700; }
+.gl-pop-cn { font-weight: 700; }
+.gl-pop-en { margin: 2px 0 8px; }
+.gl-pop-simple { margin: 0 0 8px; }
+.gl-pop-why { margin: 0 0 10px; color: var(--text-2); }
+.gl-close {
+  margin-left: auto; flex: none; width: 28px; height: 28px; min-width: 28px;
+  border: 0; background: transparent; color: var(--text-2);
+  font-size: 20px; line-height: 1; cursor: pointer; border-radius: 8px;
+}
+.gl-close:hover { color: var(--text); background: var(--surface-3); }
+.gl-detail-btn {
+  border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent);
+  border-radius: 999px; padding: 5px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.gl-detail-btn:hover { filter: brightness(1.08); }
+
+/* ---------- 第二级：详情面板（桌面居中，移动端底部抽屉） ---------- */
+.gl-backdrop {
+  position: fixed; inset: 0; z-index: 118;
+  background: rgba(0, 0, 0, .38);
+  animation: gl-fade .18s ease both;
+}
+@keyframes gl-fade { from { opacity: 0; } to { opacity: 1; } }
+.gl-detail {
+  position: fixed; z-index: 120; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(640px, calc(100vw - 32px)); max-height: min(82vh, 760px);
+  overflow-y: auto; overscroll-behavior: contain;
+  background: var(--elev); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg); padding: 18px 20px 20px;
+  font-size: 13.5px; line-height: 1.75;
+  animation: gl-rise .18s var(--ease) both;
+}
+.gl-tabs { display: flex; gap: 6px; margin: 12px 0 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+.gl-tab {
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  border-radius: 999px; padding: 5px 16px; font-size: 13px; cursor: pointer;
+}
+.gl-tab.is-on { background: var(--accent-bg); border-color: var(--accent); color: var(--text); font-weight: 600; }
+.gl-tab-body h4 { font-size: 13.5px; margin: 14px 0 6px; }
+.gl-tab-body h4:first-child { margin-top: 0; }
+.gl-tab-body p { margin: 6px 0; color: var(--text-2); }
+.gl-tab-body p b { color: var(--text); }
+.gl-branch-note { margin: 4px 0; }
+.gl-paths { margin: 6px 0; padding-left: 18px; color: var(--text-2); }
+.gl-paths li { margin: 4px 0; }
+.gl-assets { border-collapse: collapse; width: 100%; font-size: 13px; }
+.gl-assets th, .gl-assets td { border-bottom: 1px solid var(--border); padding: 7px 8px; text-align: left; vertical-align: top; }
+.gl-assets th { font-weight: 700; white-space: nowrap; width: 64px; }
+.gl-assets td { color: var(--text-2); }
+.gl-link { background: none; border: 0; color: var(--accent); cursor: pointer; font-size: 12.5px; padding: 1px 4px; text-decoration: underline; text-underline-offset: 2px; }
+.gl-related { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--border-strong); }
+
+/* ---------- 第一级（移动端）：底部弹层 ---------- */
+.gl-sheet {
+  position: fixed; z-index: 120; left: 0; right: 0; bottom: 0;
+  max-height: 78vh; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--elev); color: var(--text);
+  border-top: 1px solid var(--border-strong);
+  border-radius: 16px 16px 0 0; box-shadow: var(--shadow-lg);
+  padding: 14px 18px calc(16px + env(safe-area-inset-bottom));
+  font-size: 13.5px; line-height: 1.7;
+  animation: gl-slide-up .22s var(--ease) both;
+}
+@keyframes gl-slide-up { from { transform: translateY(24px); opacity: .6; } to { transform: none; opacity: 1; } }
+
+/* ---------- 移动端适配 ---------- */
+@media (max-width: 760px) {
+  .gl-pop { display: none; } /* 移动端不用 Popover，统一用底部弹层 */
+  .gl-detail {
+    left: 0; right: 0; top: auto; bottom: 0; transform: none;
+    width: auto; max-height: 86vh;
+    border-radius: 16px 16px 0 0;
+    padding: 14px 18px calc(16px + env(safe-area-inset-bottom));
+    animation: gl-slide-up .22s var(--ease) both;
+  }
+  .gl-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .gl-tab { flex: none; }
+  .gl-assets th { width: 52px; }
+}
