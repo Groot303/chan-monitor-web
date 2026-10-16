@@ -639,6 +639,12 @@
     var t = new Date(ds + "T00:00:00"), now = new Date(); now.setHours(0, 0, 0, 0);
     return Math.round((t - now) / 86400000);
   }
+  /* 术语包装（薄调用；映射在 indicator-glossary.js。模块未加载时返回原文）。 */
+  function glossaryTermSpan(mapName, key, labelHTML) {
+    var G = window.Glossary;
+    if (!G || !G[mapName] || !G.termSpan) return labelHTML;
+    return G.termSpan(G[mapName], key, labelHTML);
+  }
   function macroInd(key) {
     var inds = (MACRO && MACRO.indicators) || {};
     return inds[key] || null;
@@ -665,14 +671,14 @@
     var ind = macroInd(key);
     if (!ind) return "";
     if (ind.status !== "ok" || ind.value == null) {
-      return '<div class="mrow" data-ind="' + esc(key) + '"><span class="mrow-name">' + esc(ind.name) + '</span>' +
+      return '<div class="mrow" data-ind="' + esc(key) + '"><span class="mrow-name">' + glossaryTermSpan("MACRO_IND_GLOSSARY", key, esc(ind.name)) + '</span>' +
         '<span class="mrow-val muted">暂无数据</span><span class="mrow-spark muted small">—</span>' +
         '<span class="mrow-range muted small">—</span><span class="mrow-read">' + esc(ind.read || "") + '</span>' +
         '<span class="mrow-asof muted small">—</span></div>';
     }
     var chg = ind.change_label ? '<span class="mrow-chg">' + esc(ind.change_label) + ' 日</span>' : "";
     var wchg = ind.window_label ? '<span class="mrow-chg">' + esc(ind.window_label) + " 90日</span>" : "";
-    return '<div class="mrow" data-ind="' + esc(key) + '"><span class="mrow-name">' + esc(ind.name) + '</span>' +
+    return '<div class="mrow" data-ind="' + esc(key) + '"><span class="mrow-name">' + glossaryTermSpan("MACRO_IND_GLOSSARY", key, esc(ind.name)) + '</span>' +
       '<span class="mrow-val">' + esc(fmtMacroVal(ind)) + " " + chg + " " + wchg + '</span>' +
       '<span class="mrow-spark">' + macroSparkline(ind) + '</span>' +
       '<span class="mrow-range muted small">90日 ' + esc(fmtMacroRange(ind)) + '</span>' +
@@ -868,6 +874,8 @@
       el.classList.toggle("is-dim", !(rel.inn.indexOf(i) >= 0 || rel.out.indexOf(i) >= 0));
     });
   }
+  /* 术语系统第三级联动：暴露画布高亮入口（供 indicator-glossary.js 调用）。 */
+  window.MacroCanvas = { highlightNode: function (id) { txSelectNode(id); } };
   function txSelectEdge(i) {
     TX_SEL.edge = i; TX_SEL.node = null;
     var d = $("tx-detail"); if (d) d.innerHTML = txDetailEdgeHTML(i);
@@ -982,7 +990,7 @@
       } else {
         nextTxt = "下次公布：" + (r.nextNote || "见官方日历");
       }
-      h += '<details class="rel"><summary><span class="rel-name">' + esc(r.name) + '</span><span class="rel-next muted small">' + esc(nextTxt) + '</span></summary>' +
+      h += '<details class="rel"><summary><span class="rel-name">' + glossaryTermSpan("RELEASE_GLOSSARY", r.id, esc(r.name)) + '</span><span class="rel-next muted small">' + esc(nextTxt) + '</span></summary>' +
         '<div class="rel-body">' +
         '<p><span class="tx-detail-k">衡量什么</span> ' + esc(r.measures) + '</p>' +
         '<p><span class="tx-detail-k">为什么市场关注</span> ' + esc(r.why) + '</p>' +
@@ -1009,7 +1017,7 @@
       if (f.id === "safe") { var g = macroInd("gold"); state = g && g.value != null ? ("黄金 " + fmtMacroVal(g) + "（" + (g.change_label || "—") + "）") : "暂无数据"; }
       if (f.id === "infl") state = "CPI / PCE 未接入";
       if (f.id === "jobs") { var fri = nextFirstFridays()[0]; state = "NFP 未接入，下次公布 " + fri.getFullYear() + "-" + String(fri.getMonth() + 1).padStart(2, "0") + "-" + String(fri.getDate()).padStart(2, "0"); }
-      h += '<span class="mx-live-item"><b>' + esc(f.label) + '</b> ' + esc(state) + '</span>';
+      h += '<span class="mx-live-item"><b>' + glossaryTermSpan("MATRIX_GLOSSARY", f.id, esc(f.label)) + '</b> ' + esc(state) + '</span>';
     });
     h += '</div>';
     h += '<div class="mx-wrap"><table class="mx"><thead><tr><th>资产</th>' +
