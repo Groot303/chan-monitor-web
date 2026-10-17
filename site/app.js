@@ -46,7 +46,7 @@
   function isBuy(g) { return /B$/.test((g && g.type) || g || ""); }
   function isEdge(g) { return (g && g.kind === "pivot_edge") || g.type === "ZG_S" || g.type === "ZD_B"; }
   function tier(score) { for (var i = 0; i < TIER.length; i++) if (score >= TIER[i][0]) return { k: TIER[i][1], label: TIER[i][2] }; return { k: "lo", label: "低" }; }
-  function typeName(t) { return TY[t] || t; }
+  function typeName(t) { return TY[t] || (String(t).indexOf("PRE_") === 0 ? (TY[t.slice(4)] || t.slice(4)) + "预警" : t); }
   function isPre(g) { return g.type && g.type.indexOf("PRE_") === 0; }
   function preBadge(g) { return isPre(g) ? '<span class="pre-badge">预</span>' : ''; }
   function fmtTime(t, level) { if (!t) return "—"; return level === "30m" ? t + " " + MK[MARKET].tz : t; }
@@ -138,6 +138,7 @@
     var t = root.getAttribute("data-theme") === "light" ? "dark" : "light";
     root.setAttribute("data-theme", t); lsSet(LS.theme, t); applyThemeMeta();
     if (window.ChanInteractive) ChanInteractive.refreshTheme();
+    if (VIEW === "holdings") renderPosCharts();
     toast(t === "light" ? "已切换为浅色主题" : "已切换为深色主题");
   });
   applyThemeMeta();
@@ -149,22 +150,6 @@
   }
 
   // ---------- 设置面板 (iOS 风格) ----------
-  var SCORE_KEY = "chan.scoreThreshold", SHOWLOW_KEY = "chan.showLow";
-  function getThreshold() {
-    var v = parseFloat(localStorage.getItem(SCORE_KEY));
-    return isNaN(v) ? 3 : v;
-  }
-  function getShowLow() {
-    return localStorage.getItem(SHOWLOW_KEY) === "1";
-  }
-  function applyScoreFilter() {
-    var th = getThreshold(), showLow = getShowLow();
-    F.min = showLow ? 0 : th;
-    $("score-threshold").value = th;
-    $("score-val").textContent = th.toFixed(1) + " 分以下隐藏";
-    $("score-filter-toggle").setAttribute("aria-checked", showLow ? "true" : "false");
-    renderSignals();
-  }
   function openSettings() {
     $("settings-sheet").hidden = false;
     $("settings-scrim").hidden = false;
@@ -178,29 +163,15 @@
   $("btn-settings").addEventListener("click", openSettings);
   $("settings-close").addEventListener("click", closeSettings);
   $("settings-scrim").addEventListener("click", closeSettings);
-  $("score-threshold").addEventListener("input", function () {
-    var v = parseFloat(this.value);
-    localStorage.setItem(SCORE_KEY, v);
-    // 如果用户拖动滑块，自动开启过滤（关闭"显示低分"）
-    if (getShowLow()) {
-      localStorage.setItem(SHOWLOW_KEY, "0");
-    }
-    applyScoreFilter();
-  });
-  $("score-filter-toggle").addEventListener("click", function () {
-    var showLow = !getShowLow();
-    localStorage.setItem(SHOWLOW_KEY, showLow ? "1" : "0");
-    applyScoreFilter();
-    toast(showLow ? "已显示全部信号" : "已隐藏低分信号");
-  });
-  // 初始化：应用保存的阈值
-  (function initScoreFilter() {
-    F.min = getShowLow() ? 0 : getThreshold();
-  })();
   // ---------- 导航 ----------
   function setView(v, noHash) {
     if (["signals", "symbols", "holdings", "macro", "about"].indexOf(v) < 0) v = "signals";
     VIEW = v;
+    window.dispatchEvent(new CustomEvent("chan-view", {detail:{view:v}}));
+    document.body.dataset.view = v;
+    var pageCopy = { signals:["信号有据。<br><em>判断在你。</em>","从多周期信号中筛出值得研究的线索，再查看价格结构与评分依据。","信号研究","01"],symbols:["看见全貌。<br><em>读懂结构。</em>","逐个比较标的在不同周期中的方向与状态。","标的总览","02"],holdings:["持仓在手。<br><em>心中有数。</em>","核对持仓快照、成本与浮盈亏，结合原有图表检查价格位置。","持仓分析","03"],macro:["置身市场。<br><em>看清环境。</em>","从指标变化到传导关系，给投资判断补充背景。","大环境","04"],about:["每个判断。<br><em>都有边界。</em>","核对评分规则、数据来源与未确认信号的含义。","方法说明","05"] }[v];
+    $("page-title").innerHTML = pageCopy[0]; $("page-purpose").textContent = pageCopy[1]; $("edition-section").textContent = pageCopy[2]; $("intro-index").textContent = pageCopy[3];
+    if (window.closeSignalFilters) closeSignalFilters(false);
     ["signals", "symbols", "holdings", "macro", "about"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
     qsa(".tab[data-view]").forEach(function (b) {
       if (b.getAttribute("data-view") === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
@@ -209,7 +180,7 @@
     if (v === "symbols" && D) renderSymbols();
     if (v === "holdings") renderHoldings();
     if (v === "macro") renderMacro();
-    var kp = $("kpis"); if (kp) kp.style.display = (v === "holdings") ? "none" : "";
+    var kp = $("kpis"); if (kp) kp.style.display = (v === "signals" || v === "symbols") ? "" : "none";
   }
   qsa(".tab[data-view]").forEach(function (b) {
     b.addEventListener("click", function () { setView(b.getAttribute("data-view")); window.scrollTo({ top: 0, behavior: "smooth" }); });
@@ -299,6 +270,7 @@
   function handleData(d) {
     if (!d || !Array.isArray(d.signals) || !d.symbols) throw new Error("数据格式不正确");
     D = d;
+    window.dispatchEvent(new CustomEvent("chan-data", {detail:{section:"signals",generated:d.generated,market:MARKET}}));
     SIGS = d.signals.filter(function (g) { return g && g.symbol && g.type; }).map(function (g, i) {
       g._id = i; g.score = num(g.score, 0);
       if (!g.kind) g.kind = (g.type === "ZG_S" || g.type === "ZD_B") ? "pivot_edge" : "chan";
@@ -307,6 +279,7 @@
     init();
   }
   function showLoadErr(e, url) {
+    window.dispatchEvent(new CustomEvent("chan-data", {detail:{section:"signals",error:true}}));
     $("meta-short").textContent = "数据加载失败";
     qsa("#meta-sub .dot").forEach(function (x) { x.className = "dot err"; });
     $("kpis").innerHTML = "";
@@ -358,12 +331,13 @@
       .then(function (d) {
         try {
           POSDATA = d; HELD = {};
+          window.dispatchEvent(new CustomEvent("chan-data", {detail:{section:"holdings",generated:d.generated}}));
           (d.positions || []).forEach(function (p) { if (p && p.symbol) HELD[p.symbol] = p; });
           renderHoldings();
           if (VIEW === "symbols" && D) renderSymbols();  // refresh 持有 badges
         } catch (e) { /* 持仓渲染失败不影响信号看板 */ }
       })
-      .catch(function () { renderHoldings(); });  // 持仓缺失不影响主流程
+      .catch(function () { window.dispatchEvent(new CustomEvent("chan-data", {detail:{section:"holdings",error:true}})); renderHoldings(); });  // 持仓缺失不影响主流程
   }
   function fmtReportDate(s) {
     s = String(s || "");
@@ -608,7 +582,7 @@
     function gj(u) { return fetch(u, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }); }
     Promise.all([gj("/api/macro").catch(function () { return null; }),
                  gj("data/events.json").catch(function () { return null; })])
-      .then(function (res) { MACRO = res[0]; EVENTS = res[1]; renderMacro(); })
+      .then(function (res) { MACRO = res[0]; EVENTS = res[1]; window.dispatchEvent(new CustomEvent("chan-data", {detail:{section:"macro",generated:MACRO && MACRO.generated,error:!MACRO || !!MACRO.error}})); renderMacro(); })
       .catch(function () { renderMacro(); })
       .finally(function () { macroLoading = false; });
   }
@@ -1389,6 +1363,8 @@
     if (!D) return;
     var a = filtered(), box = $("sig-results");
     $("sig-count").textContent = a.length + " / " + SIGS.length;
+    $("active-summary").textContent = "显示 " + a.length + " 条 · " + (F.level ? LV[F.level] : "全部周期") + " · ≥ " + (+F.min).toFixed(1) + " 分 · " + (F.recent ? "仅近期" : "全部时间");
+    $("filter-apply").textContent = "查看 " + a.length + " 条结果 →";
     if (!a.length) {
       box.innerHTML = stateHTML("empty", "没有符合条件的信号",
         F.recent ? "当前开启了「仅近期」,近期内可能没有满足条件的信号。可以关闭近期开关或降低分数下限。" : "试试放宽筛选条件,例如清空搜索、降低分数下限。",
@@ -1418,23 +1394,16 @@
     animateIn(box);
   }
 
+  // 标准1/3/6/8/10：参照成熟金融列表的行式排版，移除圆环和重复标签。
   function cardsHTML(a) {
-    return '<div class="cards">' + a.map(function (g, i) {
-      var buy = isBuy(g), edge = isEdge(g);
-      var sideCls = edge ? (buy ? "edge-buy" : "edge-sell") : (buy ? "buy" : "sell");
-      var cardCls = edge ? (buy ? "is-edge-buy" : "is-edge-sell") : (buy ? "is-buy" : "is-sell");
-      return '<button type="button" class="card ' + cardCls + (g.recent ? "" : " stale") + '" data-sig="' + g._id + '" style="animation-delay:' + Math.min(i * 35, 400) + 'ms" ' +
-        'aria-label="' + esc(g.symbol + " " + (LV[g.level] || g.level) + " " + typeName(g.type) + ",分数 " + g.score.toFixed(1) + "," + (g.confirmed ? "已确认" : "未确认,可能重绘")) + '">' +
-        '<div class="card-top">' + ringHTML(g.score) +
-        '<div class="card-id"><div class="sym">' + esc(g.symbol) + '<span class="side-tag ' + sideCls + '">' + (edge ? (buy ? "下沿买" : "上沿卖") : ((buy ? "买" : "卖") + " · " + typeName(g.type))) + preBadge(g) + '</span></div>' +
-        '<div class="card-price">信号价 <span class="num">' + fmtPrice(g.price) + '</span></div></div></div>' +
-        chipsHTML(g) +
-        '<div class="card-meta">' +
-        '<div><div class="meta-k">信号时间</div><div class="meta-v num" title="' + esc(fmtTime(g.time, g.level)) + '">' + esc(shortTime(g.time)) + '</div></div>' +
-        '<div><div class="meta-k">距今</div><div class="meta-v"><span class="num">' + esc(g.bars_ago) + '</span> 根</div></div>' +
-        '<div><div class="meta-k">共振</div><div class="meta-v">' + esc(RES[g.resonance] || "—") + '</div></div>' +
-        '</div></button>';
-    }).join("") + '</div>';
+    return '<div class="cards">' + a.map(function(g,i){
+      var side = isEdge(g) ? (isBuy(g) ? "t-edge-buy" : "t-edge-sell") : (isBuy(g) ? "t-buy" : "t-sell");
+      return '<button type="button" class="signal-note' + (g.recent ? '' : ' stale') + '" data-sig="' + g._id + '" aria-label="' + esc(g.symbol + ' ' + typeName(g.type) + ' ' + (g.confirmed ? '已确认' : '未确认，可能重绘') + '，查看依据') + '" style="animation-delay:' + Math.min(i*20,140) + 'ms">' +
+      '<div class="note-head"><span class="note-symbol">' + esc(g.symbol) + '</span><span class="note-score">' + g.score.toFixed(1) + '<small>/10</small></span></div>' +
+      '<div class="note-labels"><span class="note-type ' + side + '">' + esc(typeName(g.type)) + '</span><span>·</span><span>' + esc(LV[g.level] || g.level) + '</span><span>·</span><span class="' + (g.confirmed ? '' : 'note-unconfirmed') + '">' + (g.confirmed ? '已确认' : '未确认 · 可能重绘') + '</span>' + (g.recent ? '' : '<span>已过期</span>') + '</div>' +
+      '<div class="note-bottom"><span class="note-price"><small>信号价</small>' + fmtPrice(g.price) + '</span><span class="note-time">信号时间<b>' + esc(fmtTime(g.time,g.level)) + '</b></span></div>' +
+      '<div class="note-meta"><span>距今 ' + esc(g.bars_ago) + ' 根 · ' + esc(RES[g.resonance] || '无共振数据') + '</span><span>查看依据 <span class="note-arrow" aria-hidden="true">↗</span></span></div></button>';
+    }).join('') + '</div>';
   }
   function shortTime(t) { if (!t) return "—"; return t.length > 10 ? t.slice(5) : t; }
 
@@ -1583,11 +1552,11 @@
         (g.ratio != null ? stat("MACD 面积比", num(g.ratio, 0).toFixed(2), true) : stat("离中枢", g.margin_pct != null ? fmtPct(g.margin_pct) : "—", true)) +
         '</div></div>';
       if (!g.confirmed) h += '<div class="d-warn" role="note"><span aria-hidden="true">⚠</span><div><b>未确认信号,可能重绘。</b>最后一段尚未被特征序列分型确认,后续K线可能使该信号改变或消失。' + (g.repaint_warning ? '<div class="muted small" style="margin-top:4px">' + esc(g.repaint_warning) + '</div>' : "") + '</div></div>';
-      h += '<section class="d-block"><h3>分项评分 <span class="tier-txt tier-' + tier(g.score).k + '">' + tier(g.score).label + '分段</span></h3>' + breakdownHTML(g) + '</section>';
+      h += '<details class="research-details"><summary>评分拆解与信号解读</summary><section class="d-block"><h3>分项评分 <span class="tier-txt tier-' + tier(g.score).k + '">' + tier(g.score).label + '分段</span></h3>' + breakdownHTML(g) + '</section>';
       h += '<section class="d-block"><h3>解读</h3><ul class="explain">' + explain(g).map(function (e) {
         var v = num((g.score_breakdown || {})[e[0]], 0);
         return '<li style="--b:' + (v > 0 ? "var(--hi)" : v < 0 ? "var(--mid2)" : "var(--text-3)") + '"><span>' + esc(e[1]) + '</span></li>';
-      }).join("") + '</ul></section>';
+      }).join("") + '</ul></section></details>';
     } else {
       h += '<div class="d-warn" role="note" style="border-style:solid"><div>该标的当前数据中没有检测到信号。</div></div>';
     }
@@ -1615,6 +1584,9 @@
     }
     h += '<button type="button" class="btn" id="dr-filter" style="align-self:flex-start">在信号列表中只看 ' + esc(sym) + '</button>';
     $("dr-body").innerHTML = h;
+    // 标准4：先看信号价格与风险，再看图验证；图表不是首页主功能。
+    var chartSection = $("ichart-root").parentElement, warning = $("dr-body").querySelector(".d-warn"), hero = $("dr-body").querySelector(".d-hero");
+    if (hero) (warning || hero).insertAdjacentElement("afterend",chartSection);
     $("dr-body").scrollTop = 0;
 
     if (window.ChanInteractive && $("ichart-root")) {
@@ -1774,7 +1746,7 @@
     if (e.key === "Escape") { if (!$("profile-modal").hidden) closeProfile(); else if (lbOpen) closeLightbox(); else if (drOpen) closeDrawer(); }
     else if (e.key === "Tab") { if (lbOpen) trap($("lightbox"), e); else if (drOpen) trap($("drawer"), e); }
     else if (e.key === "/" && !lbOpen && !drOpen && document.activeElement.tagName !== "INPUT") {
-      e.preventDefault(); setView("signals"); var fs = $("filters"); fs.classList.add("open"); $("btn-filters").setAttribute("aria-expanded", "true"); $("f-q").focus();
+      e.preventDefault(); setView("signals"); if (window.openSignalFilters) openSignalFilters();
     }
   });
 
@@ -1786,4 +1758,79 @@
   load();
   // 每分钟刷新相对时间
   setInterval(function () { if (D) { var g = new Date(D.generated); if (!isNaN(g)) $("meta-short").textContent = "更新于 " + relTime(g) + " · " + g.toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }); } }, 60000);
+})();
+
+
+// 标准6/9：成熟的底部筛选面板，保持焦点、返回位置及滚动状态。
+(function () {
+  var filters = document.getElementById("filters"), opener = document.getElementById("btn-filters");
+  var backdrop = document.getElementById("filter-backdrop"), media = matchMedia("(max-width:760px)");
+  var oldOverflow = null;
+  function syncFilters() {
+    var open = media.matches && filters.classList.contains("open");
+    backdrop.hidden = !open;
+    opener.setAttribute("aria-expanded", String(open));
+    filters.setAttribute("role", open ? "dialog" : "search");
+    if (open) {
+      filters.setAttribute("aria-modal", "true");
+      if (oldOverflow === null) oldOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.getElementById("filter-close").focus();
+    } else {
+      filters.removeAttribute("aria-modal");
+      if (oldOverflow !== null) { document.body.style.overflow = oldOverflow; oldOverflow = null; }
+    }
+  }
+  window.closeSignalFilters = function (restore) {
+    filters.classList.remove("open"); syncFilters();
+    if (restore !== false && media.matches) opener.focus();
+  };
+  window.openSignalFilters = function () {
+    filters.classList.add("open"); syncFilters();
+    document.getElementById("f-q").focus();
+  };
+  opener.addEventListener("click", syncFilters);
+  ["filter-close", "filter-apply", "filter-backdrop"].forEach(function (id) {
+    document.getElementById(id).addEventListener("click", function () { closeSignalFilters(true); });
+  });
+  function trap(container, e) {
+    var items = Array.from(container.querySelectorAll('button,input,select,a[href],[tabindex="0"]')).filter(function (el) { return !el.disabled && el.getClientRects().length; });
+    var first = items[0], last = items[items.length - 1];
+    if (!first) return;
+    if (e.shiftKey && (document.activeElement === first || !container.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (document.activeElement === last || !container.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+  }
+  var settings = document.getElementById("settings-sheet"), settingsButton = document.getElementById("btn-settings");
+  settingsButton.addEventListener("click", function () {
+    settings.setAttribute("role", "dialog"); settings.setAttribute("aria-modal", "true");
+    document.getElementById("settings-close").focus();
+  });
+  ["settings-close", "settings-scrim"].forEach(function (id) {
+    document.getElementById(id).addEventListener("click", function () { settingsButton.focus(); });
+  });
+  document.addEventListener("keydown", function (e) {
+    if (!settings.hidden) {
+      if (e.key === "Escape") { settings.hidden = true; document.getElementById("settings-scrim").hidden = true; settingsButton.focus(); }
+      else if (e.key === "Tab") trap(settings, e);
+    } else if (media.matches && filters.classList.contains("open")) {
+      if (e.key === "Escape") { e.preventDefault(); closeSignalFilters(true); }
+      else if (e.key === "Tab") trap(filters, e);
+    }
+  });
+  media.addEventListener("change", syncFilters);
+  // 标准4/7：每个页面使用自身的数据时间，失败时明确提示，不展示过期回退。
+  var statusBySection = {}, activeView = document.body.dataset.view || "signals";
+  function renderStatus() {
+    var section = activeView === "symbols" ? "signals" : activeView, status = statusBySection[section];
+    var el = document.getElementById("data-status"), names = {signals:"信号",holdings:"持仓",macro:"宏观"};
+    if (section === "about") { el.textContent = "评分为启发式规则，未经回测；未确认信号可能重绘。"; return; }
+    if (!status) { el.textContent = "正在读取" + names[section] + "数据…"; return; }
+    if (status.error) { el.textContent = names[section] + "数据暂不可用，请稍后重试；其他页面仍可查看。"; return; }
+    var stamp = status.generated ? status.generated.replace("T", " ").slice(0, 19) + " UTC" : "更新时间未知";
+    var source = section === "signals" ? (status.market === "cn" ? "东方财富" : "Alpaca / IEX") : section === "holdings" ? "IBKR Flex 快照" : "宏观指标";
+    el.textContent = source + " · " + stamp + (section === "signals" ? " · 评分不是胜率" : "");
+  }
+  window.addEventListener("chan-view", function (e) { activeView = e.detail.view; renderStatus(); });
+  window.addEventListener("chan-data", function (e) { statusBySection[e.detail.section] = e.detail; renderStatus(); });
+  renderStatus();
 })();

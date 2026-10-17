@@ -293,7 +293,9 @@
     requestAnimationFrame(function () { requestAnimationFrame(drawPivots); });
   }
 
+  var requestVersion = 0;
   function mount(root, symbol, opts) {
+    var version = ++requestVersion;
     opts = opts || {};
     destroy();
     if (SUPPORTED && !SUPPORTED[symbol]) return Promise.resolve(false);
@@ -311,7 +313,7 @@
         return r.json();
       })
       .then(function (data) {
-        if (!state.root) return false;
+        if (!state.root || version !== requestVersion) return false;
         state.data = data;
         if (!data.levels[state.level]) {
           state.level = LV_ORDER.find(function (l) { return data.levels[l]; }) || "daily";
@@ -332,7 +334,7 @@
         return true;
       })
       .catch(function (err) {
-        if (!state.root) return false;
+        if (!state.root || version !== requestVersion) return false;
         root.innerHTML = '<div class="state" style="padding:16px"><p>交互图加载失败: ' + String(err.message || err) + '</p></div>';
         return false;
       });

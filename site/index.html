@@ -15,6 +15,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%235b8cff%22/%3E%3Cpath d=%22M4 16l4-5 4 3 4-6 4 4%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222.2%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="indicator-glossary.css">
+<link rel="stylesheet" href="mobile-design.css">
 </head>
 <body>
 <a class="skip" href="#main">跳到主要内容</a>
@@ -26,7 +27,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
         <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 17l5-6 4 4 4-7 5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </span>
       <div class="brand-text">
-        <h1>缠论信号看板</h1>
+        <h1>缠论 · 研究手记</h1>
         <p class="brand-sub" id="meta-sub"><span class="dot pulse" aria-hidden="true"></span><span id="meta-short">加载中…</span></p>
       </div>
     </div>
@@ -55,6 +56,13 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
 
 <main id="main" tabindex="-1">
 
+<!-- 标准2/3/7/8/9：具有辨识度的编辑式标题；移动首屏先解释用途、来源与边界。 -->
+<div class="edition"><span>CHAN / FIELD NOTES</span><span id="edition-section">信号研究</span></div>
+<section class="page-intro" aria-label="当前页面介绍"><div><h2 id="page-title">信号有据。<br><em>判断在你。</em></h2><p id="page-purpose">从多周期信号中筛出值得研究的线索，再查看价格结构与评分依据。</p></div><span class="intro-index" id="intro-index" aria-hidden="true">01</span></section>
+<p class="data-status" id="data-status" role="status">正在连接数据…</p>
+<!-- 标准1/4/7：渐进式引导参照 Apple Tips；只有首次理解任务需要时展开。 -->
+<details class="quick-guide"><summary>第一次使用？先了解这份看板 ↗</summary><div class="guide-content"><p>信号的确认程度和时效不同，先筛选，再核验。</p><p>按标的、周期、类型与分数整理线索。</p><p><b>核对依据：</b>数据来源、生成时间、确认状态均可查；评分不是胜率。</p><p><b>下一步：</b>先筛选，再点一条信号查看依据；持仓与大环境保留在底部导航。</p><p><a href="#about">查看评分方法与数据说明 →</a></p></div></details>
+
   <!-- 概览卡片 -->
   <section class="kpis" id="kpis" aria-label="概览">
     <div class="kpi skeleton"></div><div class="kpi skeleton"></div><div class="kpi skeleton"></div><div class="kpi skeleton"></div>
@@ -78,8 +86,8 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
       </div>
     </div>
 
-    <form class="filters" id="filters" role="search" aria-label="信号筛选" onsubmit="return false">
-      <div class="f-field f-search">
+    <div class="filter-backdrop" id="filter-backdrop" hidden></div><form class="filters" id="filters" role="search" aria-label="信号筛选" onsubmit="return false">
+      <button type="button" class="icon-btn filter-close" id="filter-close" aria-label="关闭筛选">✕</button><div class="f-field f-search">
         <label for="f-q">标的</label>
         <div class="input-icon">
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -93,7 +101,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
           <button type="button" class="fchip" data-v="" aria-pressed="true">全部</button>
           <button type="button" class="fchip" data-v="weekly" aria-pressed="false">周线</button>
           <button type="button" class="fchip" data-v="daily" aria-pressed="false">日线</button>
-          <button type="button" class="fchip" data-v="30m" aria-pressed="false">30分钟</button>
+          <button type="button" class="fchip" data-v="30m" aria-pressed="false">30分钟</button><button type="button" class="fchip" data-v="5m" aria-pressed="false">5分钟</button>
         </div>
       </div>
       <div class="f-field">
@@ -148,9 +156,10 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
       <div class="f-field f-actions">
         <button type="button" class="btn ghost" id="f-reset">重置筛选</button>
       </div>
+      <div class="filter-footer"><button type="button" class="btn primary" id="filter-apply">查看筛选结果 →</button></div>
     </form>
 
-    <div id="sig-results" aria-live="polite"></div>
+    <p class="active-summary" id="active-summary" role="status"></p><div id="sig-results" aria-live="polite"></div>
   </section>
 
   <!-- 标的总览 -->
@@ -209,7 +218,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
       </article>
       <article class="panel">
         <h3>配色约定</h3>
-        <p>默认采用中文用户习惯:<b class="t-buy">红色 = 买点</b>,<b class="t-sell">绿色 = 卖点</b>。可点击右上角按钮切换为美股习惯(绿买红卖),偏好会保存在本地浏览器。</p>
+        <p>采用<b class="t-buy">绿买</b>、<b class="t-sell">红卖</b>，并同时显示信号名称；中枢沿提示使用青色与琥珀色，不单靠颜色传递含义。</p>
         <h3>确认状态</h3>
         <p><span class="chip chip-un">未确认</span> 表示最后一段尚未被特征序列分型确认,信号<b>可能重绘或消失</b>。<span class="chip chip-ok">已确认</span> 表示所在线段已确认。</p>
       </article>
@@ -219,6 +228,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
         <div id="failures"></div>
       </article>
     </div>
+
   </section>
 </main>
 
@@ -228,22 +238,6 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
   <div class="sheet-handle"></div>
   <h2 class="sheet-title">设置</h2>
   <div class="ios-group">
-    <div class="ios-row">
-      <div class="ios-row-main">
-        <span class="ios-label">最低分数</span>
-        <span class="ios-sub" id="score-val">3.0 分以下隐藏</span>
-      </div>
-      <input type="range" id="score-threshold" min="0" max="10" step="0.5" value="3" class="ios-slider" aria-label="最低分数">
-    </div>
-    <div class="ios-row">
-      <div class="ios-row-main">
-        <span class="ios-label">显示低分信号</span>
-        <span class="ios-sub">关闭时隐藏低于阈值的信号</span>
-      </div>
-      <button type="button" class="ios-switch" id="score-filter-toggle" role="switch" aria-checked="false" aria-label="显示低分信号">
-        <span class="ios-knob"></span>
-      </button>
-    </div>
     <div class="ios-row">
       <div class="ios-row-main">
         <span class="ios-label">金融术语辅助显示</span>
