@@ -1,14 +1,12 @@
-name: Deploy to VPS
+name: Telegram read-only diagnosis
 
 # push 到 main 即触发部署；也可在 Actions 页面手动 Run workflow
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 # 连续 push 时排队执行，避免两次部署重叠
 concurrency:
-  group: deploy-vps
+  group: telegram-readonly-diagnosis
   cancel-in-progress: false
 
 jobs:
@@ -32,21 +30,63 @@ jobs:
           ssh-keyscan -T 10 -p 22 "$HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
           echo "deploy key ready; known_hosts lines: $(grep -c . ~/.ssh/known_hosts || echo 0)"
 
-      - name: Deploy on VPS
+      - name: Read notification diagnostics on VPS
         env:
           HOST: ${{ secrets.VPS_HOST }}
           USER: ${{ secrets.VPS_USER }}
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/deploy_key \
-              -o IdentitiesOnly=yes \
-              -o StrictHostKeyChecking=accept-new \
-              -o ConnectTimeout=15 \
-              -o ServerAliveInterval=15 \
-              -o ServerAliveCountMax=20 \
-              "$USER@$HOST" /opt/chan-monitor/deploy.sh
-
-      - name: Verify site responds
-        run: |
-          curl -fsS --max-time 20 --retry 3 --retry-delay 5 \
-            -o /dev/null -w "site HTTP %{http_code}\n" https://groot303.duckdns.org/
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 "$USER@$HOST" '/opt/chan-monitor/repo/venv/bin/python -' <<'PYCODE'
+          import os, sys, json, re, urllib.request, urllib.parse, urllib.error
+          from pathlib import Path
+          sys.path.insert(0, '/opt/chan-monitor/repo')
+          import api  # 仅加载现有配置；不运行ASGI启动事件或通知任务。
+          sys.path.insert(0, '/opt/chan-monitor/repo/scripts')
+          import notify_telegram as notifier
+          token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+          chat = os.environ.get('TELEGRAM_CHAT_ID', '')
+          print('CONFIG', json.dumps({'token_configured': bool(token), 'chat_configured': bool(chat), 'score_min': notifier.SCORE_MIN}))
+          state_path = Path('/opt/chan-monitor/repo/state/notified.json')
+          state = notifier.load_state(str(state_path))
+          print('STATE', json.dumps({'exists':state_path.exists(), 'entry_count':len(state)}))
+          for name in ['signals.json', 'signals_cn.json']:
+              path = Path('/opt/chan-monitor/api_data/data') / name
+              if not path.exists():
+                  print('SIGNALS', name, 'missing'); continue
+              data = json.loads(path.read_text())
+              signals = data.get('signals', [])
+              due = notifier.select(signals, state)
+              eligible = notifier.select(signals, {})
+              print('SIGNALS', json.dumps({'file':name, 'generated':data.get('generated'), 'eligible':len(eligible), 'due':len(due), 'due_message_chars':len(notifier.fmt(due)) if due else 0}, ensure_ascii=False))
+          log_path = Path('/opt/chan-monitor/logs/api.log')
+          if log_path.exists():
+              with log_path.open('rb') as f:
+                  f.seek(max(0,log_path.stat().st_size-262144)); text=f.read().decode(errors='replace')
+              lines=[line for line in text.splitlines() if re.search(r'notify\[|notify.*failed',line)]
+              print('NOTIFY_LOG_COUNT', len(lines))
+              for line in lines[-24:]:
+                  if token: line=line.replace(token,'[redacted]')
+                  if chat: line=line.replace(chat,'[redacted]')
+                  print('LOG',line[:450])
+          def query(method, params=None):
+              if not token: return {'skipped':'token missing'}
+              url = 'https://api.telegram.org/bot'+token+'/'+method
+              if params: url += '?'+urllib.parse.urlencode(params)
+              try:
+                  with urllib.request.urlopen(url, timeout=20) as r: result=json.load(r)
+              except urllib.error.HTTPError as e:
+                  try: result=json.load(e)
+                  except Exception: return {'http_status':e.code}
+              except Exception as e: return {'exception':type(e).__name__}
+              desc=str(result.get('description','')).replace(token,'[redacted]')
+              if chat: desc=desc.replace(chat,'[redacted]')
+              safe={'ok':result.get('ok'), 'error_code':result.get('error_code'), 'description':desc}
+              obj=result.get('result') or {}
+              if method=='getMe': safe['is_bot']=obj.get('is_bot')
+              if method=='getChat': safe['chat_type']=obj.get('type')
+              if method=='getWebhookInfo': safe.update({'webhook_configured':bool(obj.get('url')), 'pending_update_count':obj.get('pending_update_count')})
+              return safe
+          print('GET_ME',json.dumps(query('getMe')))
+          if chat: print('GET_CHAT',json.dumps(query('getChat',{'chat_id':chat})))
+          print('GET_WEBHOOK_INFO',json.dumps(query('getWebhookInfo')))
+          PYCODE
