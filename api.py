@@ -8,9 +8,6 @@ import subprocess
 import secrets
 import sys
 import logging
-import time
-from functools import lru_cache
-from scripts.notification_diagnostics import diagnose as diagnose_notifications
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -301,17 +298,6 @@ def jobs():
             nxt = job.next_run_time if job else None
             d[key] = nxt.isoformat() if nxt else None
     return d
-
-
-# Read-only, cached diagnostics. No token/chat IDs, raw logs or sends exposed.
-@lru_cache(maxsize=1)
-def _notification_diagnostics_cached(minute):
-    return diagnose_notifications(REPO, DATA_DIR)
-
-
-@app.get("/api/notifications/status")
-def notification_diagnostics():
-    return _notification_diagnostics_cached(int(time.time() // 60))
 
 
 def _get_api_token():
