@@ -23,6 +23,12 @@ self_update() {
   if cp -f "$REPO/deploy/deploy.sh" "$SELF.new" && chmod 755 "$SELF.new" && mv -f "$SELF.new" "$SELF"; then log "deploy.sh self-updated"; else log "WARN: self-update failed"; fi
 }
 
+# 仅在既有部署通道中接受两项通知配置，不增加任意远程命令权限。
+sync_telegram_config() {
+  [ -f "$REPO/deploy/configure_telegram.py" ] || return 0
+  "$VENV/bin/python" "$REPO/deploy/configure_telegram.py"
+}
+
 cd "$REPO" || exit 1
 
 git checkout -- site/data/positions_ibkr.json 2>/dev/null || true
@@ -31,7 +37,7 @@ if [ -n "$OTHER" ]; then log "ABORT: dirty tracked files: $(echo $OTHER | tr '\n
 
 git fetch --quiet origin main || { log "ABORT: git fetch failed"; exit 1; }
 LOCAL=$(git rev-parse HEAD); REMOTE=$(git rev-parse origin/main)
-if [ "$LOCAL" = "$REMOTE" ]; then log "up to date at $LOCAL"; self_update; exit 0; fi
+if [ "$LOCAL" = "$REMOTE" ]; then log "up to date at $LOCAL"; self_update; sync_telegram_config; exit $?; fi
 
 PREV=$LOCAL
 log "deploying $LOCAL -> $REMOTE"
@@ -90,3 +96,4 @@ else
 fi
 
 self_update
+sync_telegram_config

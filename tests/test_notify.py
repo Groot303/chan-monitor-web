@@ -17,7 +17,7 @@ class T(unittest.TestCase):
         n.update_state([c], st)
         self.assertEqual(n.select([c], st), [])
     def test_filters(self):
-        self.assertEqual(n.select([sig(score=5.9), sig(recent=False, time="t2")], {}), [])
-        self.assertEqual(len(n.select([sig(score=6.0)], {})), 1)
+        self.assertEqual(n.select([sig(score=3.9), sig(recent=False, time="t2")], {}, score_min=4.0), [])
+        self.assertEqual(len(n.select([sig(score=4.0)], {}, score_min=4.0)), 1)
     def test_fmt(self):
         self.assertIn("可能重绘", n.fmt([sig()]))

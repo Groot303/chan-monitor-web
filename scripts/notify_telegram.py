@@ -4,7 +4,7 @@ Never fails the pipeline; never prints the token.
 
 Wired into api.py run_pipeline (after a successful pipeline run):
   SIGNALS_FILE = <api_data>/data/signals.json (US) or signals_cn.json (CN)
-  STATE_FILE   = <repo>/state/notified.json (dedup across runs)
+  STATE_FILE   = <api_data>/state/notified.json (dedup across runs)
   ANNOUNCE_FILE= <repo>/state/announcement.txt (one-off message, sent once
                  per content hash, then skipped on later runs)
 

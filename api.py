@@ -8,6 +8,7 @@ import subprocess
 import secrets
 import sys
 import logging
+from scripts.notification_state import notification_state_path
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -85,14 +86,14 @@ def notify_telegram():
     """Send Telegram notifications for new signals (US + CN) after a pipeline run.
 
     Runs scripts/notify_telegram.py twice (US signals.json, CN signals_cn.json),
-    sharing one state file for dedup. Token/chat come from env (VPS .env).
+    sharing a runtime state file under api_data/state for dedup. Token/chat come from env (VPS .env).
     Also delivers the one-off announcement file (state/announcement.txt) if
     present. Never raises; failures are logged only.
     """
     script = REPO / "scripts" / "notify_telegram.py"
     if not script.exists():
         return
-    state_file = REPO / "state" / "notified.json"
+    state_file = notification_state_path(REPO, DATA_DIR)
     announce_file = REPO / "state" / "announcement.txt"
     for name in ("signals.json", "signals_cn.json"):
         try:
