@@ -1,52 +1,16 @@
-name: Deploy to VPS
-
-# push 到 main 即触发部署；也可在 Actions 页面手动 Run workflow
+name: Telegram configuration preflight
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
-
-# 连续 push 时排队执行，避免两次部署重叠
-concurrency:
-  group: deploy-vps
-  cancel-in-progress: false
-
 jobs:
-  deploy:
+  check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
-      # 不再用 appleboy/ssh-action：它把密钥文件从宿主机挂进容器，
-      # chmod 600 容器读不了、chmod 644 ssh 又不认（run #5 就死在这）。
-      # 改为在 runner 本机把 base64 secret 还原成 600 权限的密钥，再用系统 ssh 部署。
-      - name: Prepare SSH key
+      - name: Check existing notification configuration
         env:
-          KEY_B64: ${{ secrets.VPS_SSH_KEY_B64 }}
-          HOST: ${{ secrets.VPS_HOST }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          printf '%s' "$KEY_B64" | tr -d '\r\n\t ' | base64 -d > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keygen -y -f ~/.ssh/deploy_key > /dev/null   # 私钥不可用会在这里直接失败
-          ssh-keyscan -T 10 -p 22 "$HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-          echo "deploy key ready; known_hosts lines: $(grep -c . ~/.ssh/known_hosts || echo 0)"
-
-      - name: Deploy on VPS
-        env:
-          HOST: ${{ secrets.VPS_HOST }}
-          USER: ${{ secrets.VPS_USER }}
-        run: |
-          set -euo pipefail
-          ssh -i ~/.ssh/deploy_key \
-              -o IdentitiesOnly=yes \
-              -o StrictHostKeyChecking=accept-new \
-              -o ConnectTimeout=15 \
-              -o ServerAliveInterval=15 \
-              -o ServerAliveCountMax=20 \
-              "$USER@$HOST" /opt/chan-monitor/deploy.sh
-
-      - name: Verify site responds
-        run: |
-          curl -fsS --max-time 20 --retry 3 --retry-delay 5 \
-            -o /dev/null -w "site HTTP %{http_code}\n" https://groot303.duckdns.org/
+          python - <<'PY'
+          import os, json
+          print(json.dumps({"token_configured":bool(os.environ.get("TELEGRAM_BOT_TOKEN")),"chat_configured":bool(os.environ.get("TELEGRAM_CHAT_ID"))}))
+          PY
