@@ -37,7 +37,7 @@ for sym, ent in d["symbols"].items():
     has = os.path.exists(os.path.join(src, img))
     if has:
         shutil.copyfile(os.path.join(src, img), os.path.join(site, img_dirname, img))
-    symbols[sym] = {"image": f"{img_dirname}/{img}" if has else None, "levels": lv_info}
+    symbols[sym] = {"image": f"{img_dirname}/{img}" if has else None, "levels": lv_info, "code": ent.get("code")}
 signals.sort(key=lambda g: -g.get("score", 0))
 out = {"generated": d["generated"], "market": d.get("market", market),
        "failures": d.get("failures", {}), "symbols": symbols, "signals": signals}
@@ -69,7 +69,7 @@ try:
     data_dirs = [os.path.join(root, src), root, os.path.join(root, "..", "chan-monitor")]
     for _sym in sorted(d["symbols"].keys()):
         try:
-            payload = export_symbol(_sym, data_dirs)
+            payload = export_symbol(_sym, data_dirs, tz="Asia/Shanghai" if market == "cn" else "America/New_York")
             with open(os.path.join(charts_dir, f"{_sym}.json"), "w", encoding="utf-8") as _f:
                 _json.dump(payload, _f, ensure_ascii=False, separators=(",", ":"))
             print(f"[{market}] chart {_sym}: ok")

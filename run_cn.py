@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A-share major indices chan-analysis pipeline (mirrors run2.py for US stocks).
+"""A-share indices and stocks chan-analysis pipeline (mirrors run2.py for US stocks).
 
 Data: East Money kline API directly (no API key needed).
 Sina K-line API as fallback when East Money returns nothing
@@ -18,19 +18,13 @@ from matplotlib.patches import Rectangle
 import os, requests
 from zoneinfo import ZoneInfo
 from chan2 import analyze_level, resonance, score_signal
+from cn_symbols import CN_SYMS, CN_CODES, SINA_SYMS
 
 CACHED = os.environ.get('CACHED') == '1'          # re-use out_cn/data2_*.csv instead of re-downloading
 FORCE_RUN = os.environ.get('FORCE_RUN') == 'true'  # bypass market-hours gate (workflow_dispatch)
 SH_TZ = "Asia/Shanghai"
 OUT = "out_cn"
 
-# (display name, eastmoney secid)
-CN_SYMS = [
-    ("上证指数", "1.000001"),
-    ("科创50", "1.000688"),
-    ("银行指数", "0.399986"),   # 中证银行
-    ("平均股价", "47.800005"),  # A股平均股价
-]
 LEVELS = [("weekly", "102"), ("daily", "101"), ("30m", "30"), ("5m", "5")]
 
 # Trend-filter mode for pivot-edge signals that conflict with the higher-timeframe trend
@@ -73,7 +67,7 @@ EM_HEADERS = {
 
 
 def fetch_em_kline(secid, klt, lmt="1000"):
-    """Fetch one index/level from East Money. Returns df with tz-aware
+    """Fetch one symbol/level from East Money. Returns df with tz-aware
     Asia/Shanghai index, columns Open/High/Low/Close/Volume, or None.
     Browser-like headers + 3 attempts with backoff; empty/error responses
     are logged with a snippet so the cause is visible in the backend log
@@ -109,16 +103,16 @@ def fetch_em_kline(secid, klt, lmt="1000"):
     df.index = df.index.tz_localize(SH_TZ)
     df = df[["Open", "High", "Low", "Close", "Volume"]].sort_index()
     df = df[~df.index.duplicated(keep="last")]
-    return df
+    # East Money may ignore lmt; keep the requested history bound locally.
+    return df.tail(int(lmt))
 
 
 SINA_URL = "http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData"
-SINA_SYMS = {"上证指数": "sh000001", "科创50": "sh000688", "银行指数": "sz399986"}
 SINA_SCALE = {"daily": 240, "30m": 30, "5m": 5}  # 新浪无原生周线: weekly 由 daily 按 W-FRI 重采样
 
 
 def fetch_sina_kline(name, lv):
-    """Sina fallback for one index/level. Returns df with the same
+    """Sina fallback for one symbol/level. Returns df with the same
     contract as fetch_em_kline (tz-aware Asia/Shanghai index,
     Open/High/Low/Close/Volume), or None. Only called when East Money
     returns nothing; 平均股价 has no Sina code and stays EM-only."""
@@ -168,7 +162,7 @@ def fetch_sina_kline(name, lv):
 
 
 def fetch_em_frames():
-    """Fetch OHLC bars for all indices/levels. Returns {level: {name: df}}."""
+    """Fetch OHLC bars for all symbols/levels. Returns {level: {name: df}}."""
     frames = {}
     for lv, klt in LEVELS:
         per = {}
@@ -267,7 +261,7 @@ out = {"generated": datetime.datetime.now(datetime.timezone.utc).isoformat() + "
 for s, secid in CN_SYMS:
     res = {}
     dfs = {}
-    ent = {"levels": {}}
+    ent = {"levels": {}, "code": CN_CODES.get(s)}
     for lv, klt in LEVELS:
         try:
             if CACHED:
@@ -299,7 +293,7 @@ for s, secid in CN_SYMS:
             last_segment=dict(up=r['segs'][-1].up, start=fmt(df.index[r['segs'][-1].s_i]),
                               end=fmt(df.index[r['segs'][-1].e_i]), end_price=r['segs'][-1].e_p,
                               confirmed=r['segs'][-1].confirmed) if r['segs'] else None,
-            signals=[dict(symbol=s, level=lv, **{k: (float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else v)
+            signals=[dict(symbol=s, code=CN_CODES.get(s), level=lv, **{k: (float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else v)
                                                   for k, v in sg.items() if k not in ('idx', 'seg', 'confirmed')},
                           time=fmt(df.index[sg['idx']]), bars_ago=len(df) - 1 - sg['idx'],
                           recent=(len(df) - 1 - sg['idx']) < {'weekly': 4, 'daily': 10, '30m': 40, '5m': 120}[lv],
@@ -347,7 +341,7 @@ for s, secid in CN_SYMS:
 json.dump(out, open(f"{OUT}/signals.json", "w"), indent=1, default=str, ensure_ascii=False)
 
 # summary md
-L = ["# Chan v2 signals summary (A股指数, 含中枢沿 ZG_S/ZD_B)", "",
+L = ["# Chan v2 signals summary (A股指数与个股, 含中枢沿 ZG_S/ZD_B)", "",
      f"Generated {out['generated']} (UTC). Prototype, read-only analysis. NOT investment advice.",
      "'?'/unconfirmed = last segment not yet confirmed, signal may repaint or vanish.", ""]
 if out["failures"]:

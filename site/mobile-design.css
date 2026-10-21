@@ -228,3 +228,7 @@ main{max-width:1440px;padding:28px 24px 40px}
 .fchip{min-height:40px}}
 /* 首次筛选引导只出现在信号页，其余页面直接进入各自任务。 */
 body:not([data-view="signals"]) .quick-guide{display:none}
+
+/* A股名称和交易代码分层显示，避免挤占手机价格区域。 */
+.symbol-code{font:400 10px/1.4 var(--mono);color:var(--text-3);letter-spacing:0;margin-left:8px}
+.sym .symbol-code{margin-left:0}

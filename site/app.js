@@ -15,7 +15,7 @@
   var DIR = { up: "向上", down: "向下", range: "震荡", inside: "震荡" };
   var POS = { above: "中枢上方", below: "中枢下方", inside: "中枢内", none: "无中枢" };
   var TIER = [[5, "hi", "高"], [2.5, "mid", "中"], [-Infinity, "lo", "低"]];
-  // 市场配置:美股(us) / A股指数(cn)
+  // 市场配置:美股(us) / A股指数与个股(cn)
   // API_BASE: 恒为空串 = 同源后端(api.py 同源托管 site/ + /api/*)。设置面板的 API 地址输入已删除。
   var API_BASE = "";
   var MK = {
@@ -23,8 +23,8 @@
           watch: ["AAOI","AAPL","AMD","AVGO","GOOG","INTC","LITE","META","MRNA","MRVL","MU","NOK","NVDA","ORCL","PLTR","SKHY","SNDK","SPCX","TSLA","TSM"],
           searchPh: "搜索代码,如 NVDA" },
     cn: { label: "A股", api: "/api/signals_cn", tz: "北京时间", src: "东方财富", delay: "东财数据可能延迟",
-          watch: ["上证指数","科创50","银行指数","平均股价"],
-          searchPh: "搜索指数,如 上证指数" }
+          watch: ["上证指数","科创50","银行指数","平均股价","万向钱潮","三花智控","三孚股份","诺德股份"],
+          searchPh: "搜索名称或代码，如 000559" }
   };
   function apiURL() { var m = MK[MARKET]; return (API_BASE || "") + m.api; }
   function signalsURL() { return apiURL(); }
@@ -43,6 +43,13 @@
   function fmtPrice(v) { v = num(v); return v == null ? "—" : v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function fmtSigned(v, n) { v = num(v, 0); var s = v.toFixed(n == null ? 2 : n); return v > 0 ? "+" + s : (v < 0 ? "−" + s.slice(1) : s); }
   function fmtPct(v) { v = num(v); return v == null ? "—" : v.toFixed(2) + "%"; }
+  function symbolCode(sym) {
+    return MARKET === "cn" && D && D.symbols && D.symbols[sym] ? (D.symbols[sym].code || "") : "";
+  }
+  function symbolHTML(sym) {
+    var code = symbolCode(sym);
+    return esc(sym) + (code ? '<small class="symbol-code">' + esc(code) + '</small>' : "");
+  }
   function isBuy(g) { return /B$/.test((g && g.type) || g || ""); }
   function isEdge(g) { return (g && g.kind === "pivot_edge") || g.type === "ZG_S" || g.type === "ZD_B"; }
   function tier(score) { for (var i = 0; i < TIER.length; i++) if (score >= TIER[i][0]) return { k: TIER[i][1], label: TIER[i][2] }; return { k: "lo", label: "低" }; }
@@ -192,7 +199,7 @@
     var about = $("about-src");
     if (about) about.textContent = "行情来自 " + MK[MARKET].src + "。信号时间为极值K线时间(" + MK[MARKET].tz + "),确认会滞后若干根K线。周线最后一根为当周未完成K线。";
     var ff = $("foot-syms");
-    if (ff) ff.textContent = MK[MARKET].watch.length + " 个" + (MARKET === "cn" ? "指数" : "标的") + "均为可缩放交互 K 线(Lightweight Charts,叠加笔/线段/中枢)。箭头=缠论一二三类买卖点;青绿/琥珀圆点=中枢下沿买/上沿卖。静态 PNG 可在详情中展开对照。";
+    if (ff) ff.textContent = MK[MARKET].watch.length + " 个" + "标的" + "均为可缩放交互 K 线(Lightweight Charts,叠加笔/线段/中枢)。箭头=缠论一二三类买卖点;青绿/琥珀圆点=中枢下沿买/上沿卖。静态 PNG 可在详情中展开对照。";
     var disc = $("foot-disc-src");
     if (disc) disc.textContent = "数据源 " + MK[MARKET].src + ",可能延迟或缺失。";
   }
@@ -208,6 +215,7 @@
     MARKET = m; lsSet("chan.market", m);
     if (window.ChanInteractive && ChanInteractive.setMarket) ChanInteractive.setMarket(m);
     F.q = "";
+    saveFilters();
     closeDrawer();
     syncMarketUI();
     load();
@@ -314,7 +322,7 @@
     var symsAll = allSymbols();
     $("foot-meta").textContent = "数据生成时间(UTC):" + (D.generated || "").slice(0, 19).replace("T", " ") + " · 标的 " + symsAll.length + " 个 · 信号 " + SIGS.length + " 条 · 分数为启发式 0–10,不是胜率。";
     var dl = $("sym-list");
-    dl.innerHTML = symsAll.map(function (s) { return '<option value="' + esc(s) + '">'; }).join("");
+    dl.innerHTML = symsAll.map(function (s) { return '<option value="' + esc(s) + '" label="' + esc(symbolCode(s)) + '">'; }).join("");
     renderKPIs(gen, ok, ageH);
     renderFailures();
     syncControls();
@@ -1330,7 +1338,7 @@
   function filtered() {
     var q = F.q.toUpperCase();
     var a = SIGS.filter(function (g) {
-      if (q && g.symbol.toUpperCase().indexOf(q) < 0) return false;
+      if (q && g.symbol.toUpperCase().indexOf(q) < 0 && symbolCode(g.symbol).indexOf(q) < 0) return false;
       if (F.level && g.level !== F.level) return false;
       if (F.type) {
         if (F.type === "edge") { if (!isEdge(g)) return false; }
@@ -1399,7 +1407,7 @@
     return '<div class="cards">' + a.map(function(g,i){
       var side = isEdge(g) ? (isBuy(g) ? "t-edge-buy" : "t-edge-sell") : (isBuy(g) ? "t-buy" : "t-sell");
       return '<button type="button" class="signal-note' + (g.recent ? '' : ' stale') + '" data-sig="' + g._id + '" aria-label="' + esc(g.symbol + ' ' + typeName(g.type) + ' ' + (g.confirmed ? '已确认' : '未确认，可能重绘') + '，查看依据') + '" style="animation-delay:' + Math.min(i*20,140) + 'ms">' +
-      '<div class="note-head"><span class="note-symbol">' + esc(g.symbol) + '</span><span class="note-score">' + g.score.toFixed(1) + '<small>/10</small></span></div>' +
+      '<div class="note-head"><span class="note-symbol">' + symbolHTML(g.symbol) + '</span><span class="note-score">' + g.score.toFixed(1) + '<small>/10</small></span></div>' +
       '<div class="note-labels"><span class="note-type ' + side + '">' + esc(typeName(g.type)) + '</span><span>·</span><span>' + esc(LV[g.level] || g.level) + '</span><span>·</span><span class="' + (g.confirmed ? '' : 'note-unconfirmed') + '">' + (g.confirmed ? '已确认' : '未确认 · 可能重绘') + '</span>' + (g.recent ? '' : '<span>已过期</span>') + '</div>' +
       '<div class="note-bottom"><span class="note-price"><small>信号价</small>' + fmtPrice(g.price) + '</span><span class="note-time">信号时间<b>' + esc(fmtTime(g.time,g.level)) + '</b></span></div>' +
       '<div class="note-meta"><span>距今 ' + esc(g.bars_ago) + ' 根 · ' + esc(RES[g.resonance] || '无共振数据') + '</span><span>查看依据 <span class="note-arrow" aria-hidden="true">↗</span></span></div></button>';
@@ -1421,7 +1429,7 @@
       var buy = isBuy(g);
       return '<tr tabindex="0" data-sig="' + g._id + '" aria-label="' + esc(g.symbol + " " + typeName(g.type) + " 分数 " + g.score.toFixed(1) + ",按回车查看详情") + '">' +
         '<td>' + sbarHTML(g.score) + '</td>' +
-        '<td class="t-sym">' + esc(g.symbol) + '</td>' +
+        '<td class="t-sym">' + symbolHTML(g.symbol) + '</td>' +
         '<td><span class="chip ' + (isEdge(g) ? (buy ? "chip-edge-buy" : "chip-edge-sell") : (buy ? "chip-buy" : "chip-sell")) + '">' + esc(typeName(g.type)) + '</span>' + preBadge(g) + '</td>' +
         '<td><span class="chip chip-lv">' + esc(LV[g.level] || g.level) + '</span></td>' +
         '<td>' + (g.confirmed ? '<span class="chip chip-ok">已确认</span>' : '<span class="chip chip-un" title="可能重绘">未确认</span>') + (g.recent ? "" : ' <span class="chip chip-stale">过期</span>') + '</td>' +
@@ -1471,7 +1479,7 @@
         body = '<div class="sym-empty" role="status">暂无信号<span class="muted"> · 仍可打开查看多级别状态</span></div>';
       }
       return '<button type="button" class="sym-card' + (info.latest ? "" : " is-empty") + '" data-sym="' + esc(sym) + '" style="animation-delay:' + Math.min(i * 25, 400) + 'ms" aria-label="' + esc(sym + (info.latest ? ",查看详情" : ",暂无信号,查看状态")) + '">' +
-        '<div class="sym-head"><span class="sym">' + esc(sym) + ((HELD && HELD[sym]) ? ' <span class="held-badge" title="IBKR 持仓中">持有</span>' : "") + '</span><span class="sym-close">' + (lc ? '<span class="num">' + fmtPrice(lc.last_close) + '</span>' : "—") + '</span></div>' +
+        '<div class="sym-head"><span class="sym">' + symbolHTML(sym) + ((HELD && HELD[sym]) ? ' <span class="held-badge" title="IBKR 持仓中">持有</span>' : "") + '</span><span class="sym-close">' + (lc ? '<span class="num">' + fmtPrice(lc.last_close) + '</span>' : "—") + '</span></div>' +
         '<div class="dirs">' + dirs + '</div>' + body + '</button>';
     }).join("");
     qsa("[data-sym]", $("sym-grid")).forEach(function (el) {
@@ -1540,7 +1548,7 @@
     var s = D.symbols[sym] || {};
     current = { sym: sym, g: g };
     if (opener && !$("drawer").contains(opener)) lastFocus = opener;
-    var head = '<h2 id="dr-title">' + esc(sym) + (g ? ' <span class="side-tag ' + (isEdge(g) ? (isBuy(g) ? "edge-buy" : "edge-sell") : (isBuy(g) ? "buy" : "sell")) + '">' + (isEdge(g) ? esc(typeName(g.type)) : ((isBuy(g) ? "买" : "卖") + " · " + typeName(g.type))) + '</span>' : ' <span class="chip">暂无信号</span>') + '</h2><button type="button" class="mini-btn" id="dr-profile" data-sym="' + esc(sym) + '">简介</button>' + (g ? chipsHTML(g, { res: true }) : "");
+    var head = '<h2 id="dr-title">' + symbolHTML(sym) + (g ? ' <span class="side-tag ' + (isEdge(g) ? (isBuy(g) ? "edge-buy" : "edge-sell") : (isBuy(g) ? "buy" : "sell")) + '">' + (isEdge(g) ? esc(typeName(g.type)) : ((isBuy(g) ? "买" : "卖") + " · " + typeName(g.type))) + '</span>' : ' <span class="chip">暂无信号</span>') + '</h2><button type="button" class="mini-btn" id="dr-profile" data-sym="' + esc(sym) + '">简介</button>' + (g ? chipsHTML(g, { res: true }) : "");
     $("dr-headline").innerHTML = head;
     var pfb = $("dr-profile");
     if (pfb) pfb.addEventListener("click", function () { openProfile(sym, pfb); });

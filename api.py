@@ -9,6 +9,7 @@ import secrets
 import sys
 import logging
 from scripts.notification_state import notification_state_path
+from cn_symbols import CN_SYMS
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -261,6 +262,7 @@ scheduler = None
 @app.on_event("startup")
 async def on_startup():
     global scheduler
+    log.info("A-share universe configured: %s", ", ".join(name for name, _ in CN_SYMS))
     try:
         from apscheduler.schedulers.asyncio import AsyncIOScheduler
         scheduler = AsyncIOScheduler(timezone="UTC")

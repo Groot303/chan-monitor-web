@@ -39,3 +39,7 @@ Cloudflare Pages 已于 2026-10-13 停用。现由阿里云 VPS（FastAPI + Cadd
 ## GitHub Actions 注意
 - 部署工作流所需 Secrets（仓库 Settings → Secrets and variables → Actions）：`VPS_HOST`、`VPS_USER`、`VPS_SSH_KEY_B64`。
 - 行情来自 Alpaca(IEX 免费实时)，API Key 放在 VPS `/opt/chan-monitor/.env`，不在 GitHub Secrets 里。失败标的记录在 `failures`。
+
+## A股关注标的
+
+保留上证指数、科创50、银行指数、平均股价，另加入万向钱潮（000559）、三花智控（002050）、三孚股份（603938）、诺德股份（600110）。四个周期（周线、日线、30分钟、5分钟）沿用同一套分析与通知规则；网站支持按名称或六位代码筛选。交易所映射及新浪备用代码统一维护于 `cn_symbols.py`。

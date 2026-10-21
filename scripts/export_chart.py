@@ -30,9 +30,9 @@ def find_csv(sym: str, lv: str, data_dirs: list[str]) -> str:
     raise FileNotFoundError(name)
 
 
-def load_df(path: str) -> pd.DataFrame:
+def load_df(path: str, tz: str = "America/New_York") -> pd.DataFrame:
     df = pd.read_csv(path, index_col=0)
-    df.index = pd.to_datetime(df.index, utc=True).tz_convert("America/New_York")
+    df.index = pd.to_datetime(df.index, utc=True).tz_convert(tz)
     df = df.dropna(subset=["High", "Low", "Open", "Close"])
     return df
 
@@ -46,7 +46,7 @@ def bar_time(ts, lv: str):
         if ts.tzinfo is None:
             raise ValueError("intraday bar missing tz")
         return int(ts.astimezone(timezone.utc).timestamp())
-    # business-day string in America/New_York calendar date
+    # business-day string in the market-local calendar date
     return ts.strftime("%Y-%m-%d")
 
 
@@ -130,7 +130,7 @@ def export_level(df: pd.DataFrame, lv: str, sym: str, big_states: list | None = 
     }
 
 
-def export_symbol(sym: str, data_dirs: list[str]) -> dict:
+def export_symbol(sym: str, data_dirs: list[str], tz: str = "America/New_York") -> dict:
     dfs, raw_levels = {}, {}
     for lv in LEVELS:
         try:
@@ -138,7 +138,7 @@ def export_symbol(sym: str, data_dirs: list[str]) -> dict:
         except FileNotFoundError as e:
             raw_levels[lv] = None
             continue
-        df = load_df(path)
+        df = load_df(path, tz=tz)
         if len(df) < 40:
             raw_levels[lv] = None
             continue
