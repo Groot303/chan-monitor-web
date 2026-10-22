@@ -18,7 +18,7 @@ for (const [symbol,code] of addedCN) {
 }
 
 const macro = { generated, source: 'UI test fixture', indicators: {vix:{name:'VIX',value:19.99,unit:'',kind:'index',status:'ok',asof:'2026-10-16',change:1,change_pct:1,change_label:'+1%',read:'测试指标',range:[18,22],series:[['2026-10-15',19],['2026-10-16',19.99]]}}, regime:{}, failures:{} };
-const positions = {generated, positions:[{symbol:'NVDA',qty:10,cost:200,mark:225.92,unrealized:259.2,value:2259.2,asset:'STK'}]};
+const positions = {generated, positions:[{symbol:'NVDA',currency:'USD',qty:10,cost:200,mark:225.92,unrealized:259.2,value:2259.2,asset:'STK'}]};
 (async () => {
   const browser = await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',args:['--no-sandbox'],headless:true});
   try {
@@ -73,7 +73,7 @@ const positions = {generated, positions:[{symbol:'NVDA',qty:10,cost:200,mark:225
     await page.keyboard.press('Escape');
     await page.locator('#drawer').waitFor({state:'hidden'});
     await page.locator('#btn-theme').click();
-    assert.equal(await page.locator('html').getAttribute('data-theme'),'light');
+    assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');
     await page.locator('#btn-settings').click();
     await page.locator('#settings-close').focus();
     await page.keyboard.press('Tab');

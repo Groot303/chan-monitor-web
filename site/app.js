@@ -161,19 +161,25 @@
   }
 
   // ---------- 设置面板 (iOS 风格) ----------
+  var settingsOverflow = null;
   function openSettings() {
+    if (settingsOverflow === null) settingsOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     $("settings-sheet").hidden = false;
+    AppleMotion.enter($("settings-sheet"), "sheet");
     $("settings-scrim").hidden = false;
-    // force reflow for transition
-    void $("settings-sheet").offsetWidth;
   }
   function closeSettings() {
-    $("settings-sheet").hidden = true;
-    $("settings-scrim").hidden = true;
+    AppleMotion.close($("settings-sheet"), function () {
+      $("settings-sheet").hidden = true; $("settings-scrim").hidden = true;
+      if (settingsOverflow !== null) { document.body.style.overflow = settingsOverflow; settingsOverflow = null; }
+      $("btn-settings").focus();
+    });
   }
   $("btn-settings").addEventListener("click", openSettings);
   $("settings-close").addEventListener("click", closeSettings);
   $("settings-scrim").addEventListener("click", closeSettings);
+  window.addEventListener("apple-dismiss-settings", closeSettings);
   // ---------- 导航 ----------
   function setView(v, noHash) {
     if (["signals", "symbols", "holdings", "macro", "about"].indexOf(v) < 0) v = "signals";
@@ -210,6 +216,7 @@
       b.setAttribute("aria-pressed", b.getAttribute("data-market") === MARKET ? "true" : "false");
     });
     var q = $("f-q"); if (q) q.setAttribute("placeholder", MK[MARKET].searchPh);
+    $("quick-search").setAttribute("placeholder", MK[MARKET].searchPh);
     updateMarketTexts();
   }
   function switchMarket(m) {
@@ -229,6 +236,11 @@
   // ---------- 筛选控件 ----------
   function syncControls() {
     $("f-q").value = F.q;
+    if ($("quick-search").value !== F.q) $("quick-search").value = F.q;
+    $("scope-all").setAttribute("aria-pressed", String(!F.recent && !F.conf));
+    $("scope-recent").setAttribute("aria-pressed", String(!!F.recent && !F.conf));
+    $("scope-confirmed").setAttribute("aria-pressed", String(F.conf === "1" && !F.recent));
+    var recentKpi = $("k-recent"); if (recentKpi) recentKpi.setAttribute("aria-pressed", String(!!F.recent));
     $("f-type").value = F.type;
     $("f-min").value = F.min; $("f-min-out").textContent = (+F.min).toFixed(1);
     $("f-recent").checked = !!F.recent;
@@ -247,6 +259,11 @@
     var bd = $("filter-badge"); bd.hidden = !n; bd.textContent = n;
   }
   function onFilter() { saveFilters(); syncControls(); renderSignals(); }
+  // Apple §16：常用搜索与筛选直接位于列表旁，和高级面板共享同一份状态。
+  $("quick-search").addEventListener("input", function () { F.q = this.value.trim(); onFilter(); });
+  $("scope-all").addEventListener("click", function () { F.recent = false; F.conf = ""; onFilter(); });
+  $("scope-recent").addEventListener("click", function () { F.recent = true; F.conf = ""; onFilter(); });
+  $("scope-confirmed").addEventListener("click", function () { F.conf = "1"; F.recent = false; onFilter(); });
   $("f-q").addEventListener("input", function () { F.q = this.value.trim(); onFilter(); });
   $("f-type").addEventListener("change", function () { F.type = this.value; onFilter(); });
   $("f-min").addEventListener("input", function () { F.min = +this.value; onFilter(); });
@@ -264,8 +281,8 @@
     b.addEventListener("click", function () { MODE = b.getAttribute("data-mode"); lsSet(LS.mode, MODE); syncControls(); renderSignals(); });
   });
   $("btn-filters").addEventListener("click", function () {
-    var f = $("filters"), open = !f.classList.contains("open");
-    f.classList.toggle("open", open); this.setAttribute("aria-expanded", open ? "true" : "false");
+    if ($("filters").classList.contains("open") && !$("filters").classList.contains("closing")) closeSignalFilters(true);
+    else openSignalFilters(false);
   });
   function resetFilters() {
     for (var k in DEFAULT_F) F[k] = DEFAULT_F[k];
@@ -671,7 +688,7 @@
   }
   function macroSectionA() {
     var upd = MACRO.generated ? MACRO.generated.slice(0, 16).replace("T", " ") : "";
-    var h = '<section class="msec" id="msec-overview"><h3 class="msec-title">A · 宏观数据总览' +
+    var h = '<section class="msec" id="msec-overview"><h3 class="msec-title">宏观指标' +
       '<span class="msec-sub">更新于 ' + esc(upd) + ' · 来源：Yahoo Finance（yfinance）· 变化为较上一交易日 / 近 90 日</span></h3>' +
       '<p class="msec-note">以下为实时抓取的市场指标。每个指标同时给出最新值、日变化、90 日走势与区间。没有可靠来源的指标列在文末“待接入”，不展示数值。</p>';
     var groups = [
@@ -792,7 +809,7 @@
       '<p class="muted small">方向提示为理论传导方向（条件成立时），不是预测；实际反应还受市场定价、仓位与同时发生的其他因素影响。</p>';
   }
   function macroSectionB() {
-    var h = '<section class="msec" id="msec-canvas"><h3 class="msec-title">B · 宏观经济传导画布' +
+    var h = '<section class="msec" id="msec-canvas"><h3 class="msec-title">经济传导' +
       '<span class="msec-sub">点击任意节点或连线查看传导机制与成立条件</span></h3>' +
       '<p class="msec-note">从左到右：源头变量 → 传导机制 → 资产影响。连线标注 <b>+ 促进</b> / <b>− 抑制</b> / <b>? 不确定</b>，方向提示为理论传导方向（条件成立时），不是预测。同一源头可能同时触发相反的链——例如就业走弱既可能增强降息预期（支撑估值），也可能压低盈利预期（压制股价）。</p>' +
       '<div class="tx-tools"><span class="tx-tools-label">主题：</span>' +
@@ -959,7 +976,7 @@
   }
 
   function macroSectionC() {
-    var h = '<section class="msec" id="msec-releases"><h3 class="msec-title">C · 重要经济数据公布解读' +
+    var h = '<section class="msec" id="msec-releases"><h3 class="msec-title">经济数据公布' +
       '<span class="msec-sub">公布前 — 公布时 — 公布后</span></h3>' +
       '<p class="msec-note">每个数据都给出“高于预期 / 符合预期 / 低于预期”三条基础分支。以下只是基础情景：实际结果还受核心分项、前值修正、市场仓位、经济增长预期和美联储表态等因素影响。排期来自官方日历（FOMC / CPI）与规则生成（非农：每月第一个周五）；未标注排期的请以 BEA / ISM 官方日历为准。</p>';
     RELEASES.forEach(function (r) {
@@ -990,7 +1007,7 @@
     return h;
   }
   function macroSectionD() {
-    var h = '<section class="msec" id="msec-assets"><h3 class="msec-title">D · 从宏观变量到市场资产' +
+    var h = '<section class="msec" id="msec-assets"><h3 class="msec-title">资产影响' +
       '<span class="msec-sub">影响矩阵：理论传导方向（条件成立时），非预测</span></h3>' +
       '<p class="msec-note">单元格为“某个宏观因素出现时，对某类资产的理论传导方向”。每个判断都有条件；方向不等于必然涨跌，实际结果取决于市场是否已定价、仓位与其他同时发生的因素。A 股的传导是间接的（全球风险偏好、汇率、外资流动），不能把美债传导直接等同于 A 股涨跌。</p>';
     h += '<div class="mx-live"><span class="tx-detail-k">各因素当前状态（实时数据触发）：</span>';
@@ -1054,7 +1071,7 @@
     dims.push({ name: "市场风险偏好", status: kStatus,
       evidence: "VIX " + (vix && vix.value != null ? fmtMacroVal(vix) + "（" + (vix.read || "") + "）" : "暂无数据") + "；黄金 " + (gold && gold.value != null ? fmtMacroVal(gold) + "（" + (gold.change_label || "—") + "）" : "暂无数据") + "。",
       overturn: "VIX 突破 30，或黄金急涨。" });
-    var h = '<section class="msec" id="msec-assess"><h3 class="msec-title">E · 当前宏观环境综合判断' +
+    var h = '<section class="msec" id="msec-assess"><h3 class="msec-title">环境评估' +
       '<span class="msec-sub">分项评估 + 情景（框架，非实时结论）</span></h3>' +
       '<p class="msec-note">每项判断都标注依据与可能推翻它的条件。标注“暂无足够依据”的维度是分析框架，不是结论——不要用代理指标假装它就是该维度本身。</p>';
     dims.forEach(function (d) {
@@ -1114,12 +1131,24 @@
     var tb = $("pos-tbody");
     if (!tb) return;
     if (!POSDATA || !Array.isArray(POSDATA.positions) || !POSDATA.positions.length) {
+      $("portfolio-summary").hidden = true;
       tb.innerHTML = '<tr><td colspan="5" class="muted">暂无持仓数据</td></tr>';
       var pc0 = $("pos-count"); if (pc0) pc0.textContent = "";
       var pu0 = $("pos-updated"); if (pu0) pu0.textContent = "持仓数据未就绪";
       renderPosCharts();
       return;
     }
+    var summary = $("portfolio-summary");
+    summary.hidden = false;
+    var values = POSDATA.positions.map(function(p){ return num(p.value); });
+    var pnls = POSDATA.positions.map(function(p){ return num(p.unrealized); });
+    var currencies = Array.from(new Set(POSDATA.positions.map(function(p){return p.currency || "";})));
+    var sameCurrency = currencies.length === 1 && !!currencies[0];
+    var knownValues = sameCurrency && values.every(function(v){return v !== null;}), knownPnl = sameCurrency && pnls.every(function(v){return v !== null;});
+    // 与逐行显示的两位小数一致；不同币种及缺失金额不强行合并。
+    function sumShown(a) { return a.reduce(function(total,v){return total+Math.round((v || 0)*100);},0)/100; }
+    var totalValue = sumShown(values), totalPnl = sumShown(pnls), moneySign = currencies[0] === "USD" ? "$" : "";
+    summary.innerHTML = '<div class="portfolio-label">持仓市值 · ' + esc(sameCurrency ? currencies[0] : '按币种查看明细') + '</div><div class="portfolio-value">' + (knownValues ? moneySign + fmtPrice(totalValue) : '—') + '</div><div class="portfolio-pnl ' + (knownPnl ? (totalPnl >= 0 ? 'pnl-pos' : 'pnl-neg') : '') + '"><small>浮盈亏</small>' + (knownPnl ? (totalPnl >= 0 ? '+' : '−') + moneySign + fmtPrice(Math.abs(totalPnl)) : '—') + '</div><div class="portfolio-caption">' + POSDATA.positions.length + ' 个持仓 · IBKR 每日快照' + (sameCurrency ? '' : ' · 不同或未知币种不合并金额') + '</div>';
     var ps = POSDATA.positions.slice().sort(function (a, b) { return num(b.value, 0) - num(a.value, 0); });
     $("pos-count").textContent = ps.length;
     var gen = POSDATA.generated ? new Date(POSDATA.generated) : null, gok = gen && !isNaN(gen.getTime());
@@ -1311,22 +1340,15 @@
   }
 
   // ---------- 概览 ----------
-  function renderKPIs(gen, ok, ageH) {
+  // Apple §16：三个真实计数，共享一组表面；近期数字也是现有筛选的入口。
+  function renderKPIs() {
     var recent = SIGS.filter(function (g) { return g.recent; });
     var rb = recent.filter(isBuy).length;
     var conf = SIGS.filter(function (g) { return g.confirmed; }).length, un = SIGS.length - conf;
-    var unRecent = recent.filter(function (g) { return !g.confirmed; }).length;
-    var h = "";
-    h += '<button type="button" class="kpi clickable" id="k-recent" style="--k1:var(--hi);--k2:var(--hi2)" aria-label="近期信号 ' + recent.length + ' 条,点击仅看近期">' +
-      '<div class="kpi-label">近期信号</div><div class="kpi-value num">' + recent.length + '<small>/ 共 ' + SIGS.length + ' 条</small></div>' +
-      '<div class="kpi-foot"><span class="t-buy">买 ' + rb + '</span>·<span class="t-sell">卖 ' + (recent.length - rb) + '</span>·<span>未确认 ' + unRecent + '</span></div></button>';
-    var pc = SIGS.length ? conf / SIGS.length * 100 : 0;
-    h += '<div class="kpi" style="--k1:var(--accent);--k2:var(--warn)"><div class="kpi-label">已确认 / 未确认</div>' +
-      '<div class="kpi-value num">' + conf + '<small>/</small><span style="color:var(--warn)">' + un + '</span></div>' +
-      '<div class="split-bar" role="img" aria-label="已确认 ' + conf + ' 条,未确认 ' + un + ' 条"><i class="ok" style="width:' + pc + '%"></i><i class="un" style="width:' + (100 - pc) + '%"></i></div>' +
-      '<div class="kpi-foot">未确认信号可能重绘</div></div>';
-    $("kpis").innerHTML = h;
-    var kr = $("k-recent"); if (kr) kr.addEventListener("click", function () { F.recent = true; onFilter(); setView("signals"); $("h-signals").scrollIntoView({ behavior: "smooth", block: "start" }); });
+    $("kpis").innerHTML = '<button type="button" class="kpi clickable" id="k-recent" aria-pressed="' + String(!!F.recent) + '" aria-label="近期信号 ' + recent.length + ' 条，点击仅看近期"><div class="kpi-label">近期信号<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></div><div class="kpi-value num">' + recent.length + '</div><div class="kpi-foot">买 ' + rb + ' · 卖 ' + (recent.length-rb) + '</div></button>' +
+      '<div class="kpi"><div class="kpi-label">已确认</div><div class="kpi-value num">' + conf + '</div><div class="kpi-foot">共 ' + SIGS.length + ' 条信号</div></div>' +
+      '<div class="kpi"><div class="kpi-label">未确认</div><div class="kpi-value num">' + un + '</div><div class="kpi-foot">可能重绘</div></div>';
+    $("k-recent").addEventListener("click", function () { F.recent = true; onFilter(); setView("signals"); $("h-signals").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches ? "instant" : "smooth",block:"start"}); });
   }
 
   function renderFailures() {
@@ -1404,15 +1426,18 @@
     animateIn(box);
   }
 
-  // 标准1/3/6/8/10：参照成熟金融列表的行式排版，移除圆环和重复标签。
+  // Apple §15/16：熟悉的分组信息行，价格、状态与分数拥有稳定的阅读位置。
   function cardsHTML(a) {
-    return '<div class="cards">' + a.map(function(g,i){
-      var side = isEdge(g) ? (isBuy(g) ? "t-edge-buy" : "t-edge-sell") : (isBuy(g) ? "t-buy" : "t-sell");
-      return '<button type="button" class="signal-note' + (g.recent ? '' : ' stale') + '" data-sig="' + g._id + '" aria-label="' + esc(g.symbol + ' ' + typeName(g.type) + ' ' + (g.confirmed ? '已确认' : '未确认，可能重绘') + '，查看依据') + '">' +
-      '<div class="note-head"><span class="note-symbol">' + symbolHTML(g.symbol) + '</span><span class="note-score">' + g.score.toFixed(1) + '<small>/10</small></span></div>' +
-      '<div class="note-labels"><span class="note-type ' + side + '">' + esc(typeName(g.type)) + '</span><span>·</span><span>' + esc(LV[g.level] || g.level) + '</span><span>·</span><span class="' + (g.confirmed ? '' : 'note-unconfirmed') + '">' + (g.confirmed ? '已确认' : '未确认 · 可能重绘') + '</span>' + (g.recent ? '' : '<span>已过期</span>') + '</div>' +
-      '<div class="note-bottom"><span class="note-price"><small>信号价</small>' + fmtPrice(g.price) + '</span><span class="note-time">信号时间<b>' + esc(fmtTime(g.time,g.level)) + '</b></span></div>' +
-      '<div class="note-meta"><span>距今 ' + esc(g.bars_ago) + ' 根 · ' + esc(RES[g.resonance] || '无共振数据') + '</span><span>查看依据 <span class="note-arrow" aria-hidden="true">↗</span></span></div></button>';
+    return '<div class="cards">' + a.map(function(g){
+      var buy = isBuy(g), side = isEdge(g) ? (buy ? "t-edge-buy" : "t-edge-sell") : (buy ? "t-buy" : "t-sell");
+      return '<button type="button" class="signal-note" data-sig="' + g._id + '" aria-label="' + esc(g.symbol + ' ' + typeName(g.type) + ' ' + (g.confirmed ? '已确认' : '未确认，可能重绘') + '，查看依据') + '">' +
+      '<span class="signal-glyph ' + (buy ? 'is-buy' : 'is-sell') + '" aria-hidden="true">' + (buy ? '↗' : '↘') + '</span>' +
+      '<span class="note-identity"><span class="note-symbol">' + symbolHTML(g.symbol) + '</span></span>' +
+      '<span class="note-labels"><span class="note-type ' + side + '">' + esc(typeName(g.type)) + '</span><span>·</span><span>' + esc(LV[g.level] || g.level) + '</span><span class="' + (g.confirmed ? '' : 'note-unconfirmed') + '">' + (g.confirmed ? '已确认' : '未确认') + '</span></span>' +
+      '<span class="note-quote"><small>信号价</small>' + fmtPrice(g.price) + '</span>' +
+      '<span class="note-rating"><span class="note-score">' + g.score.toFixed(1) + '<small>/10</small></span><span class="note-score-label">启发式评分</span></span>' +
+      '<span class="note-meta"><span>' + esc(fmtTime(g.time,g.level)) + '</span><span>距今 ' + esc(g.bars_ago) + ' 根 · ' + esc(RES[g.resonance] || '无共振数据') + '</span>' + (g.recent ? '' : '<span class="stale-label">已过期</span>') + (!g.confirmed ? '<span>可能重绘</span>' : '') + '</span>' +
+      '<svg class="note-chevron" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
     }).join('') + '</div>';
   }
   function shortTime(t) { if (!t) return "—"; return t.length > 10 ? t.slice(5) : t; }
@@ -1550,7 +1575,7 @@
     var s = D.symbols[sym] || {};
     current = { sym: sym, g: g };
     if (opener && !$("drawer").contains(opener)) lastFocus = opener;
-    var head = '<h2 id="dr-title">' + symbolHTML(sym) + (g ? ' <span class="side-tag ' + (isEdge(g) ? (isBuy(g) ? "edge-buy" : "edge-sell") : (isBuy(g) ? "buy" : "sell")) + '">' + (isEdge(g) ? esc(typeName(g.type)) : ((isBuy(g) ? "买" : "卖") + " · " + typeName(g.type))) + '</span>' : ' <span class="chip">暂无信号</span>') + '</h2><button type="button" class="mini-btn" id="dr-profile" data-sym="' + esc(sym) + '">简介</button>' + (g ? chipsHTML(g, { res: true }) : "");
+    var head = '<div class="detail-title-row"><h2 id="dr-title">' + symbolHTML(sym) + (g ? ' <span class="side-tag ' + (isEdge(g) ? (isBuy(g) ? "edge-buy" : "edge-sell") : (isBuy(g) ? "buy" : "sell")) + '">' + esc(typeName(g.type)) + '</span>' : ' <span class="chip">暂无信号</span>') + '</h2><button type="button" class="mini-btn" id="dr-profile" data-sym="' + esc(sym) + '">简介</button></div>' + (g ? '<p class="detail-subline">' + esc(LV[g.level] || g.level) + ' · <span class="' + (g.confirmed ? '' : 'note-unconfirmed') + '">' + (g.confirmed ? '已确认' : '未确认，可能重绘') + '</span> · ' + esc(RES[g.resonance] || '无共振数据') + '</p>' : '');
     $("dr-headline").innerHTML = head;
     var pfb = $("dr-profile");
     if (pfb) pfb.addEventListener("click", function () { openProfile(sym, pfb); });
@@ -1619,10 +1644,11 @@
     });
 
     var dr = $("drawer");
-    if (dr.hidden) {
+    if (dr.hidden || dr.classList.contains("closing")) {
       dr.classList.remove("closing"); dr.hidden = false; $("scrim").hidden = false;
       document.body.style.overflow = "hidden";
-      setTimeout(function () { $("dr-close").focus(); }, 30);
+      AppleMotion.enter(dr, "detail");
+      $("dr-close").focus();
     }
     animateIn(dr);
   }
@@ -1631,15 +1657,18 @@
   function closeDrawer() {
     var dr = $("drawer"); if (dr.hidden) return;
     dr.classList.add("closing");
-    $("scrim").hidden = true;
-    setTimeout(function () { dr.hidden = true; dr.classList.remove("closing"); }, 200);
-    document.body.style.overflow = "";
     current = null;
     if (window.ChanInteractive) ChanInteractive.destroy();
-    if (lastFocus && document.body.contains(lastFocus)) lastFocus.focus();
+    AppleMotion.close(dr, function () {
+      dr.hidden = true; dr.classList.remove("closing"); $("scrim").hidden = true;
+      document.body.style.overflow = "";
+      if (lastFocus && document.body.contains(lastFocus)) lastFocus.focus();
+    });
   }
   $("dr-close").addEventListener("click", closeDrawer);
+  $("dr-back").addEventListener("click", closeDrawer);
   $("scrim").addEventListener("click", closeDrawer);
+  window.addEventListener("apple-dismiss-detail", closeDrawer);
 
   // ---------- 全屏图 ----------
   var LB = { s: 1, fit: 1, x: 0, y: 0, w: 0, h: 0, opener: null, ptrs: {}, pinch: null };
@@ -1755,7 +1784,7 @@
     var lbOpen = !$("lightbox").hidden, drOpen = !$("drawer").hidden;
     if (e.key === "Escape") { if (!$("profile-modal").hidden) closeProfile(); else if (lbOpen) closeLightbox(); else if (drOpen) closeDrawer(); }
     else if (e.key === "Tab") { if (lbOpen) trap($("lightbox"), e); else if (drOpen) trap($("drawer"), e); }
-    else if (e.key === "/" && !lbOpen && !drOpen && document.activeElement.tagName !== "INPUT") {
+    else if (e.key === "/" && !lbOpen && !drOpen && $("settings-sheet").hidden && $("profile-modal").hidden && document.activeElement.tagName !== "INPUT") {
       e.preventDefault(); setView("signals"); if (window.openSignalFilters) openSignalFilters();
     }
   });
@@ -1777,7 +1806,7 @@
   var backdrop = document.getElementById("filter-backdrop"), media = matchMedia("(max-width:760px)");
   var oldOverflow = null;
   function syncFilters() {
-    var open = media.matches && filters.classList.contains("open");
+    var open = filters.classList.contains("open");
     backdrop.hidden = !open;
     opener.setAttribute("aria-expanded", String(open));
     filters.setAttribute("role", open ? "dialog" : "search");
@@ -1785,24 +1814,28 @@
       filters.setAttribute("aria-modal", "true");
       if (oldOverflow === null) oldOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
-      document.getElementById("filter-close").focus();
     } else {
       filters.removeAttribute("aria-modal");
       if (oldOverflow !== null) { document.body.style.overflow = oldOverflow; oldOverflow = null; }
     }
   }
   window.closeSignalFilters = function (restore) {
-    filters.classList.remove("open"); syncFilters();
-    if (restore !== false && media.matches) opener.focus();
+    if (!filters.classList.contains("open")) return;
+    filters.classList.add("closing");
+    AppleMotion.close(filters, function () {
+      filters.classList.remove("open", "closing"); syncFilters();
+      if (restore !== false) opener.focus();
+    });
   };
-  window.openSignalFilters = function () {
-    filters.classList.add("open"); syncFilters();
-    document.getElementById("f-q").focus();
+  window.openSignalFilters = function (search) {
+    filters.classList.remove("closing"); filters.classList.add("open"); syncFilters();
+    AppleMotion.enter(filters, "filter");
+    document.getElementById(search === false ? "filter-close" : "f-q").focus();
   };
-  opener.addEventListener("click", syncFilters);
   ["filter-close", "filter-apply", "filter-backdrop"].forEach(function (id) {
     document.getElementById(id).addEventListener("click", function () { closeSignalFilters(true); });
   });
+  window.addEventListener("apple-dismiss-filter", function () { closeSignalFilters(true); });
   function trap(container, e) {
     var items = Array.from(container.querySelectorAll('button,input,select,a[href],[tabindex="0"]')).filter(function (el) { return !el.disabled && el.getClientRects().length; });
     var first = items[0], last = items[items.length - 1];
@@ -1815,19 +1848,20 @@
     settings.setAttribute("role", "dialog"); settings.setAttribute("aria-modal", "true");
     document.getElementById("settings-close").focus();
   });
-  ["settings-close", "settings-scrim"].forEach(function (id) {
-    document.getElementById(id).addEventListener("click", function () { settingsButton.focus(); });
-  });
   document.addEventListener("keydown", function (e) {
     if (!settings.hidden) {
-      if (e.key === "Escape") { settings.hidden = true; document.getElementById("settings-scrim").hidden = true; settingsButton.focus(); }
+      if (e.key === "Escape") { document.getElementById("settings-close").click(); }
       else if (e.key === "Tab") trap(settings, e);
-    } else if (media.matches && filters.classList.contains("open")) {
+    } else if (filters.classList.contains("open")) {
       if (e.key === "Escape") { e.preventDefault(); closeSignalFilters(true); }
       else if (e.key === "Tab") trap(filters, e);
     }
   });
-  media.addEventListener("change", syncFilters);
+  media.addEventListener("change", function () {
+    // 旋转或切换桌面布局时，不能留下旧坐标、遮罩或滚动锁。
+    AppleMotion.reset(filters); filters.classList.remove("open", "closing"); syncFilters();
+    AppleMotion.reset(settings); if (!settings.hidden) AppleMotion.enter(settings, "sheet");
+  });
   // 标准4/7：每个页面使用自身的数据时间，失败时明确提示，不展示过期回退。
   var statusBySection = {}, activeView = document.body.dataset.view || "signals";
   function renderStatus() {
