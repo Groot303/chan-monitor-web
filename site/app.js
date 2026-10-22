@@ -2,6 +2,10 @@
 (function () {
   "use strict";
 
+  // Apple / Emil：键盘操作即时响应；触控按下时通过 CSS 反馈。
+  document.addEventListener("keydown", function () { document.documentElement.dataset.input = "keyboard"; }, true);
+  document.addEventListener("pointerdown", function () { document.documentElement.dataset.input = "pointer"; }, true);
+
   // ---------- 常量 ----------
   var LV = { weekly: "周线", daily: "日线", "30m": "30分钟", "5m": "5分钟" };
   var LV_ORDER = ["weekly", "daily", "30m", "5m"];
@@ -138,7 +142,7 @@
   root.setAttribute("data-color", "us");
   function applyThemeMeta() {
     var m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.setAttribute("content", root.getAttribute("data-theme") === "light" ? "#f4f6fa" : "#0b0f17");
+    if (m) m.setAttribute("content", getComputedStyle(root).getPropertyValue("--bg").trim());
     $("btn-theme").setAttribute("aria-pressed", root.getAttribute("data-theme") === "light" ? "true" : "false");
   }
   $("btn-theme").addEventListener("click", function () {
@@ -176,8 +180,6 @@
     VIEW = v;
     window.dispatchEvent(new CustomEvent("chan-view", {detail:{view:v}}));
     document.body.dataset.view = v;
-    var pageCopy = { signals:["信号有据。<br><em>判断在你。</em>","从多周期信号中筛出值得研究的线索，再查看价格结构与评分依据。","信号研究","01"],symbols:["看见全貌。<br><em>读懂结构。</em>","逐个比较标的在不同周期中的方向与状态。","标的总览","02"],holdings:["持仓在手。<br><em>心中有数。</em>","核对持仓快照、成本与浮盈亏，结合原有图表检查价格位置。","持仓分析","03"],macro:["置身市场。<br><em>看清环境。</em>","从指标变化到传导关系，给投资判断补充背景。","大环境","04"],about:["每个判断。<br><em>都有边界。</em>","核对评分规则、数据来源与未确认信号的含义。","方法说明","05"] }[v];
-    $("page-title").innerHTML = pageCopy[0]; $("page-purpose").textContent = pageCopy[1]; $("edition-section").textContent = pageCopy[2]; $("intro-index").textContent = pageCopy[3];
     if (window.closeSignalFilters) closeSignalFilters(false);
     ["signals", "symbols", "holdings", "macro", "about"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
     qsa(".tab[data-view]").forEach(function (b) {
@@ -317,7 +319,7 @@
     var gen = new Date(D.generated);
     var ok = !isNaN(gen.getTime());
     var ageH = ok ? (Date.now() - gen.getTime()) / 36e5 : 999;
-    $("meta-short").textContent = ok ? "更新于 " + relTime(gen) + " · " + gen.toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "更新时间未知";
+    $("meta-short").textContent = ok ? "更新于 " + relTime(gen) : "更新时间未知";
     qsa("#meta-sub .dot").forEach(function (x) { x.className = "dot" + (ageH > 72 ? " stale" : " pulse"); });
     var symsAll = allSymbols();
     $("foot-meta").textContent = "数据生成时间(UTC):" + (D.generated || "").slice(0, 19).replace("T", " ") + " · 标的 " + symsAll.length + " 个 · 信号 " + SIGS.length + " 条 · 分数为启发式 0–10,不是胜率。";
@@ -1127,10 +1129,10 @@
       var u = num(p.unrealized, 0), cls = u >= 0 ? "pnl-pos" : "pnl-neg";
       return "<tr>" +
         '<td><span class="t-sym">' + esc(p.symbol) + "</span>" + (p.asset && p.asset !== "STK" ? ' <span class="chip">' + esc(p.asset) + "</span>" : "") + "</td>" +
-        '<td class="r num">' + esc(fmtPrice(p.qty)) + "</td>" +
-        '<td class="r num">$' + esc(fmtPrice(p.cost)) + "</td>" +
-        '<td class="r num">$' + esc(fmtPrice(p.mark)) + "</td>" +
-        '<td class="r num ' + cls + '">' + (u >= 0 ? "+" : "\u2212") + "$" + esc(fmtPrice(Math.abs(u))) + "</td>" +
+        '<td class="r num" data-label="数量">' + esc(fmtPrice(p.qty)) + "</td>" +
+        '<td class="r num" data-label="成本">$' + esc(fmtPrice(p.cost)) + "</td>" +
+        '<td class="r num" data-label="现价">$' + esc(fmtPrice(p.mark)) + "</td>" +
+        '<td class="r num ' + cls + '" data-label="浮盈亏">' + (u >= 0 ? "+" : "\u2212") + "$" + esc(fmtPrice(Math.abs(u))) + "</td>" +
         "</tr>";
     }).join("");
     renderPosCharts();
@@ -1406,7 +1408,7 @@
   function cardsHTML(a) {
     return '<div class="cards">' + a.map(function(g,i){
       var side = isEdge(g) ? (isBuy(g) ? "t-edge-buy" : "t-edge-sell") : (isBuy(g) ? "t-buy" : "t-sell");
-      return '<button type="button" class="signal-note' + (g.recent ? '' : ' stale') + '" data-sig="' + g._id + '" aria-label="' + esc(g.symbol + ' ' + typeName(g.type) + ' ' + (g.confirmed ? '已确认' : '未确认，可能重绘') + '，查看依据') + '" style="animation-delay:' + Math.min(i*20,140) + 'ms">' +
+      return '<button type="button" class="signal-note' + (g.recent ? '' : ' stale') + '" data-sig="' + g._id + '" aria-label="' + esc(g.symbol + ' ' + typeName(g.type) + ' ' + (g.confirmed ? '已确认' : '未确认，可能重绘') + '，查看依据') + '">' +
       '<div class="note-head"><span class="note-symbol">' + symbolHTML(g.symbol) + '</span><span class="note-score">' + g.score.toFixed(1) + '<small>/10</small></span></div>' +
       '<div class="note-labels"><span class="note-type ' + side + '">' + esc(typeName(g.type)) + '</span><span>·</span><span>' + esc(LV[g.level] || g.level) + '</span><span>·</span><span class="' + (g.confirmed ? '' : 'note-unconfirmed') + '">' + (g.confirmed ? '已确认' : '未确认 · 可能重绘') + '</span>' + (g.recent ? '' : '<span>已过期</span>') + '</div>' +
       '<div class="note-bottom"><span class="note-price"><small>信号价</small>' + fmtPrice(g.price) + '</span><span class="note-time">信号时间<b>' + esc(fmtTime(g.time,g.level)) + '</b></span></div>' +
@@ -1478,7 +1480,7 @@
       } else {
         body = '<div class="sym-empty" role="status">暂无信号<span class="muted"> · 仍可打开查看多级别状态</span></div>';
       }
-      return '<button type="button" class="sym-card' + (info.latest ? "" : " is-empty") + '" data-sym="' + esc(sym) + '" style="animation-delay:' + Math.min(i * 25, 400) + 'ms" aria-label="' + esc(sym + (info.latest ? ",查看详情" : ",暂无信号,查看状态")) + '">' +
+      return '<button type="button" class="sym-card' + (info.latest ? "" : " is-empty") + '" data-sym="' + esc(sym) + '" aria-label="' + esc(sym + (info.latest ? ",查看详情" : ",暂无信号,查看状态")) + '">' +
         '<div class="sym-head"><span class="sym">' + symbolHTML(sym) + ((HELD && HELD[sym]) ? ' <span class="held-badge" title="IBKR 持仓中">持有</span>' : "") + '</span><span class="sym-close">' + (lc ? '<span class="num">' + fmtPrice(lc.last_close) + '</span>' : "—") + '</span></div>' +
         '<div class="dirs">' + dirs + '</div>' + body + '</button>';
     }).join("");
@@ -1765,7 +1767,7 @@
   setView(location.hash.slice(1) || "signals", true);
   load();
   // 每分钟刷新相对时间
-  setInterval(function () { if (D) { var g = new Date(D.generated); if (!isNaN(g)) $("meta-short").textContent = "更新于 " + relTime(g) + " · " + g.toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }); } }, 60000);
+  setInterval(function () { if (D) { var g = new Date(D.generated); if (!isNaN(g)) $("meta-short").textContent = "更新于 " + relTime(g); } }, 60000);
 })();
 
 

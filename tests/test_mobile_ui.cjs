@@ -45,8 +45,12 @@ const positions = {generated, positions:[{symbol:'NVDA',qty:10,cost:200,mark:225
     await page.goto('http://chan.test/');
     await page.locator('.signal-note').first().waitFor();
     assert.match(await page.locator('#data-status').innerText(), /Alpaca/);
+    // 手机首屏服务真实内容：第一条信号必须在屏幕上方60%内出现。
+    const firstSignal = await page.locator('.signal-note').first().boundingBox();
+    assert.ok(firstSignal.y < 844 * 0.6, 'signal list pushed below the first screen');
     await page.locator('#btn-filters').click();
     await page.locator('#filter-backdrop').waitFor({state:'visible'});
+    assert.equal(await page.locator('#f-q').evaluate(el=>getComputedStyle(el).fontSize),'16px','prevent iOS input zoom');
     assert.equal(await page.locator('#filters').getAttribute('aria-modal'),'true');
     await page.locator('#f-q').fill('NVDA');
     assert.equal(await page.locator('.note-symbol').evaluateAll(es=>es.every(e=>e.textContent==='NVDA')),true);
@@ -80,6 +84,11 @@ const positions = {generated, positions:[{symbol:'NVDA',qty:10,cost:200,mark:225
     await page.locator('.tabs-bottom [data-view="holdings"]').click();
     assert.match(await page.locator('#pos-tbody').innerText(),/NVDA/);
     await page.locator('#pos-charts canvas').first().waitFor();
+    // 手机持仓的数量、成本、现价和盈亏应同时可见，不依赖横向滚动。
+    for (const cell of await page.locator('#pos-tbody td').all()) {
+      const bounds = await cell.boundingBox();
+      assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 390, 'holding field is outside mobile viewport');
+    }
     assert.match(await page.locator('#data-status').innerText(),/IBKR/);
     assert.equal(await page.locator('#kpis').isVisible(),false);
     await page.locator('.tabs-bottom [data-view="macro"]').click();
@@ -159,6 +168,17 @@ const positions = {generated, positions:[{symbol:'NVDA',qty:10,cost:200,mark:225
       await page.setViewportSize({width:1440,height:1000});
       await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
       await page.screenshot({path:path.join(process.env.SCREENSHOT_DIR,'desktop.png'),style:'#toast{visibility:hidden}'});
+      await page.setViewportSize({width:390,height:844});
+      for (const theme of ['dark','light']) {
+        if (await page.locator('html').getAttribute('data-theme') !== theme) await page.locator('#btn-theme').click();
+        for (const view of ['signals','symbols','holdings','macro','about']) {
+          await page.locator('.tabs-bottom [data-view="'+view+'"]').click();
+          await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
+          assert.equal(await page.locator('h1:visible').count(),1);
+          assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+          await page.screenshot({path:path.join(process.env.SCREENSHOT_DIR,theme+'-'+view+'.png'),style:'#toast{visibility:hidden}'});
+        }
+      }
     }
   } finally { await browser.close(); }
 })().catch(e=>{console.error(e);process.exitCode=1;});
