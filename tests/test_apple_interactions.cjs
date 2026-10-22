@@ -73,15 +73,13 @@ const site=path.resolve(__dirname,'../site');
     await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x,y+160,{steps:5});await page.mouse.up();
     await page.locator('#settings-sheet').waitFor({state:'hidden'});
     assert.equal(await page.evaluate(()=>document.body.style.overflow),'');
-    await page.locator('.tabs-bottom [data-view="holdings"]').click();
-    assert.equal(await page.locator('.portfolio-value').innerText(),'$2,259.20');
-    assert.match(await page.locator('.portfolio-pnl').innerText(),/\+\$259\.20/);
+    assert.equal(await page.locator('.tab[data-view="holdings"]').count(),0);
     // 不同业务内容、两种主题及窄桌面都不能挤出页面宽度。
     for(const theme of ['light','dark']){
       await page.evaluate(t=>{document.documentElement.dataset.theme=t;},theme);
       for(const width of [320,390,768,1000,1024,1440]){
         await page.setViewportSize({width,height:844});
-        for(const view of ['signals','symbols','holdings','macro','about']){
+        for(const view of ['signals','symbols','macro','about']){
           await page.locator((width>1000?'.tabs-top':'.tabs-bottom')+' [data-view="'+view+'"]').click();
           assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${theme} ${view} overflow at ${width}`);
         }
@@ -93,6 +91,6 @@ const site=path.resolve(__dirname,'../site');
     assert.equal((await offset('#filters')).y,0);
     await page.keyboard.press('Escape');assert.equal(await page.locator('#filter-backdrop').isVisible(),false);
     assert.deepEqual(errors,[]);
-    console.log('PASS: Apple spring tracking/reversal/reopen/flick, shared search, detail back, settings scroll lock, all five views in both themes at six widths, reduced motion.');
+    console.log('PASS: Apple spring tracking/reversal/reopen/flick, shared search, detail back, settings scroll lock, all four public views in both themes at six widths, reduced motion.');
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -40,7 +40,8 @@ const positions = {generated, positions:[{symbol:'NVDA',currency:'USD',qty:10,co
       return route.fulfill({path:resolved});
     });
     const page = await context.newPage();
-    const errors = [];
+    const errors = [], privateRequests = [];
+    page.on('request',r=>{if(/\/(?:api\/(?:positions|holdings)|data\/positions_ibkr\.json)(?:[?]|$)/.test(r.url()))privateRequests.push(r.url());});
     page.on('pageerror', e => errors.push(e.message));
     await page.goto('http://chan.test/');
     await page.locator('.signal-note').first().waitFor();
@@ -80,17 +81,14 @@ const positions = {generated, positions:[{symbol:'NVDA',currency:'USD',qty:10,co
     assert.equal(await page.evaluate(()=>document.activeElement.id),'glossary-hints-toggle');
     await page.keyboard.press('Escape');
     assert.equal(await page.locator('#settings-sheet').isVisible(),false);
-    // 真实业务页面仍可用，包括持仓表格、持仓图表、宏观传导和术语解释。
-    await page.locator('.tabs-bottom [data-view="holdings"]').click();
-    assert.match(await page.locator('#pos-tbody').innerText(),/NVDA/);
-    await page.locator('#pos-charts canvas').first().waitFor();
-    // 手机持仓的数量、成本、现价和盈亏应同时可见，不依赖横向滚动。
-    for (const cell of await page.locator('#pos-tbody td').all()) {
-      const bounds = await cell.boundingBox();
-      assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 390, 'holding field is outside mobile viewport');
-    }
-    assert.match(await page.locator('#data-status').innerText(),/IBKR/);
-    assert.equal(await page.locator('#kpis').isVisible(),false);
+    // 持仓入口已移除，旧深链接也无法打开持仓。
+    assert.equal(await page.locator('.tab[data-view="holdings"]').count(),0);
+    await page.evaluate(()=>{location.hash='holdings';});
+    await page.waitForFunction(()=>location.hash==='#signals');
+    assert.equal(await page.locator('#view-holdings').isVisible(),false);
+    await page.goto('http://chan.test/#holdings');
+    await page.waitForFunction(()=>location.hash==='#signals');
+    assert.equal(await page.locator('#view-holdings').isVisible(),false);
     await page.locator('.tabs-bottom [data-view="macro"]').click();
     await page.locator('#macro-body .msec').first().waitFor();
     assert.match(await page.locator('#data-status').innerText(),/2026-10-17/);
@@ -154,7 +152,8 @@ const positions = {generated, positions:[{symbol:'NVDA',currency:'USD',qty:10,co
     assert.deepEqual(race.results,[false,true]);
     assert.match(race.label,/AAPL/);
     assert.deepEqual(errors,[]);
-    console.log('PASS: mobile filters/focus/Escape/shortcut, charts, themes, settings, holdings, macro glossary, navigation, markets, responsive widths, failure/retry.');
+    assert.deepEqual(privateRequests,[],'disabled holdings must not fetch private data');
+    console.log('PASS: mobile filters/focus/Escape/shortcut, charts, themes, settings, hidden holdings/deep link, macro glossary, navigation, markets, responsive widths, failure/retry.');
     if (process.env.SCREENSHOT_DIR) {
       fs.mkdirSync(process.env.SCREENSHOT_DIR,{recursive:true});
       await page.setViewportSize({width:390,height:844});
@@ -171,7 +170,7 @@ const positions = {generated, positions:[{symbol:'NVDA',currency:'USD',qty:10,co
       await page.setViewportSize({width:390,height:844});
       for (const theme of ['dark','light']) {
         if (await page.locator('html').getAttribute('data-theme') !== theme) await page.locator('#btn-theme').click();
-        for (const view of ['signals','symbols','holdings','macro','about']) {
+        for (const view of ['signals','symbols','macro','about']) {
           await page.locator('.tabs-bottom [data-view="'+view+'"]').click();
           await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
           assert.equal(await page.locator('h1:visible').count(),1);

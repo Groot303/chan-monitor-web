@@ -119,7 +119,7 @@
 
   // ---------- 状态 ----------
   var D = null, SIGS = [], F = loadFilters(), MODE = lsGet(LS.mode) === "table" ? "table" : "cards", VIEW = "signals";
-  var POSDATA = null, HELD = {};  // IBKR positions (public /api/positions), HELD: symbol -> position
+  var POSDATA = null, HELD = {};  // 持仓页已停用；数据仅保留在后台供以后恢复。
   var lastFocus = null, current = null;
 
   function loadFilters() {
@@ -182,7 +182,9 @@
   window.addEventListener("apple-dismiss-settings", closeSettings);
   // ---------- 导航 ----------
   function setView(v, noHash) {
-    if (["signals", "symbols", "holdings", "macro", "about"].indexOf(v) < 0) v = "signals";
+    // 持仓页已停用，旧链接和手动输入都返回信号页。
+    if (v === "holdings") { v = "signals"; history.replaceState(null, "", "#signals"); }
+    if (["signals", "symbols", "macro", "about"].indexOf(v) < 0) v = "signals";
     VIEW = v;
     window.dispatchEvent(new CustomEvent("chan-view", {detail:{view:v}}));
     document.body.dataset.view = v;
@@ -193,7 +195,6 @@
     });
     if (!noHash && location.hash.slice(1) !== v) history.replaceState(null, "", "#" + v);
     if (v === "symbols" && D) renderSymbols();
-    if (v === "holdings") renderHoldings();
     if (v === "macro") renderMacro();
     var kp = $("kpis"); if (kp) kp.style.display = (v === "signals" || v === "symbols") ? "" : "none";
   }
@@ -347,7 +348,8 @@
     syncControls();
     renderSignals();
     renderSymbols();
-    try { loadPositions(); } catch (e) { /* 持仓加载失败不影响信号看板 */ }
+    // 持仓页停用后不请求敏感数据，也不显示“持有”标记。
+    HELD = {};
   }
 
   // ---------- 持仓 ----------

@@ -375,10 +375,9 @@ def api_macro():
 
 
 @app.get("/api/positions")
-def api_positions():
-    # Public by user decision 2026-10-14: qty/cost/mark/value/unrealized.
-    # Account field removed (not displayed anywhere). Write endpoints
-    # (e.g. /api/jobs/run) stay token-protected via _require_token.
+def api_positions(request: Request):
+    # 用户屏蔽持仓页：恢复敏感接口鉴权，后台同步和原始数据继续保留。
+    _require_token(request)
     p = DATA_DIR / "data" / "positions_ibkr.json"
     if not p.exists():
         raise HTTPException(status_code=503, detail="positions_ibkr.json not ready yet")
@@ -393,9 +392,11 @@ def api_positions():
     return JSONResponse(content=out)
 
 
+@app.get("/data/positions_ibkr.json")
 @app.get("/api/holdings")
-def api_holdings():
-    """Public: held symbols only (for the web badge). No quantities/costs."""
+def api_holdings(request: Request):
+    """持仓标的及旧静态入口同样需要鉴权，不再向匿名访客展示。"""
+    _require_token(request)
     p = DATA_DIR / "data" / "positions_ibkr.json"
     if not p.exists():
         raise HTTPException(status_code=503, detail="positions_ibkr.json not ready yet")
