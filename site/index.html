@@ -229,7 +229,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
       </article>
       <article class="panel">
         <h3>数据</h3>
-        <p id="about-src">行情来自 Alpaca(IEX 免费版,单交易所数据),价格未复权。信号时间为极值K线时间(美东时间),确认会滞后若干根K线。周线最后一根为当周未完成K线。</p>
+        <p id="about-src">美股个股行情来自 Alpaca(IEX)，纳指来自 Yahoo Finance 的 ^IXIC。信号时间为极值K线时间(美东时间),确认会滞后若干根K线。周线最后一根为当周未完成K线。</p>
         <div id="failures"></div>
       </article>
     </div>
@@ -266,8 +266,8 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
 
 <footer class="footer">
   <div class="footer-inner">
-    <p class="muted small" id="foot-syms">20 个标的均为可缩放交互 K 线(Lightweight Charts,叠加笔/线段/中枢)。箭头=缠论一二三类买卖点;青绿/琥珀圆点=中枢下沿买/上沿卖。静态 PNG 可在详情中展开对照。</p>
-    <p class="disclaimer"><b>免责声明:</b>本页信号基于启发式规则,<b>未回测</b>,<b>不构成投资建议</b>;<b>未确认信号可能重绘</b>。<span id="foot-disc-src">数据源 Alpaca,可能延迟或缺失。</span></p>
+    <p class="muted small" id="foot-syms">21 个标的均为可缩放交互 K 线(Lightweight Charts,叠加笔/线段/中枢)。箭头=缠论一二三类买卖点;青绿/琥珀圆点=中枢下沿买/上沿卖。静态 PNG 可在详情中展开对照。</p>
+    <p class="disclaimer"><b>免责声明:</b>本页信号基于启发式规则,<b>未回测</b>,<b>不构成投资建议</b>;<b>未确认信号可能重绘</b>。<span id="foot-disc-src">数据源 Alpaca / Yahoo Finance，可能延迟或缺失。</span></p>
     <p class="muted small" id="foot-meta"></p>
   </div>
 </footer>

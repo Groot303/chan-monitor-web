@@ -7,6 +7,7 @@ from matplotlib.patches import Rectangle
 import os
 from zoneinfo import ZoneInfo
 from chan2 import analyze_level, resonance, score_signal, RECENT_BARS
+from scripts.fetch_nasdaq import fetch_nasdaq_frames
 CACHED=os.environ.get('CACHED')=='1'  # re-use data2_*.csv instead of re-downloading
 FORCE_RUN=os.environ.get('FORCE_RUN')=='true'  # bypass market-hours gate (workflow_dispatch)
 NY_TZ="America/New_York"
@@ -19,8 +20,11 @@ def _ibkr_symbols(path="site/data/positions_ibkr.json"):
         return [s for s in d.get("symbols",[]) if isinstance(s,str) and s]
     except Exception:
         return []
-# IBKR holdings first, then the hardcoded watchlist; cap 20 (Alpaca free-tier comfort).
-SYMS=list(dict.fromkeys(_ibkr_symbols()+FALLBACK_SYMS))[:20]
+# IBKR holdings first, then the hardcoded watchlist; cap Alpaca stocks at 20.
+# 纳指为 ^IXIC 指数，由项目现有 Yahoo 数据源单独抓取，不占股票名额。
+STOCK_SYMS=list(dict.fromkeys(_ibkr_symbols()+FALLBACK_SYMS))[:20]
+NASDAQ_SYMBOL="纳指"
+SYMS=STOCK_SYMS+[NASDAQ_SYMBOL]
 LEVELS=[("weekly","1wk","5y"),("daily","1d","2y"),("30m","30m","60d"),("5m","5m","30d")]
 
 # Trend-filter mode for pivot-edge signals that conflict with the higher-timeframe trend
@@ -50,7 +54,7 @@ def fetch_alpaca_frames():
     now=datetime.datetime.now(datetime.timezone.utc)
     frames={}
     for lv in ("weekly","daily","30m","5m"):
-        req=StockBarsRequest(symbol_or_symbols=SYMS, timeframe=tf[lv],
+        req=StockBarsRequest(symbol_or_symbols=STOCK_SYMS, timeframe=tf[lv],
                              start=now-datetime.timedelta(days=days[lv]),
                              end=now, feed=DataFeed.IEX)
         df=client.get_stock_bars(req).df
@@ -60,7 +64,7 @@ def fetch_alpaca_frames():
             # (symbol, timestamp) with UNNAMED levels; df.tz_convert() on it
             # raises KeyError('Level None not found'). Split per symbol first,
             # then tz-convert each plain DatetimeIndex.
-            for s in SYMS:
+            for s in STOCK_SYMS:
                 try: sdf=df.xs(s, level=0)
                 except KeyError: continue
                 sdf.index=pd.DatetimeIndex(sdf.index)
@@ -111,6 +115,9 @@ def plot(sym, res, dfs):
         ax.legend(loc="upper left",fontsize=8)
     fig.tight_layout(); fig.savefig(f"out/{sym}_chan2.png",dpi=80); plt.close(fig)
 FRAMES={} if CACHED else fetch_alpaca_frames()
+NASDAQ_FRAMES, NASDAQ_FAILURES=({}, {}) if CACHED else fetch_nasdaq_frames()
+for lv, frame in NASDAQ_FRAMES.items():
+    FRAMES.setdefault(lv, {})[NASDAQ_SYMBOL]=frame
 
 def fetch_regime():
     """Bear-regime check (2026-10-13 opt, matches backtest REGIME=pause):
@@ -137,9 +144,11 @@ def fetch_regime():
         return {"benchmark":"SPY","bear":False,"error":str(e)[:120]}
 
 REGIME={} if CACHED else fetch_regime()
-out={"generated":datetime.datetime.utcnow().isoformat()+"Z","symbols":{},"failures":{},"regime":REGIME}
+out={"generated":datetime.datetime.utcnow().isoformat()+"Z","symbols":{},"failures":
+     {f"{NASDAQ_SYMBOL}/{lv}": error for lv,error in NASDAQ_FAILURES.items()},"regime":REGIME}
 for s in SYMS:
     res={}; dfs={}; ent={"levels":{}}
+    if s==NASDAQ_SYMBOL: ent["code"]="^IXIC"
     for lv,iv,per in LEVELS:
         try:
             if CACHED:

@@ -23,8 +23,8 @@
   // API_BASE: 恒为空串 = 同源后端(api.py 同源托管 site/ + /api/*)。设置面板的 API 地址输入已删除。
   var API_BASE = "";
   var MK = {
-    us: { label: "美股", api: "/api/signals", tz: "ET", src: "Alpaca(IEX 免费版)", delay: "Alpaca 可能延迟",
-          watch: ["AAOI","AAPL","AMD","AVGO","GOOG","INTC","LITE","META","MRNA","MRVL","MU","NOK","NVDA","ORCL","PLTR","SKHY","SNDK","SPCX","TSLA","TSM"],
+    us: { label: "美股", api: "/api/signals", tz: "ET", src: "Alpaca(IEX) / Yahoo Finance(纳指)", delay: "行情可能延迟",
+          watch: ["AAOI","AAPL","AMD","AVGO","GOOG","INTC","LITE","META","MRNA","MRVL","MU","NOK","NVDA","ORCL","PLTR","SKHY","SNDK","SPCX","TSLA","TSM","纳指"],
           searchPh: "搜索代码,如 NVDA" },
     cn: { label: "A股", api: "/api/signals_cn", tz: "北京时间", src: "东方财富", delay: "东财数据可能延迟",
           watch: ["上证指数","科创50","银行指数","平均股价","万向钱潮","三花智控","三孚股份","诺德股份"],
@@ -48,7 +48,7 @@
   function fmtSigned(v, n) { v = num(v, 0); var s = v.toFixed(n == null ? 2 : n); return v > 0 ? "+" + s : (v < 0 ? "−" + s.slice(1) : s); }
   function fmtPct(v) { v = num(v); return v == null ? "—" : v.toFixed(2) + "%"; }
   function symbolCode(sym) {
-    return MARKET === "cn" && D && D.symbols && D.symbols[sym] ? (D.symbols[sym].code || "") : "";
+    return D && D.symbols && D.symbols[sym] ? (D.symbols[sym].code || "") : "";
   }
   function symbolHTML(sym) {
     var code = symbolCode(sym);
@@ -1364,7 +1364,7 @@
   function filtered() {
     var q = F.q.toUpperCase();
     var a = SIGS.filter(function (g) {
-      if (q && g.symbol.toUpperCase().indexOf(q) < 0 && symbolCode(g.symbol).indexOf(q) < 0) return false;
+      if (q && g.symbol.toUpperCase().indexOf(q) < 0 && symbolCode(g.symbol).toUpperCase().indexOf(q) < 0) return false;
       if (F.level && g.level !== F.level) return false;
       if (F.type) {
         if (F.type === "edge") { if (!isEdge(g)) return false; }

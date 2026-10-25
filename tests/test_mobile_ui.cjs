@@ -9,6 +9,9 @@ const path = require('node:path');
 const repo = path.resolve(__dirname, '..');
 const site = path.join(repo, 'site');
 const generated = '2026-10-17T03:00:00+00:00';
+const usSnapshot = JSON.parse(fs.readFileSync(path.join(site,'data/signals.json'),'utf8'));
+usSnapshot.symbols['纳指'] = {code:'^IXIC',levels:{daily:{last_close:23204.87,bars:500,state:{direction:'up',pivot_pos:'above'}}}};
+usSnapshot.signals.push({...usSnapshot.signals[0],symbol:'纳指',level:'daily',score:4.5,recent:true});
 // 测试数据：验证名称/代码搜索和新增A股详情，不访问真实持仓。
 const cnSnapshot = JSON.parse(fs.readFileSync(path.join(site,'data/signals_cn.json'),'utf8'));
 const addedCN = [['万向钱潮','000559'],['三花智控','002050'],['三孚股份','603938'],['诺德股份','600110']];
@@ -30,7 +33,7 @@ const positions = {generated, positions:[{symbol:'NVDA',currency:'USD',qty:10,co
       if (name === '/api/positions') return route.fulfill({json:positions});
       if (name === '/api/macro') return route.fulfill({json:macro});
       let file = name === '/' ? 'index.html' : name.slice(1);
-      if (name === '/api/signals') file = 'data/signals.json';
+      if (name === '/api/signals') return route.fulfill({json:usSnapshot});
       else if (name === '/api/signals_cn') return route.fulfill({json:cnSnapshot});
       else if (name.startsWith('/api/charts')) file = 'data/' + name.slice('/api/'.length);
       if (slowNvda && name === '/api/charts/NVDA.json') await new Promise(resolve=>setTimeout(resolve,150));
@@ -46,6 +49,14 @@ const positions = {generated, positions:[{symbol:'NVDA',currency:'USD',qty:10,co
     await page.goto('http://chan.test/');
     await page.locator('.signal-note').first().waitFor();
     assert.match(await page.locator('#data-status').innerText(), /Alpaca/);
+    await page.locator('.tabs-bottom [data-view="symbols"]').click();
+    assert.match(await page.locator('.sym-card[data-sym="纳指"]').innerText(),/纳指\s+\^IXIC/);
+    assert.match(await page.locator('.sym-card[data-sym="纳指"]').innerText(),/23,204\.87/);
+    await page.locator('.tabs-bottom [data-view="signals"]').click();
+    await page.locator('#quick-search').fill('^ixic');
+    assert.equal(await page.locator('.signal-note').count(),1);
+    assert.match(await page.locator('.note-symbol').innerText(),/纳指.*\^IXIC/s);
+    await page.locator('#quick-search').fill('');
     // 手机首屏服务真实内容：第一条信号必须在屏幕上方60%内出现。
     const firstSignal = await page.locator('.signal-note').first().boundingBox();
     assert.ok(firstSignal.y < 844 * 0.6, 'signal list pushed below the first screen');
