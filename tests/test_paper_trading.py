@@ -34,7 +34,7 @@ class Market:
 class StoreTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.clock=Clock();self.market=Market(self.clock)
-        self.store=PaperStore(Path(self.tmp.name)/'paper.sqlite',self.market,self.clock)
+        self.store=PaperStore(Path(self.tmp.name)/'paper.sqlite',self.market,self.clock,markets=('us','cn'))
         self.token=self.store.create('us',100000)['token']
     def tearDown(self): self.tmp.cleanup()
     def order(self,**kw):
@@ -205,6 +205,16 @@ class StoreTests(unittest.TestCase):
         app=FastAPI();app.include_router(router_for(self.store,enabled=lambda:False))
         client=TestClient(app)
         self.assertEqual(client.post('/api/paper/accounts',json={'market':'us','initial':100000}).status_code,503)
+
+    def test_product_defaults_to_us_only_and_rejects_cn_credentials(self):
+        scoped=PaperStore(self.store.path,self.market,self.clock)
+        app=FastAPI();app.include_router(router_for(scoped));client=TestClient(app)
+        response=client.post('/api/paper/accounts',json={'market':'cn','initial':100000})
+        self.assertEqual(response.status_code,400)
+        self.assertIn('仅支持美股',response.json()['detail'])
+        legacy_cn=self.store.create('cn',100000)['token']
+        with self.assertRaises(PaperError):scoped.state(legacy_cn)
+        with self.assertRaises(PaperError):scoped.order(legacy_cn,{'request_key':'legacy-cn-order-0001'})
 
 
 class Sessions:

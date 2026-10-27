@@ -41,6 +41,21 @@ const path=require('node:path');
     await page.locator('[data-cancel]').first().waitFor();await page.locator('[data-cancel]').first().click();
     await page.waitForFunction(()=>document.querySelector('#paper-app').textContent.includes('已撤销'));
     const download=page.waitForEvent('download');await page.locator('#paper-export').click();assert.match((await download).suggestedFilename(),/paper-us/);
+    // 两个市场分别建设：A股保留原页面，不展示/创建美股练习入口。
+    await page.locator('[data-market="cn"]').click();
+    await page.waitForFunction(()=>document.getElementById('data-status').textContent.includes('东方财富'));
+    assert.equal(await page.locator('.tab[data-view="paper"]:visible').count(),0);
+    await page.evaluate(()=>{location.hash='paper';});
+    await page.waitForFunction(()=>location.hash==='#signals');
+    await page.locator('.signal-note').first().click();
+    assert.equal(await page.locator('#dr-paper').count(),0);
+    await page.keyboard.press('Escape');
+    await page.locator('#drawer').waitFor({state:'hidden'});
+    await page.locator('[data-market="us"]').click();
+    await page.waitForFunction(()=>document.body.dataset.market==='us');
+    await page.locator('.tabs-bottom [data-view="paper"]').click();
+    await page.locator('#paper-ticket').waitFor();
+    assert.equal(await page.locator('[data-sell=NVDA]').count(),1,'US account stays independent of CN navigation');
     for(const theme of ['light','dark']){
       await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);
       for(const width of [320,390,768,1440]){

@@ -33,7 +33,8 @@ def costs(market, side, qty, price):
 
 
 class PaperStore:
-    def __init__(self, path, market_data, clock=None):
+    def __init__(self, path, market_data, clock=None, *, markets=('us',)):
+        self.markets = tuple(markets)
         self.path, self.market_data = path, market_data
         self.clock = clock or (lambda: datetime.now(timezone.utc))
 
@@ -82,9 +83,13 @@ class PaperStore:
                          (hashlib.sha256(token.encode()).hexdigest(),)).fetchone()
         if row is None:
             raise PaperError('练习账户凭据无效')
+        if row['market'] not in self.markets:
+            raise PaperError('此练习盘目前仅支持美股')
         return dict(row)
 
     def create(self, market, initial):
+        if market not in self.markets:
+            raise PaperError('此练习盘目前仅支持美股')
         if market not in ('us', 'cn') or isinstance(initial, bool):
             raise PaperError('账户参数不正确')
         try:

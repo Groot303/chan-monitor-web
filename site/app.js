@@ -185,6 +185,7 @@
   // ---------- 导航 ----------
   function setView(v, noHash) {
     // 持仓页已停用，旧链接和手动输入都返回信号页。
+    if (v === "paper" && MARKET !== "us") { v = "signals"; history.replaceState(null, "", "#signals"); }
     if (v === "holdings") { v = "signals"; history.replaceState(null, "", "#signals"); }
     if (["signals", "symbols", "paper", "macro", "about"].indexOf(v) < 0) v = "signals";
     VIEW = v;
@@ -215,6 +216,10 @@
     if (disc) disc.textContent = "数据源 " + MK[MARKET].src + ",可能延迟或缺失。";
   }
   function syncMarketUI() {
+    document.body.dataset.market = MARKET;
+    qsa('.tab[data-view="paper"]').forEach(function (button) { button.hidden = MARKET !== "us"; });
+    window.dispatchEvent(new CustomEvent("chan-market", {detail:{market:MARKET}}));
+    if (MARKET !== "us" && VIEW === "paper") setView("signals");
     qsa("[data-market]").forEach(function (b) {
       b.setAttribute("aria-pressed", b.getAttribute("data-market") === MARKET ? "true" : "false");
     });
@@ -1621,7 +1626,7 @@
           (x.confirmed ? "" : '<span class="chip chip-un">未确认</span>') + (x.recent ? "" : '<span class="chip chip-stale">过期</span>') + '</button>';
       }).join("") + '</div></section>';
     }
-    h += '<button type="button" class="btn primary" id="dr-paper">加入模拟练习</button>';
+    if (MARKET === "us") h += '<button type="button" class="btn primary" id="dr-paper">加入美股模拟练习</button>';
     h += '<button type="button" class="btn" id="dr-filter" style="align-self:flex-start">在信号列表中只看 ' + esc(sym) + '</button>';
     $("dr-body").innerHTML = h;
     // 标准4：先看信号价格与风险，再看图验证；图表不是首页主功能。
@@ -1643,7 +1648,7 @@
     qsa("[data-other]", $("dr-body")).forEach(function (b) {
       b.addEventListener("click", function () { var x = SIGS[+b.getAttribute("data-other")]; openDrawer(x.symbol, x); var f = document.querySelector('[data-other="' + x._id + '"]'); if (f) f.focus(); });
     });
-    $("dr-paper").addEventListener("click", function () {
+    if ($("dr-paper")) $("dr-paper").addEventListener("click", function () {
       window.dispatchEvent(new CustomEvent("paper-order-intent", {detail:{market:MARKET,symbol:sym}}));
       closeDrawer(); setView("paper");
     });
