@@ -64,6 +64,15 @@ class PaperStore:
               BEGIN SELECT RAISE(ABORT,'immutable events'); END;
             ''')
             con.execute('BEGIN IMMEDIATE')
+            # Compatible migration: old plan_stop values stay records, never auto-arm.
+            if 'auto_stop' not in {r[1] for r in con.execute('PRAGMA table_info(orders)')}:
+                con.execute('ALTER TABLE orders ADD COLUMN auto_stop INTEGER NOT NULL DEFAULT 0')
+            con.execute("""CREATE TABLE IF NOT EXISTS protective_stops(
+                id TEXT PRIMARY KEY,account TEXT,lot_id INTEGER UNIQUE,symbol TEXT,price REAL,
+                active_after TEXT,last_checked TEXT,status TEXT,trigger_json TEXT,fill_after TEXT,message TEXT)""")
+            con.execute('CREATE INDEX IF NOT EXISTS stops_account_status ON protective_stops(account,status)')
+            con.execute('CREATE INDEX IF NOT EXISTS orders_account_status ON orders(account,status)')
+            con.execute('CREATE INDEX IF NOT EXISTS lots_account ON lots(account)')
             yield con
             con.commit()
         except Exception:
@@ -142,17 +151,15 @@ class PaperStore:
                 'constraint_note': quote.get('constraint_note', ''), 'model': 'paper-v1-5bps'}
 
     def order(self, token, payload):
-        with self.db() as db:
-            a = self.account(db, token)
-            self.reconcile(db, a)
-            a = self.account(db, token)
+        with self.action_db(token) as (db,a):
             key = payload.get('request_key')
-            if not isinstance(key, str) or not 16 <= len(key) <= 100:
+            if not isinstance(key, str) or not 16 <= len(key) <= 100 or key.startswith('stop-'):
                 raise PaperError('缺少订单幂等编号')
             old = db.execute('SELECT * FROM orders WHERE account=? AND request_key=?', (a['id'], key)).fetchone()
             if old:
                 if any(payload.get(k) != old[k] for k in ('symbol', 'side', 'qty', 'reason', 'plan_stop')):
                     raise PaperError('同一幂等编号不能更改订单')
+                if bool(payload.get('auto_stop',False))!=bool(old['auto_stop']): raise PaperError('同一幂等编号不能更改自动止损')
                 return dict(old)
             if db.execute('SELECT COUNT(*) FROM orders WHERE account=?',(a['id'],)).fetchone()[0]>=10000:
                 raise PaperError('账户练习单数量已达上限')
@@ -165,103 +172,237 @@ class PaperStore:
                 raise PaperError('请填写1至500字练习理由')
             if stop is not None:
                 if type(stop) not in (int, float) or not 0 < stop < p['reference_price'] or side != 'buy':
-                    raise PaperError('计划止损须为低于参考价的正数；它仅作复盘记录')
+                    raise PaperError('止损须为低于参考价的正数')
+            auto_stop=payload.get('auto_stop',False)
+            if type(auto_stop) is not bool or (auto_stop and (a['market']!='us' or side!='buy' or stop is None)):
+                raise PaperError('自动止损只适用于填写止损价的美股买单')
+            if auto_stop and money(stop)!=stop: raise PaperError('自动止损价最多两位小数')
             oid, now = secrets.token_hex(16), self.clock().isoformat()
             snapshot = self.market_data.signal_snapshot(a['market'], symbol)
-            db.execute('INSERT INTO orders VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)',
+            db.execute('INSERT INTO orders(id,account,request_key,symbol,side,qty,submitted,status,reserve,reason,plan_stop,signal_json,message,auto_stop) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                        (oid,a['id'],key,symbol,side,qty,now,'pending',p['reserve'] if side=='buy' else 0,
-                        reason,stop,json.dumps(snapshot,ensure_ascii=False),'等待提交后的可成交行情'))
+                        reason,stop,json.dumps(snapshot,ensure_ascii=False),'等待提交后的可成交行情',int(auto_stop)))
             self.event(db,a['id'],'order_submitted',{'id':oid,'symbol':symbol,'side':side,'qty':qty,
-                       'reason':reason,'plan_stop':stop,'signal_snapshot':snapshot,'preview':p})
+                       'reason':reason,'plan_stop':stop,'auto_stop':auto_stop,'signal_snapshot':snapshot,'preview':p})
             return dict(db.execute('SELECT * FROM orders WHERE id=?',(oid,)).fetchone())
 
     def preview_order(self, token, payload):
-        with self.db() as db:
-            a = self.account(db, token)
-            self.reconcile(db, a)
+        with self.action_db(token) as (db,a):
             return self.preview(db,self.account(db,token),payload.get('symbol'),payload.get('side'),payload.get('qty'))
 
     def cancel(self, token, oid):
-        with self.db() as db:
-            a = self.account(db, token)
-            self.reconcile(db, a)
+        with self.action_db(token) as (db,a):
             row = db.execute('SELECT * FROM orders WHERE id=? AND account=?',(oid,a['id'])).fetchone()
+            if row is not None and row['request_key'].startswith('stop-'):
+                raise PaperError('自动止损已触发，不能通过普通撤单撤销')
             if row is None or row['status'] != 'pending':
                 raise PaperError('该订单已成交或不可撤销')
             db.execute("UPDATE orders SET status='canceled',message='用户撤单' WHERE id=?",(oid,))
             self.event(db,a['id'],'order_canceled',{'id':oid})
 
+    @contextmanager
+    def action_db(self, token):
+        # Market effects survive a rejected user action, e.g. cancel after a stop fill.
+        with self.db() as db:
+            a=self.account(db,token)
+            self.reconcile(db,a)
+            a=self.account(db,token)
+            db.execute('SAVEPOINT user_action')
+            try:
+                yield db,a
+            except PaperError:
+                db.execute('ROLLBACK TO user_action')
+                db.execute('RELEASE user_action')
+                db.commit()
+                raise
+            else:
+                db.execute('RELEASE user_action')
+
+    def update_stop(self, token, lot_id, price):
+        with self.action_db(token) as (db,a):
+            if a['market']!='us': raise PaperError('自动止损仅支持美股模拟盘')
+            lot=db.execute('SELECT * FROM lots WHERE id=? AND account=? AND remaining>0',(lot_id,a['id'])).fetchone()
+            if not lot: raise PaperError('模拟持仓批次不存在')
+            old=db.execute('SELECT * FROM protective_stops WHERE lot_id=?',(lot_id,)).fetchone()
+            if old and old['status']=='triggered': raise PaperError('止损已触发，不能撤销或修改等待中的卖出')
+            if old and old['status']=='active':
+                safe=getattr(self.market_data,'stop_amendment_safe',None)
+                if not safe or not safe(a['market'],lot['symbol'],timestamp(old['last_checked'] or old['active_after']),self.clock()):
+                    raise PaperError('行情不完整，无法确认止损未触发，暂不能修改或停用')
+            now=self.clock().isoformat()
+            if price is None:
+                if old and old['status']=='active':
+                    db.execute("UPDATE protective_stops SET status='canceled',message='用户停用' WHERE id=?",(old['id'],))
+                    self.event(db,a['id'],'stop_canceled',{'stop_id':old['id'],'reason':'user_disabled'})
+                return {'status':'canceled'}
+            quote=self.market_data.quote(a['market'],lot['symbol'],self.clock())
+            if type(price) not in (int,float) or not quote or not quote.get('fresh') or not 0<price<quote['price'] or money(price)!=price:
+                raise PaperError('自动止损价须为低于当前参考价的正数，最多两位小数')
+            if old:
+                db.execute("UPDATE protective_stops SET price=?,active_after=?,last_checked=NULL,status='active',trigger_json=NULL,fill_after=NULL,message='自动止损已启用' WHERE id=?",(price,now,old['id']))
+                sid=old['id']
+            else:
+                sid=secrets.token_hex(16)
+                db.execute('INSERT INTO protective_stops(id,account,lot_id,symbol,price,active_after,status,message) VALUES(?,?,?,?,?,?,?,?)',
+                           (sid,a['id'],lot_id,lot['symbol'],price,now,'active','自动止损已启用'))
+            self.event(db,a['id'],'stop_set',{'stop_id':sid,'lot_id':lot_id,'price':price,'active_after':now})
+            return {'id':sid,'status':'active'}
+
+    def sync_all(self):
+        # Called by the feature's own scheduler; never uses browser/account credentials.
+        with self.db() as db:
+            accounts=[dict(r) for r in db.execute("SELECT * FROM accounts WHERE market='us' AND (id IN (SELECT account FROM orders WHERE status='pending') OR id IN (SELECT account FROM protective_stops WHERE status IN ('active','triggered')))")]
+        for a in accounts:
+            try:
+                with self.db() as db: self.reconcile(db,a)
+            except Exception:
+                import logging
+                logging.getLogger('paper').exception('paper background reconciliation failed')
+        return {'accounts_checked':len(accounts)}
+
     def reconcile(self, db, a):
-        now = self.clock()
-        previous_fills = [json.loads(r['payload']) for r in db.execute(
-            "SELECT payload FROM events WHERE account=? AND kind='fill'", (a['id'],))]
-        latest_filled_open = max((timestamp(f['market_bar']['open_time']) for f in previous_fills), default=None)
-        pending = list(db.execute("SELECT * FROM orders WHERE account=? AND status='pending' ORDER BY submitted,rowid",(a['id'],)))
+        import heapq
+        now=self.clock()
+        fills=[json.loads(r['payload']) for r in db.execute("SELECT payload FROM events WHERE account=? AND kind='fill'",(a['id'],))]
+        latest=max((timestamp(f['market_bar']['open_time']) for f in fills),default=None)
         timeline=[]
-        for order in pending:
-            submitted = timestamp(order['submitted'])
-            if (now-submitted).total_seconds() > 7*86400:
+        serial=0
+        def queue(at,priority,kind,identifier,bar):
+            nonlocal serial
+            serial+=1
+            heapq.heappush(timeline,(at,priority,serial,kind,identifier,bar))
+        def schedule_stop(stop):
+            since=timestamp(stop['last_checked'] or stop['active_after'])
+            bars,note=self.market_data.stop_bars(a['market'],stop['symbol'],since,now)
+            db.execute('UPDATE protective_stops SET message=? WHERE id=?',(note,stop['id']))
+            for bar in bars:
+                opened,closed=timestamp(bar['open_time']),timestamp(bar['close_time'])
+                if opened<timestamp(stop['active_after']) or closed<=since or closed>now: continue
+                queue(opened,1,'stop_open',stop['id'],bar)
+                queue(closed,0,'stop_close',stop['id'],bar)
+        for stop in db.execute("SELECT * FROM protective_stops WHERE account=? AND status IN ('active','triggered')",(a['id'],)).fetchall():
+            schedule_stop(dict(stop))
+        for order in db.execute("SELECT * FROM orders WHERE account=? AND status='pending' AND request_key NOT LIKE 'stop-%' ORDER BY submitted,rowid",(a['id'],)).fetchall():
+            submitted=timestamp(order['submitted'])
+            if (now-submitted).total_seconds()>7*86400:
                 db.execute("UPDATE orders SET status='rejected',message='订单7天到期' WHERE id=?",(order['id'],))
                 self.event(db,a['id'],'order_rejected',{'id':order['id'],'reason':'expired'})
                 continue
-            bars, note = self.market_data.execution_bars(a['market'],order['symbol'],submitted,now)
+            bars,note=self.market_data.execution_bars(a['market'],order['symbol'],submitted,now)
             db.execute('UPDATE orders SET message=? WHERE id=?',(note,order['id']))
-            for bar in bars:
-                timeline.append((timestamp(bar['open_time']),order['submitted'],order['id'],dict(order),bar))
-        for _, _, _, order, bar in sorted(timeline,key=lambda x:x[:3]):
-            if db.execute('SELECT status FROM orders WHERE id=?',(order['id'],)).fetchone()[0]!='pending':
+            for bar in bars: queue(timestamp(bar['open_time']),2,'manual',order['id'],bar)
+        while timeline:
+            at,_,_,kind,identifier,bar=heapq.heappop(timeline)
+            opened,closed=timestamp(bar['open_time']),timestamp(bar['close_time'])
+            if not opened<closed<=now: continue
+            if kind=='manual':
+                order=db.execute('SELECT * FROM orders WHERE id=?',(identifier,)).fetchone()
+                if order['status']!='pending' or not timestamp(order['submitted'])<opened or bar.get('tradable') is not True: continue
+                if latest and opened<latest:
+                    db.execute("UPDATE orders SET status='rejected',message='历史行情后到，已有更晚成交，需人工复盘' WHERE id=?",(identifier,))
+                    self.event(db,a['id'],'order_rejected',{'id':identifier,'reason':'late_history_would_reorder_ledger'})
+                    continue
+                stop=self.fill(db,a,dict(order),bar)
+                if stop is not False:
+                    latest=opened
+                    if stop: schedule_stop(stop)
                 continue
-            submitted=timestamp(order['submitted'])
-            # Hard contract even when a provider implementation is replaced.
-            opened, closed = timestamp(bar['open_time']), timestamp(bar['close_time'])
-            if not (submitted < opened < closed <= now) or bar.get('tradable') is not True:
+            stop=db.execute('SELECT * FROM protective_stops WHERE id=?',(identifier,)).fetchone()
+            if not stop or stop['status'] not in ('active','triggered'): continue
+            stop=dict(stop)
+            lot=db.execute('SELECT * FROM lots WHERE id=? AND remaining>0',(stop['lot_id'],)).fetchone()
+            if not lot:
+                db.execute("UPDATE protective_stops SET status='canceled',message='该批次已平仓' WHERE id=?",(identifier,))
                 continue
-            if latest_filled_open and opened < latest_filled_open:
-                db.execute("UPDATE orders SET status='rejected',message='历史行情后到，已有更晚成交，需人工复盘' WHERE id=?",(order['id'],))
-                self.event(db,a['id'],'order_rejected',{'id':order['id'],'reason':'late_history_would_reorder_ledger'})
+            if kind=='stop_close':
+                if stop['status']=='active' and bar.get('low',float('inf'))<=stop['price']:
+                    self.trigger_stop(db,a,stop,bar,'intrabar',closed,now)
+                db.execute('UPDATE protective_stops SET last_checked=? WHERE id=?',(bar['close_time'],identifier))
                 continue
-            qty, side = order['qty'], order['side']
-            lots = list(db.execute('SELECT * FROM lots WHERE account=? AND symbol=? AND remaining>0 ORDER BY id', (a['id'],order['symbol'])))
-            sellable = [l for l in lots if a['market']=='us' or l['acquired_day'] < bar['session_day']]
-            if side=='sell' and sum(l['remaining'] for l in sellable) < qty:
-                continue  # A股T+1：仍等待后续交易日，不回填当天成交。
-            price = money(Decimal(str(bar['open'])) * Decimal('1.0005' if side=='buy' else '.9995'))
-            if price<=0: continue
-            if a['market']=='cn':
-                limits=bar.get('constraint_evidence',{})
-                if not limits.get('lower_limit',float('inf'))<=price<=limits.get('upper_limit',0): continue
-            fee = costs(a['market'],side,qty,price)
-            amount = money(qty*price)
-            current_cash = db.execute('SELECT cash FROM accounts WHERE id=?',(a['id'],)).fetchone()[0]
-            other_reserved = db.execute("SELECT COALESCE(SUM(reserve),0) FROM orders WHERE account=? AND status='pending' AND side='buy' AND id!=?",(a['id'],order['id'])).fetchone()[0]
-            if side=='buy' and money(amount+fee) > money(current_cash-other_reserved):
-                db.execute("UPDATE orders SET status='rejected',message='跳空后资金不足' WHERE id=?",(order['id'],))
-                self.event(db,a['id'],'order_rejected',{'id':order['id'],'reason':'insufficient_cash_at_open'})
+            # Gap is observable at open; intrabar low is only known after that bar closes.
+            if stop['status']=='active' and bar['open']<=stop['price']:
+                self.trigger_stop(db,a,stop,bar,'gap_open',opened if bar.get('tradable') else closed,now)
+                stop=dict(db.execute('SELECT * FROM protective_stops WHERE id=?',(identifier,)).fetchone())
+            if stop['status']!='triggered' or opened<timestamp(stop['fill_after']) or bar.get('tradable') is not True: continue
+            if latest and opened<latest:
+                db.execute("UPDATE protective_stops SET fill_after=?,message='历史行情后到，等待当前时刻之后的开盘' WHERE id=?",(now.isoformat(),identifier))
+                self.event(db,a['id'],'stop_deferred',{'stop_id':identifier,'reason':'late_history','eligible_after':now.isoformat()})
                 continue
-            realized = 0
-            if side=='buy':
-                db.execute('INSERT INTO lots(account,symbol,qty,remaining,cost,basis_remaining,acquired_day) VALUES(?,?,?,?,?,?,?)',
-                           (a['id'],order['symbol'],qty,qty,(amount+fee)/qty,money(amount+fee),bar['session_day']))
-                cash = money(current_cash-amount-fee)
-            else:
-                need, basis = qty, 0
-                for lot in sellable:
-                    take = min(need,lot['remaining'])
-                    allocated = money(Decimal(str(lot['basis_remaining']))*Decimal(take)/Decimal(lot['remaining']))
-                    basis += allocated
-                    db.execute('UPDATE lots SET remaining=remaining-?,basis_remaining=? WHERE id=?',
-                               (take,money(lot['basis_remaining']-allocated),lot['id']))
-                    need -= take
-                    if not need: break
-                realized = money(amount-fee-basis)
-                cash = money(current_cash+amount-fee)
-            db.execute('UPDATE accounts SET cash=? WHERE id=?',(cash,a['id']))
-            db.execute("UPDATE orders SET status='filled',message='按后续已完成K线开盘价模拟成交' WHERE id=?",(order['id'],))
-            self.event(db,a['id'],'fill',{'order_id':order['id'],'symbol':order['symbol'],'side':side,'qty':qty,
-                'price':price,'fee':fee,'realized_pnl':realized,'market_bar':bar,
-                'recorded_at':now.isoformat(),'model':'paper-v1-5bps'},at=opened)
-            latest_filled_open = opened
-            continue
+            # Protective exit wins at the same open, and cancels queued manual sells.
+            for sell in db.execute("SELECT id FROM orders WHERE account=? AND symbol=? AND side='sell' AND status='pending' AND request_key NOT LIKE 'stop-%'",(a['id'],stop['symbol'])).fetchall():
+                db.execute("UPDATE orders SET status='canceled',message='自动止损优先，撤销同标的待卖单' WHERE id=?",(sell['id'],))
+                self.event(db,a['id'],'order_canceled',{'id':sell['id'],'reason':'protective_stop_priority'})
+            if money(Decimal(str(bar['open']))*Decimal('.9995'))<=0: continue
+            oid='stop-'+identifier
+            db.execute('INSERT OR IGNORE INTO orders(id,account,request_key,symbol,side,qty,submitted,status,reserve,reason,plan_stop,signal_json,message,auto_stop) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                       (oid,a['id'],oid,stop['symbol'],'sell',lot['remaining'],stop['active_after'],'pending',0,'自动止损',None,'{}','自动止损卖出',0))
+            order=dict(db.execute('SELECT * FROM orders WHERE id=?',(oid,)).fetchone())
+            if self.fill(db,a,order,bar,stop=stop) is not False:
+                db.execute("UPDATE protective_stops SET status='filled',message='自动止损已卖出' WHERE id=?",(identifier,))
+                latest=opened
+
+    def trigger_stop(self, db, a, stop, bar, origin, eligible_after, now):
+        evidence={'origin':origin,'interval_open':bar['open_time'],'interval_close':bar['close_time'],
+                  'exact_intrabar_time':None,'observed_at':now.isoformat(),'stop_price':stop['price'],'bar':bar}
+        db.execute("UPDATE protective_stops SET status='triggered',trigger_json=?,fill_after=?,message='止损已触发，等待可成交开盘' WHERE id=?",
+                   (json.dumps(evidence),eligible_after.isoformat(),stop['id']))
+        self.event(db,a['id'],'stop_triggered',{'stop_id':stop['id'],**evidence})
+
+    def fill(self, db, a, order, bar, *, stop=None):
+        qty,side=order['qty'],order['side']
+        lots=list(db.execute('SELECT * FROM lots WHERE account=? AND symbol=? AND remaining>0 ORDER BY id',(a['id'],order['symbol'])))
+        sellable=[l for l in lots if (not stop or l['id']==stop['lot_id']) and (a['market']=='us' or l['acquired_day']<bar['session_day'])]
+        if side=='sell' and sum(l['remaining'] for l in sellable)<qty: return False
+        price=money(Decimal(str(bar['open']))*Decimal('1.0005' if side=='buy' else '.9995'))
+        if price<=0: return False
+        if a['market']=='cn':
+            limits=bar.get('constraint_evidence',{})
+            if not limits.get('lower_limit',float('inf'))<=price<=limits.get('upper_limit',0): return False
+        if side=='buy' and order.get('auto_stop') and order['plan_stop']>=min(price,bar['open']):
+            db.execute("UPDATE orders SET status='rejected',message='开盘买入价已低于自动止损，取消入场' WHERE id=?",(order['id'],))
+            self.event(db,a['id'],'order_rejected',{'id':order['id'],'reason':'entry_below_stop'})
+            return False
+        fee=costs(a['market'],side,qty,price)
+        amount=money(qty*price)
+        cash=db.execute('SELECT cash FROM accounts WHERE id=?',(a['id'],)).fetchone()[0]
+        reserved=db.execute("SELECT COALESCE(SUM(reserve),0) FROM orders WHERE account=? AND status='pending' AND side='buy' AND id!=?",(a['id'],order['id'])).fetchone()[0]
+        if side=='buy' and money(amount+fee)>money(cash-reserved):
+            db.execute("UPDATE orders SET status='rejected',message='跳空后资金不足' WHERE id=?",(order['id'],))
+            self.event(db,a['id'],'order_rejected',{'id':order['id'],'reason':'insufficient_cash_at_open'})
+            return False
+        realized,new_stop=0,None
+        if side=='buy':
+            cursor=db.execute('INSERT INTO lots(account,symbol,qty,remaining,cost,basis_remaining,acquired_day) VALUES(?,?,?,?,?,?,?)',
+                              (a['id'],order['symbol'],qty,qty,(amount+fee)/qty,money(amount+fee),bar['session_day']))
+            cash=money(cash-amount-fee)
+            if order.get('auto_stop'):
+                sid=secrets.token_hex(16)
+                db.execute('INSERT INTO protective_stops(id,account,lot_id,symbol,price,active_after,status,message) VALUES(?,?,?,?,?,?,?,?)',
+                           (sid,a['id'],cursor.lastrowid,order['symbol'],order['plan_stop'],bar['close_time'],'active','自动止损已启用'))
+                new_stop=dict(db.execute('SELECT * FROM protective_stops WHERE id=?',(sid,)).fetchone())
+                self.event(db,a['id'],'stop_set',{'stop_id':sid,'lot_id':cursor.lastrowid,'price':order['plan_stop'],'active_after':bar['close_time']})
+        else:
+            need,basis=qty,0
+            for lot in sellable:
+                take=min(need,lot['remaining'])
+                allocated=money(Decimal(str(lot['basis_remaining']))*Decimal(take)/Decimal(lot['remaining']))
+                basis+=allocated
+                db.execute('UPDATE lots SET remaining=remaining-?,basis_remaining=? WHERE id=?',(take,money(lot['basis_remaining']-allocated),lot['id']))
+                need-=take
+                if not need: break
+            realized=money(amount-fee-basis);cash=money(cash+amount-fee)
+        db.execute('UPDATE accounts SET cash=? WHERE id=?',(cash,a['id']))
+        db.execute("UPDATE orders SET status='filled',message=? WHERE id=?",('自动止损卖出' if stop else '按后续已完成K线开盘价模拟成交',order['id']))
+        self.event(db,a['id'],'fill',{'order_id':order['id'],'symbol':order['symbol'],'side':side,'qty':qty,
+                   'price':price,'fee':fee,'realized_pnl':realized,'market_bar':bar,'recorded_at':self.clock().isoformat(),
+                   'model':'paper-v2-autostop' if stop else 'paper-v1-5bps','execution_reason':'automatic_stop' if stop else 'manual',
+                   'stop_id':stop['id'] if stop else None,'trigger_evidence':json.loads(stop['trigger_json']) if stop else None},at=timestamp(bar['open_time']))
+        for empty in db.execute("SELECT s.id FROM protective_stops s JOIN lots l ON s.lot_id=l.id WHERE s.account=? AND l.remaining=0 AND s.status IN ('active','triggered')",(a['id'],)).fetchall():
+            if stop and empty['id']==stop['id']: continue
+            db.execute("UPDATE protective_stops SET status='canceled',message='该批次已平仓' WHERE id=?",(empty['id'],))
+            self.event(db,a['id'],'stop_canceled',{'stop_id':empty['id'],'reason':'lot_closed'})
+        return new_stop
+
     def state(self, token):
         with self.db() as db:
             a = self.account(db, token)
@@ -305,7 +446,9 @@ class PaperStore:
             reserved = money(sum(o['reserve'] for o in orders if o['status']=='pending' and o['side']=='buy'))
             events = [{'id':r['id'],'time':r['time'],'kind':r['kind'],'payload':json.loads(r['payload'])}
                       for r in db.execute('SELECT * FROM events WHERE account=? ORDER BY id',(a['id'],))]
-            return {'market':a['market'],'currency':'USD' if a['market']=='us' else 'CNY','initial':a['initial'],'created':a['created'],
+            stops=[dict(r) for r in db.execute('SELECT s.*,l.remaining qty FROM protective_stops s JOIN lots l ON l.id=s.lot_id WHERE s.account=? ORDER BY l.id',(a['id'],))]
+            lots=[dict(r) for r in db.execute('SELECT id,symbol,remaining qty FROM lots WHERE account=? AND remaining>0 ORDER BY id',(a['id'],))]
+            return {'stops':stops,'lots':lots,'market':a['market'],'currency':'USD' if a['market']=='us' else 'CNY','initial':a['initial'],'created':a['created'],
                 'cash':a['cash'],'available_cash':money(a['cash']-reserved),'equity':value,'valuation_status':'known' if valid else 'unknown',
                 'return_pct':(value/a['initial']-1)*100 if value is not None else None,'max_drawdown_pct':drawdown*100,
                 'drawdown_basis':'observed_snapshots_only','positions':positions,'orders':orders,'fills':fills,'curve':curve,

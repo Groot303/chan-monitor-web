@@ -125,7 +125,7 @@ class FileMarketData:
     def benchmark(self, market, now):
         return self._quote(market,'纳指' if market=='us' else '上证指数',now)
 
-    def execution_bars(self, market, symbol, submitted, now):
+    def execution_bars(self, market, symbol, submitted, now, *, include_blocked=False):
         if not self.allowed(market,symbol): return [],'标的不支持模拟交易或行情缺失'
         bars=self.bars(market,symbol,now)
         if not bars: return [],'等待已完成行情及交易日历'
@@ -153,7 +153,23 @@ class FileMarketData:
                         return eligible,'缺少可核验的当日A股交易约束数据'
                     tradable = tradable and rule['suspended'] is False and lower<bar['open']<upper
                 except (KeyError,ValueError,TypeError): return eligible,'等待A股当日涨跌停及停牌证据'
-            if tradable:
-                eligible.append({**bar,'tradable':True,'constraint_evidence':
+            if tradable or include_blocked:
+                eligible.append({**bar,'tradable':tradable,'constraint_evidence':
                     {**rules[bar['session_day']][symbol],'upper_limit':upper,'lower_limit':lower} if market=='cn' else 'regular_session_nonflat_bar'})
         return eligible,'等待下一可成交开盘；A股须核验T+1、停牌与价格限制' if market=='cn' else '等待提交后的常规交易时段K线'
+
+    def stop_bars(self, market, symbol, since, now):
+        # Include a bar opening exactly at the previous closed-bar boundary.
+        return self.execution_bars(market,symbol,since-timedelta(microseconds=1),now,include_blocked=True)
+
+    def stop_amendment_safe(self, market, symbol, since, now):
+        bars=self.bars(market,symbol,now)
+        if not bars or not self.allowed(market,symbol) or not self.sessions.fresh(market,timestamp(bars[-1]['close_time']),now):
+            return False
+        seen={timestamp(bar['open_time']) for bar in bars}
+        cursor=datetime.fromtimestamp(math.ceil(since.timestamp()/300)*300,timezone.utc)
+        while cursor+timedelta(minutes=5)<=now:
+            end=cursor+timedelta(minutes=5)
+            if self.sessions.valid(market,cursor,end) and cursor not in seen: return False
+            cursor=end
+        return True

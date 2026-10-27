@@ -23,10 +23,13 @@ class Market:
     def signal_snapshot(self,market,symbol): return {'symbol':symbol,'first_seen_time':None,'time':'2020-01-01'}
     def benchmark(self,market,now): return {'price':100.,'time':now.isoformat(),'fresh':True}
     def execution_bars(self,market,symbol,submitted,now): return self.bars.get(symbol,[]),'waiting'
+    def stop_bars(self,market,symbol,since,now):
+        return [b for b in self.bars.get(symbol,[]) if timestamp(b['open_time'])>=since and timestamp(b['close_time'])<=now],'test stop history'
+    def stop_amendment_safe(self,*args):return True
     def bar(self,symbol='AAPL',start='2026-10-27T14:35:00Z',price=100.,day='2026-10-27'):
         opened=timestamp(start)
         bar={'open_time':opened.isoformat(),'close_time':(opened+timedelta(minutes=5)).isoformat(),
-             'open':price,'close':price,'session_day':day,'tradable':True,'constraint_evidence':{'lower_limit':1.,'upper_limit':2000.}}
+             'open':price,'close':price,'high':price+1,'low':price-1,'session_day':day,'tradable':True,'constraint_evidence':{'lower_limit':1.,'upper_limit':2000.}}
         self.bars.setdefault(symbol,[]).append(bar)
         return bar
 

@@ -21,6 +21,7 @@ const path=require('node:path');
     await page.locator('#paper-create button').click();await page.locator('#paper-ticket').waitFor();
     assert.equal(await page.locator('#paper-ticket [name=symbol]').inputValue(),'NVDA');
     await page.locator('#paper-ticket [name=qty]').fill('10');
+    await page.locator('#paper-ticket [name=stop]').fill('90');
     await page.locator('#paper-ticket [name=reason]').fill('手动回踩练习 <script>bad</script>');
     await page.locator('#paper-ticket button[type=submit]').click();await page.locator('#paper-confirm').waitFor();
     assert.match(await page.locator('#paper-preview').innerText(),/实际模拟成交价取提交后的后续行情/);
@@ -41,6 +42,15 @@ const path=require('node:path');
     await page.locator('[data-cancel]').first().waitFor();await page.locator('[data-cancel]').first().click();
     await page.waitForFunction(()=>document.querySelector('#paper-app').textContent.includes('已撤销'));
     const download=page.waitForEvent('download');await page.locator('#paper-export').click();assert.match((await download).suggestedFilename(),/paper-us/);
+    assert.match(await page.locator('.paper-stop-form').innerText(),/已启用/);
+    await page.locator('.paper-stop-form [name=price]').fill('92');
+    await page.locator('.paper-stop-form button[type=submit]').click();
+    await page.waitForFunction(()=>document.querySelector('.paper-stop-form').textContent.includes('92.00'));
+    const stopped=await fetch(base+'/test/stop-advance',{method:'POST'});
+    assert.equal((await stopped.json()).automatic_stops_filled,1,'background reconciliation exits without browser/account refresh');
+    await page.locator('#paper-refresh').click();
+    await page.waitForFunction(()=>document.getElementById('paper-app').textContent.includes('自动止损卖出'));
+    assert.equal(await page.locator('[data-sell=NVDA]').count(),0);
     // 两个市场分别建设：A股保留原页面，不展示/创建美股练习入口。
     await page.locator('[data-market="cn"]').click();
     await page.waitForFunction(()=>document.getElementById('data-status').textContent.includes('东方财富'));
@@ -55,7 +65,8 @@ const path=require('node:path');
     await page.waitForFunction(()=>document.body.dataset.market==='us');
     await page.locator('.tabs-bottom [data-view="paper"]').click();
     await page.locator('#paper-ticket').waitFor();
-    assert.equal(await page.locator('[data-sell=NVDA]').count(),1,'US account stays independent of CN navigation');
+    assert.equal(await page.locator('[data-sell=NVDA]').count(),0,'stopped US position stays closed after CN navigation');
+    assert.match(await page.locator('#paper-app').innerText(),/自动止损卖出/);
     for(const theme of ['light','dark']){
       await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);
       for(const width of [320,390,768,1440]){

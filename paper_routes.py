@@ -51,6 +51,12 @@ def router_for(store, enabled=lambda: True):
         data=await body(request)
         return await run_in_threadpool(run,lambda:store.order(token(request),data))
 
+    @router.post('/stops/{lot_id}')
+    async def stop(lot_id: int,request: Request):
+        data=await body(request)
+        if 'price' not in data: raise HTTPException(400,'请提供止损价，停用时传null')
+        return await run_in_threadpool(run,lambda:store.update_stop(token(request),lot_id,data['price']))
+
     @router.post('/orders/{oid}/cancel')
     def cancel(oid: str,request: Request):
         run(lambda:store.cancel(token(request),oid))

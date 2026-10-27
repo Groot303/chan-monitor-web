@@ -22,6 +22,15 @@ def advance():
     clock.now=timestamp('2026-10-27T14:41:00Z')
     return {'ok':True}
 
+@app.post('/test/stop-advance')
+def stop_advance():
+    market.bar('NVDA','2026-10-27T14:45:00Z',85)
+    clock.now=timestamp('2026-10-27T14:51:00Z')
+    store.sync_all()
+    with store.db() as db:
+        count=db.execute("SELECT COUNT(*) FROM protective_stops WHERE status='filled'").fetchone()[0]
+    return {'automatic_stops_filled':count}
+
 @app.get('/api/signals')
 def signals(): return json.loads((site/'data/signals.json').read_text())
 
