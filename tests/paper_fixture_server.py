@@ -7,6 +7,9 @@ from fastapi.staticfiles import StaticFiles
 from paper_routes import router_for
 from paper_trading import PaperStore, timestamp
 from tests.test_paper_trading import Clock, Market
+from tests.test_automatic_strategy import Source, signal
+from automatic_strategy import AutomaticStrategy
+from strategy_routes import strategy_router
 
 app=FastAPI()
 clock=Clock()
@@ -15,11 +18,20 @@ site=Path(__file__).resolve().parents[1]/'site'
 tmp=tempfile.TemporaryDirectory()
 store=PaperStore(Path(tmp.name)/'ledger.sqlite',market,clock)
 app.include_router(router_for(store))
+source=Source();source.publish(symbol='NVDA')
+engine=AutomaticStrategy(store,source);engine.tick()
+app.include_router(strategy_router(engine))
+
+@app.post('/test/signal')
+def new_signal():
+    source.publish([signal()],symbol='NVDA');engine.tick()
+    return {'orders':len(engine.report()['account']['orders'])}
 
 @app.post('/test/advance')
 def advance():
     market.bar('NVDA','2026-10-27T14:35:00Z',100)
     clock.now=timestamp('2026-10-27T14:41:00Z')
+    engine.tick()
     return {'ok':True}
 
 @app.post('/test/stop-advance')

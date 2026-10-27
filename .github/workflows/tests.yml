@@ -1,0 +1,31 @@
+name: Strategy and UI checks
+on:
+  pull_request:
+  push:
+    branches: [main, feature/automatic-us-strategy]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt httpx httpx2
+      - run: python -m unittest discover -s tests -p 'test_*.py'
+      - run: python -m tests.check_paper_calendar
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-package-lock playwright
+      - run: npx playwright install --with-deps chromium
+      - name: Browser regression
+        run: |
+          export CHROMIUM_PATH="$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')"
+          node tests/test_mobile_ui.cjs
+          node tests/test_apple_interactions.cjs
+          node tests/test_paper_ui.cjs

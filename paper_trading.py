@@ -48,6 +48,7 @@ class PaperStore:
             con.executescript('''
             CREATE TABLE IF NOT EXISTS accounts(id TEXT PRIMARY KEY, token_hash TEXT UNIQUE,
               market TEXT, created TEXT, initial REAL, cash REAL);
+            CREATE TABLE IF NOT EXISTS managed_accounts(account TEXT PRIMARY KEY, strategy_id TEXT UNIQUE);
             CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY, account TEXT, request_key TEXT,
               symbol TEXT, side TEXT, qty INTEGER, submitted TEXT, status TEXT,
               reserve REAL, reason TEXT, plan_stop REAL, signal_json TEXT, message TEXT,
@@ -92,6 +93,8 @@ class PaperStore:
                          (hashlib.sha256(token.encode()).hexdigest(),)).fetchone()
         if row is None:
             raise PaperError('练习账户凭据无效')
+        if db.execute('SELECT 1 FROM managed_accounts WHERE account=?',(row['id'],)).fetchone():
+            raise PaperError('策略账户只读，不能手动操作')
         if row['market'] not in self.markets:
             raise PaperError('此练习盘目前仅支持美股')
         return dict(row)
@@ -152,39 +155,43 @@ class PaperStore:
 
     def order(self, token, payload):
         with self.action_db(token) as (db,a):
-            key = payload.get('request_key')
-            if not isinstance(key, str) or not 16 <= len(key) <= 100 or key.startswith('stop-'):
-                raise PaperError('缺少订单幂等编号')
-            old = db.execute('SELECT * FROM orders WHERE account=? AND request_key=?', (a['id'], key)).fetchone()
-            if old:
-                if any(payload.get(k) != old[k] for k in ('symbol', 'side', 'qty', 'reason', 'plan_stop')):
-                    raise PaperError('同一幂等编号不能更改订单')
-                if bool(payload.get('auto_stop',False))!=bool(old['auto_stop']): raise PaperError('同一幂等编号不能更改自动止损')
-                return dict(old)
-            if db.execute('SELECT COUNT(*) FROM orders WHERE account=?',(a['id'],)).fetchone()[0]>=10000:
-                raise PaperError('账户练习单数量已达上限')
-            if db.execute("SELECT COUNT(*) FROM orders WHERE account=? AND status='pending'",(a['id'],)).fetchone()[0]>=50:
-                raise PaperError('最多保留50笔待成交单')
-            symbol, side, qty = (payload.get(k) for k in ('symbol', 'side', 'qty'))
-            p = self.preview(db, a, symbol, side, qty)
-            reason, stop = payload.get('reason', ''), payload.get('plan_stop')
-            if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 500:
-                raise PaperError('请填写1至500字练习理由')
-            if stop is not None:
-                if type(stop) not in (int, float) or not 0 < stop < p['reference_price'] or side != 'buy':
-                    raise PaperError('止损须为低于参考价的正数')
-            auto_stop=payload.get('auto_stop',False)
-            if type(auto_stop) is not bool or (auto_stop and (a['market']!='us' or side!='buy' or stop is None)):
-                raise PaperError('自动止损只适用于填写止损价的美股买单')
-            if auto_stop and money(stop)!=stop: raise PaperError('自动止损价最多两位小数')
-            oid, now = secrets.token_hex(16), self.clock().isoformat()
-            snapshot = self.market_data.signal_snapshot(a['market'], symbol)
-            db.execute('INSERT INTO orders(id,account,request_key,symbol,side,qty,submitted,status,reserve,reason,plan_stop,signal_json,message,auto_stop) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                       (oid,a['id'],key,symbol,side,qty,now,'pending',p['reserve'] if side=='buy' else 0,
-                        reason,stop,json.dumps(snapshot,ensure_ascii=False),'等待提交后的可成交行情',int(auto_stop)))
-            self.event(db,a['id'],'order_submitted',{'id':oid,'symbol':symbol,'side':side,'qty':qty,
-                       'reason':reason,'plan_stop':stop,'auto_stop':auto_stop,'signal_snapshot':snapshot,'preview':p})
-            return dict(db.execute('SELECT * FROM orders WHERE id=?',(oid,)).fetchone())
+            return self._submit_order(db,a,payload)
+
+    def _submit_order(self, db, a, payload, *, observation=None):
+        key = payload.get('request_key')
+        if not isinstance(key, str) or not 16 <= len(key) <= 100 or key.startswith('stop-'):
+            raise PaperError('缺少订单幂等编号')
+        old = db.execute('SELECT * FROM orders WHERE account=? AND request_key=?', (a['id'], key)).fetchone()
+        if old:
+            if any(payload.get(k) != old[k] for k in ('symbol', 'side', 'qty', 'reason', 'plan_stop')):
+                raise PaperError('同一幂等编号不能更改订单')
+            if bool(payload.get('auto_stop',False))!=bool(old['auto_stop']): raise PaperError('同一幂等编号不能更改自动止损')
+            return dict(old)
+        if db.execute('SELECT COUNT(*) FROM orders WHERE account=?',(a['id'],)).fetchone()[0]>=10000:
+            raise PaperError('账户练习单数量已达上限')
+        if db.execute("SELECT COUNT(*) FROM orders WHERE account=? AND status='pending'",(a['id'],)).fetchone()[0]>=50:
+            raise PaperError('最多保留50笔待成交单')
+        symbol, side, qty = (payload.get(k) for k in ('symbol', 'side', 'qty'))
+        p = self.preview(db, a, symbol, side, qty)
+        reason, stop = payload.get('reason', ''), payload.get('plan_stop')
+        if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 500:
+            raise PaperError('请填写1至500字练习理由')
+        if stop is not None:
+            if type(stop) not in (int, float) or not 0 < stop < p['reference_price'] or side != 'buy':
+                raise PaperError('止损须为低于参考价的正数')
+        auto_stop=payload.get('auto_stop',False)
+        if type(auto_stop) is not bool or (auto_stop and (a['market']!='us' or side!='buy' or stop is None)):
+            raise PaperError('自动止损只适用于填写止损价的美股买单')
+        if auto_stop and money(stop)!=stop: raise PaperError('自动止损价最多两位小数')
+        oid, now = secrets.token_hex(16), self.clock().isoformat()
+        snapshot = observation if observation is not None else self.market_data.signal_snapshot(a['market'], symbol)
+        db.execute('INSERT INTO orders(id,account,request_key,symbol,side,qty,submitted,status,reserve,reason,plan_stop,signal_json,message,auto_stop) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                   (oid,a['id'],key,symbol,side,qty,now,'pending',p['reserve'] if side=='buy' else 0,
+                    reason,stop,json.dumps(snapshot,ensure_ascii=False),'等待提交后的可成交行情',int(auto_stop)))
+        self.event(db,a['id'],'order_submitted',{'id':oid,'symbol':symbol,'side':side,'qty':qty,
+                   'reason':reason,'plan_stop':stop,'auto_stop':auto_stop,'signal_snapshot':snapshot,'preview':p})
+        return dict(db.execute('SELECT * FROM orders WHERE id=?',(oid,)).fetchone())
+
 
     def preview_order(self, token, payload):
         with self.action_db(token) as (db,a):
@@ -395,7 +402,8 @@ class PaperStore:
         db.execute("UPDATE orders SET status='filled',message=? WHERE id=?",('自动止损卖出' if stop else '按后续已完成K线开盘价模拟成交',order['id']))
         self.event(db,a['id'],'fill',{'order_id':order['id'],'symbol':order['symbol'],'side':side,'qty':qty,
                    'price':price,'fee':fee,'realized_pnl':realized,'market_bar':bar,'recorded_at':self.clock().isoformat(),
-                   'model':'paper-v2-autostop' if stop else 'paper-v1-5bps','execution_reason':'automatic_stop' if stop else 'manual',
+                   'model':'paper-v2-autostop' if stop else 'paper-v3-strategy' if order['request_key'].startswith('strategy-') else 'paper-v1-5bps',
+                   'execution_reason':'automatic_stop' if stop else 'automatic_signal' if order['request_key'].startswith('strategy-') else 'manual',
                    'stop_id':stop['id'] if stop else None,'trigger_evidence':json.loads(stop['trigger_json']) if stop else None},at=timestamp(bar['open_time']))
         for empty in db.execute("SELECT s.id FROM protective_stops s JOIN lots l ON s.lot_id=l.id WHERE s.account=? AND l.remaining=0 AND s.status IN ('active','triggered')",(a['id'],)).fetchall():
             if stop and empty['id']==stop['id']: continue
@@ -405,53 +413,57 @@ class PaperStore:
 
     def state(self, token):
         with self.db() as db:
-            a = self.account(db, token)
-            self.reconcile(db, a)
-            a = self.account(db, token)
-            positions = self.positions(db,a['id'])
-            valid, marks, value = True, [], a['cash']
-            for position in positions:
-                quote = self.market_data.quote(a['market'],position['symbol'],self.clock())
-                position['quote'] = quote
-                position['value'] = money(position['qty']*quote['price']) if quote else None
-                position['unrealized_pnl'] = money(position['value']-position['basis']) if quote else None
-                if quote and quote.get('fresh'):
-                    value += position['value']; marks.append(quote['time'])
-                else: valid = False
-            value = money(value) if valid else None
-            fills = [json.loads(r['payload']) for r in db.execute("SELECT payload FROM events WHERE account=? AND kind='fill' ORDER BY id",(a['id'],))]
-            latest_fill = max((f['market_bar']['close_time'] for f in fills), default=a['created'])
-            mark_time = min(marks) if marks else self.clock().isoformat()
-            if marks and timestamp(mark_time) < timestamp(latest_fill): valid=False; value=None
-            benchmark = self.market_data.benchmark(a['market'],self.clock())
-            if valid and (not marks or max(timestamp(x) for x in marks)-min(timestamp(x) for x in marks) <= timedelta(minutes=5)):
-                # Empty cash accounts are sampled only on refreshed benchmark bars.
-                point_time = mark_time if marks else (benchmark or {}).get('time')
-                if point_time and timestamp(point_time) > timestamp(a['created']) and timestamp(point_time)>=timestamp(latest_fill):
-                    bench_price = benchmark['price'] if benchmark and benchmark.get('fresh') and abs((timestamp(benchmark['time'])-timestamp(point_time)).total_seconds())<=300 else None
-                    db.execute('INSERT OR IGNORE INTO equity(account,time,value,benchmark) VALUES(?,?,?,?)',(a['id'],point_time,value,bench_price))
-            curve = [dict(r) for r in db.execute('SELECT time,value,benchmark FROM equity WHERE account=? ORDER BY time',(a['id'],))]
-            peak, drawdown = a['initial'], 0
-            for point in curve:
-                peak=max(peak,point['value']); drawdown=max(drawdown,(peak-point['value'])/peak)
-            exits = [f['realized_pnl'] for f in fills if f['side']=='sell']
-            wins, losses = [x for x in exits if x>0], [x for x in exits if x<0]
-            comparable = [p for p in curve if p['benchmark']]
-            comparison = None
-            if len(comparable)>=2:
-                first,last=comparable[0],comparable[-1]
-                comparison={'since':first['time'],'as_of':last['time'],'benchmark_return_pct':(last['benchmark']/first['benchmark']-1)*100,
-                            'account_return_pct':(last['value']/first['value']-1)*100}
-            orders = [dict(r) for r in db.execute('SELECT * FROM orders WHERE account=? ORDER BY submitted DESC,rowid DESC',(a['id'],))]
-            reserved = money(sum(o['reserve'] for o in orders if o['status']=='pending' and o['side']=='buy'))
-            events = [{'id':r['id'],'time':r['time'],'kind':r['kind'],'payload':json.loads(r['payload'])}
-                      for r in db.execute('SELECT * FROM events WHERE account=? ORDER BY id',(a['id'],))]
-            stops=[dict(r) for r in db.execute('SELECT s.*,l.remaining qty FROM protective_stops s JOIN lots l ON l.id=s.lot_id WHERE s.account=? ORDER BY l.id',(a['id'],))]
-            lots=[dict(r) for r in db.execute('SELECT id,symbol,remaining qty FROM lots WHERE account=? AND remaining>0 ORDER BY id',(a['id'],))]
-            return {'stops':stops,'lots':lots,'market':a['market'],'currency':'USD' if a['market']=='us' else 'CNY','initial':a['initial'],'created':a['created'],
-                'cash':a['cash'],'available_cash':money(a['cash']-reserved),'equity':value,'valuation_status':'known' if valid else 'unknown',
-                'return_pct':(value/a['initial']-1)*100 if value is not None else None,'max_drawdown_pct':drawdown*100,
-                'drawdown_basis':'observed_snapshots_only','positions':positions,'orders':orders,'fills':fills,'curve':curve,
-                'win_rate_pct':len(wins)/len(exits)*100 if exits else None,'closed_exits':len(exits),
-                'payoff_ratio':(sum(wins)/len(wins))/abs(sum(losses)/len(losses)) if wins and losses else None,
-                'fees':money(sum(f['fee'] for f in fills)),'benchmark_comparison':comparison,'events':events,'server_time':self.clock().isoformat()}
+            return self._state(db,self.account(db,token))
+
+    def _state(self, db, a, *, reconcile=True, event_limit=None):
+        if reconcile:
+            self.reconcile(db,a)
+        a=dict(db.execute('SELECT * FROM accounts WHERE id=?',(a['id'],)).fetchone())
+        positions = self.positions(db,a['id'])
+        valid, marks, value = True, [], a['cash']
+        for position in positions:
+            quote = self.market_data.quote(a['market'],position['symbol'],self.clock())
+            position['quote'] = quote
+            position['value'] = money(position['qty']*quote['price']) if quote else None
+            position['unrealized_pnl'] = money(position['value']-position['basis']) if quote else None
+            if quote and quote.get('fresh'):
+                value += position['value']; marks.append(quote['time'])
+            else: valid = False
+        value = money(value) if valid else None
+        fills = [json.loads(r['payload']) for r in db.execute("SELECT payload FROM events WHERE account=? AND kind='fill' ORDER BY id",(a['id'],))]
+        latest_fill = max((f['market_bar']['close_time'] for f in fills), default=a['created'])
+        mark_time = min(marks) if marks else self.clock().isoformat()
+        if marks and timestamp(mark_time) < timestamp(latest_fill): valid=False; value=None
+        benchmark = self.market_data.benchmark(a['market'],self.clock())
+        if valid and (not marks or max(timestamp(x) for x in marks)-min(timestamp(x) for x in marks) <= timedelta(minutes=5)):
+            # Empty cash accounts are sampled only on refreshed benchmark bars.
+            point_time = mark_time if marks else (benchmark or {}).get('time')
+            if point_time and timestamp(point_time) > timestamp(a['created']) and timestamp(point_time)>=timestamp(latest_fill):
+                bench_price = benchmark['price'] if benchmark and benchmark.get('fresh') and abs((timestamp(benchmark['time'])-timestamp(point_time)).total_seconds())<=300 else None
+                db.execute('INSERT OR IGNORE INTO equity(account,time,value,benchmark) VALUES(?,?,?,?)',(a['id'],point_time,value,bench_price))
+        curve = [dict(r) for r in db.execute('SELECT time,value,benchmark FROM equity WHERE account=? ORDER BY time',(a['id'],))]
+        peak, drawdown = a['initial'], 0
+        for point in curve:
+            peak=max(peak,point['value']); drawdown=max(drawdown,(peak-point['value'])/peak)
+        exits = [f['realized_pnl'] for f in fills if f['side']=='sell']
+        wins, losses = [x for x in exits if x>0], [x for x in exits if x<0]
+        comparable = [p for p in curve if p['benchmark']]
+        comparison = None
+        if len(comparable)>=2:
+            first,last=comparable[0],comparable[-1]
+            comparison={'since':first['time'],'as_of':last['time'],'benchmark_return_pct':(last['benchmark']/first['benchmark']-1)*100,
+                        'account_return_pct':(last['value']/first['value']-1)*100}
+        orders = [dict(r) for r in db.execute('SELECT * FROM orders WHERE account=? ORDER BY submitted DESC,rowid DESC',(a['id'],))]
+        reserved = money(sum(o['reserve'] for o in orders if o['status']=='pending' and o['side']=='buy'))
+        event_rows = db.execute('SELECT * FROM events WHERE account=? ORDER BY id',(a['id'],)) if event_limit is None else reversed(
+            db.execute('SELECT * FROM events WHERE account=? ORDER BY id DESC LIMIT ?',(a['id'],event_limit)).fetchall())
+        events = [{'id':r['id'],'time':r['time'],'kind':r['kind'],'payload':json.loads(r['payload'])} for r in event_rows]
+        stops=[dict(r) for r in db.execute('SELECT s.*,l.remaining qty FROM protective_stops s JOIN lots l ON l.id=s.lot_id WHERE s.account=? ORDER BY l.id',(a['id'],))]
+        lots=[dict(r) for r in db.execute('SELECT id,symbol,remaining qty FROM lots WHERE account=? AND remaining>0 ORDER BY id',(a['id'],))]
+        return {'stops':stops,'lots':lots,'market':a['market'],'currency':'USD' if a['market']=='us' else 'CNY','initial':a['initial'],'created':a['created'],
+            'cash':a['cash'],'available_cash':money(a['cash']-reserved),'equity':value,'valuation_status':'known' if valid else 'unknown',
+            'return_pct':(value/a['initial']-1)*100 if value is not None else None,'max_drawdown_pct':drawdown*100,
+            'drawdown_basis':'observed_snapshots_only','positions':positions,'orders':orders,'fills':fills,'curve':curve,
+            'win_rate_pct':len(wins)/len(exits)*100 if exits else None,'closed_exits':len(exits),
+            'payoff_ratio':(sum(wins)/len(wins))/abs(sum(losses)/len(losses)) if wins and losses else None,
+            'fees':money(sum(f['fee'] for f in fills)),'benchmark_comparison':comparison,'events':events,'server_time':self.clock().isoformat()}
