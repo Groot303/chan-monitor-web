@@ -18,6 +18,7 @@ from matplotlib.patches import Rectangle
 import os, requests
 from zoneinfo import ZoneInfo
 from chan2 import analyze_level, resonance, score_signal
+from signal_safety import unknown_regime, measured_regime, regime_decision, snapshot_contract
 from cn_symbols import CN_SYMS, CN_CODES, SINA_SYMS
 
 CACHED = os.environ.get('CACHED') == '1'          # re-use out_cn/data2_*.csv instead of re-downloading
@@ -242,22 +243,19 @@ FRAMES = {} if CACHED else fetch_em_frames()
 def cn_regime():
     """Bear-regime check for A-shares (2026-10-13 opt, matches backtest REGIME=pause):
     上证指数 daily close < 200d SMA -> bear. Never raises; on failure returns
-    bear=False with an error note so the pipeline keeps flowing."""
+    status=unknown with a legacy bear=False flag; new decisions use status."""
     try:
         df = FRAMES["daily"].get("上证指数")
-        closes = df["Close"].dropna()
-        if len(closes) < 210:
-            raise ValueError(f"too few 上证指数 bars: {len(closes)}")
-        sma200 = float(closes.iloc[-200:].mean())
-        last = float(closes.iloc[-1])
-        return {"benchmark": "上证指数", "bear": bool(last < sma200),
-                "close": round(last, 2), "sma200": round(sma200, 2)}
+        closes = df["Close"]
+        return measured_regime("上证指数", closes)
     except Exception as e:
-        return {"benchmark": "上证指数", "bear": False, "error": str(e)[:120]}
+        return unknown_regime("上证指数", e)
 
-REGIME = {} if CACHED else cn_regime()
+REGIME = unknown_regime("上证指数", "cached run has no benchmark evidence") if CACHED else cn_regime()
+
 out = {"generated": datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z",
        "market": "cn", "symbols": {}, "failures": {}, "regime": REGIME}
+out["strategy_context"] = regime_decision(REGIME)
 for s, secid in CN_SYMS:
     res = {}
     dfs = {}
@@ -295,7 +293,7 @@ for s, secid in CN_SYMS:
                               confirmed=r['segs'][-1].confirmed) if r['segs'] else None,
             signals=[dict(symbol=s, code=CN_CODES.get(s), level=lv, **{k: (float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else v)
                                                   for k, v in sg.items() if k not in ('idx', 'seg', 'confirmed')},
-                          time=fmt(df.index[sg['idx']]), bars_ago=len(df) - 1 - sg['idx'],
+                          **snapshot_contract(sg, df.index), time=fmt(df.index[sg['idx']]), bars_ago=len(df) - 1 - sg['idx'],
                           recent=(len(df) - 1 - sg['idx']) < {'weekly': 4, 'daily': 10, '30m': 40, '5m': 120}[lv],
                           confirmed=bool(sg['confirmed']),
                           repaint_warning=None if sg['confirmed'] else "unconfirmed: last segment not yet confirmed by feature-sequence fractal; may repaint")
@@ -325,7 +323,7 @@ for s, secid in CN_SYMS:
         ent["levels"][lv]["signals"] = kept
     # regime pause (2026-10-13 opt, matches backtest REGIME=pause):
     # bear regime -> buy-type signals flagged regime_paused; sells unaffected.
-    if REGIME.get("bear"):
+    if REGIME.get("status") == "bear":
         for lv in ent["levels"]:
             for sg in ent["levels"][lv]["signals"]:
                 if sg["type"].endswith("B"):

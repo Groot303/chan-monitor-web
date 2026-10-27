@@ -107,7 +107,8 @@ class TestDivergenceSignals(unittest.TestCase):
         for k, s in enumerate(segs): s.s_i = k; s.e_i = k
         pv = build_pivots(segs)
         sig = find_signals(segs, pv, lambda a, b, u: ({4: 10.0, 8: 4.0}.get(a, 1.0), -1.0))
-        self.assertFalse([s for s in sig if s['type'] == '1B'][0]['confirmed'])
+        self.assertFalse([s for s in sig if s['type'] == 'PRE_1B'][0]['confirmed'])
+        self.assertFalse(any(s['type'] == '1B' for s in sig))
 
 class TestMacdAndResonance(unittest.TestCase):
     def test_macd_constant_is_zero(self):
