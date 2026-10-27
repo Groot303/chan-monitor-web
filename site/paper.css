@@ -1,4 +1,4 @@
-/* 手动练习盘：沿用现有 Apple 主题，手机优先展示资产与下一步动作。 */
+/* 自动策略观察页：沿用现有 Apple 主题，手机优先展示资产与执行证据。 */
 .paper-badge{font-size:12px;background:var(--accent-bg);color:var(--accent);padding:7px 12px;border-radius:20px;white-space:nowrap}
 .paper-panel{background:var(--surface);border-radius:20px;padding:22px;margin-bottom:16px;min-width:0}
 .paper-panel h2{font-size:17px;margin:0 0 14px}.paper-panel p{line-height:1.7}.paper-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
@@ -13,3 +13,8 @@
 @media(max-width:640px){.paper-panel{padding:20px}.paper-balance{font-size:34px}.paper-metrics{grid-template-columns:1fr 1fr;gap:18px 10px}.paper-form{grid-template-columns:1fr}.paper-form .wide{grid-column:1}.paper-row{align-items:flex-start}.paper-actions{justify-content:flex-end}.paper-top{align-items:flex-start}}
 
 .paper-stop-form{padding:16px 0;border-bottom:1px solid var(--border);display:grid;gap:10px}.paper-stop-form:last-of-type{border:0}.paper-stop-form small{font-size:12px;color:var(--text-3);line-height:1.8}.paper-stop-form label{display:flex;gap:12px;align-items:center;font-size:13px}.paper-stop-form input{font-size:16px;min-height:44px;min-width:0;width:130px;padding:8px 10px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:9px}.paper-form .paper-stop-choice{flex-direction:row;align-items:center}.paper-form .paper-stop-choice input{width:20px;height:20px;min-height:20px;padding:0;accent-color:var(--accent)}
+
+/* 时间、规则版本及价格不能挤出320px屏幕，两个列轨道都允许收缩和换行。 */
+#paper-app .paper-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.85fr);align-items:start}
+#paper-app .paper-right{overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+#paper-app .paper-top>div{min-width:0;overflow-wrap:anywhere}

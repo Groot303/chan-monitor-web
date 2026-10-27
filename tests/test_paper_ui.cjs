@@ -60,6 +60,7 @@ const path=require('node:path');
       for(const width of [320,390,768,1440]){
         await page.setViewportSize({width,height:844});
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${theme} ${width} overflow`);
+        assert.equal(await page.locator('#paper-app .paper-right').evaluateAll(nodes=>nodes.some(n=>n.scrollWidth>n.clientWidth+1)),false,`${theme} ${width} clipped record text`);
       }
     }
     await page.setViewportSize({width:390,height:844});
