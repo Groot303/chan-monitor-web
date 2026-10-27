@@ -371,6 +371,22 @@ class PaperStore:
             return False
         fee=costs(a['market'],side,qty,price)
         amount=money(qty*price)
+        # 只对持久化的V2 managed买单复核冻结预算，不读取成交之后的行情。
+        try: snapshot=json.loads(order['signal_json'])
+        except (ValueError,TypeError): snapshot={}
+        plan=snapshot.get('risk_plan') if isinstance(snapshot,dict) else None
+        managed=db.execute('SELECT strategy_id FROM managed_accounts WHERE account=?',(a['id'],)).fetchone()
+        if side=='buy' and managed and managed['strategy_id']=='us-daily-30m-v2-risk':
+            from strategy_risk import planned_loss
+            import math
+            valid_plan=isinstance(plan,dict) and plan.get('schema')=='us-risk-plan-v2' and all(
+                type(plan.get(k)) in (int,float) and math.isfinite(plan[k]) and plan[k]>0 for k in ('max_loss_usd','notional_budget_usd'))
+            if (not valid_plan
+                    or planned_loss(qty,price,order['plan_stop'])>plan['max_loss_usd']
+                    or money(amount+fee)>plan['notional_budget_usd']):
+                db.execute("UPDATE orders SET status='rejected',message='开盘超过冻结风险或资金预算，取消入场' WHERE id=?",(order['id'],))
+                self.event(db,a['id'],'order_rejected',{'id':order['id'],'reason':'risk_budget_at_open','price':price,'risk_plan':plan})
+                return False
         cash=db.execute('SELECT cash FROM accounts WHERE id=?',(a['id'],)).fetchone()[0]
         reserved=db.execute("SELECT COALESCE(SUM(reserve),0) FROM orders WHERE account=? AND status='pending' AND side='buy' AND id!=?",(a['id'],order['id'])).fetchone()[0]
         if side=='buy' and money(amount+fee)>money(cash-reserved):
@@ -378,9 +394,11 @@ class PaperStore:
             self.event(db,a['id'],'order_rejected',{'id':order['id'],'reason':'insufficient_cash_at_open'})
             return False
         realized,new_stop=0,None
+        fill_lot_id,allocations=None,[]
         if side=='buy':
             cursor=db.execute('INSERT INTO lots(account,symbol,qty,remaining,cost,basis_remaining,acquired_day) VALUES(?,?,?,?,?,?,?)',
                               (a['id'],order['symbol'],qty,qty,(amount+fee)/qty,money(amount+fee),bar['session_day']))
+            fill_lot_id=cursor.lastrowid
             cash=money(cash-amount-fee)
             if order.get('auto_stop'):
                 sid=secrets.token_hex(16)
@@ -394,6 +412,7 @@ class PaperStore:
                 take=min(need,lot['remaining'])
                 allocated=money(Decimal(str(lot['basis_remaining']))*Decimal(take)/Decimal(lot['remaining']))
                 basis+=allocated
+                allocations.append({'lot_id':lot['id'],'qty':take,'basis':allocated})
                 db.execute('UPDATE lots SET remaining=remaining-?,basis_remaining=? WHERE id=?',(take,money(lot['basis_remaining']-allocated),lot['id']))
                 need-=take
                 if not need: break
@@ -404,12 +423,22 @@ class PaperStore:
                    'price':price,'fee':fee,'realized_pnl':realized,'market_bar':bar,'recorded_at':self.clock().isoformat(),
                    'model':'paper-v2-autostop' if stop else 'paper-v3-strategy' if order['request_key'].startswith('strategy-') else 'paper-v1-5bps',
                    'execution_reason':'automatic_stop' if stop else 'automatic_signal' if order['request_key'].startswith('strategy-') else 'manual',
+                   'lot_id':fill_lot_id,'lot_allocations':allocations,
+                   'entry_signal_type':(snapshot.get('signal') or {}).get('type') if side=='buy' and isinstance(snapshot,dict) else None,
+                   'initial_stop':order['plan_stop'] if side=='buy' else None,
+                   'initial_risk_usd':self._initial_risk(qty,price,order['plan_stop']) if side=='buy' and a['market']=='us' else None,
                    'stop_id':stop['id'] if stop else None,'trigger_evidence':json.loads(stop['trigger_json']) if stop else None},at=timestamp(bar['open_time']))
         for empty in db.execute("SELECT s.id FROM protective_stops s JOIN lots l ON s.lot_id=l.id WHERE s.account=? AND l.remaining=0 AND s.status IN ('active','triggered')",(a['id'],)).fetchall():
             if stop and empty['id']==stop['id']: continue
             db.execute("UPDATE protective_stops SET status='canceled',message='该批次已平仓' WHERE id=?",(empty['id'],))
             self.event(db,a['id'],'stop_canceled',{'stop_id':empty['id'],'reason':'lot_closed'})
         return new_stop
+
+    @staticmethod
+    def _initial_risk(qty, price, stop):
+        if stop is None or stop>=price: return None
+        from strategy_risk import planned_loss
+        return planned_loss(qty,price,stop)
 
     def state(self, token):
         with self.db() as db:

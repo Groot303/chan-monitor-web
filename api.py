@@ -426,11 +426,14 @@ from paper_routes import router_for
 _paper_store = PaperStore(DATA_DIR / "paper" / "ledger.sqlite3", FileMarketData(DATA_DIR / "data"))
 app.include_router(router_for(_paper_store,
                               enabled=lambda: os.environ.get("PAPER_TRADING_ENABLED") == "1" and bool(getattr(scheduler, "running", False))))
-from automatic_strategy import AutomaticStrategy
+from automatic_strategy import AutomaticStrategy, StrategyGroup, RULES_V2
 from strategy_source import FileStrategySource
 from strategy_routes import strategy_router
-_automatic_strategy = AutomaticStrategy(_paper_store, FileStrategySource(DATA_DIR / "data" / "strategy_source_us.json"))
-app.include_router(strategy_router(_automatic_strategy, enabled=lambda:
+_strategy_source = FileStrategySource(DATA_DIR / "data" / "strategy_source_us.json")
+_strategy_v1 = AutomaticStrategy(_paper_store, _strategy_source)
+_strategy_v2 = AutomaticStrategy(_paper_store, _strategy_source, rules=RULES_V2)
+_automatic_strategy = StrategyGroup(_strategy_v1,_strategy_v2)
+app.include_router(strategy_router(_strategy_v1, variants={'v1':_strategy_v1,'v2':_strategy_v2}, enabled=lambda:
     os.environ.get("PAPER_TRADING_ENABLED") == "1" and bool(getattr(scheduler,"running",False))
     and scheduler.get_job("us_strategy") is not None))
 

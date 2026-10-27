@@ -8,7 +8,7 @@ from paper_routes import router_for
 from paper_trading import PaperStore, timestamp
 from tests.test_paper_trading import Clock, Market
 from tests.test_automatic_strategy import Source, signal
-from automatic_strategy import AutomaticStrategy
+from automatic_strategy import AutomaticStrategy, StrategyGroup, RULES_V2
 from strategy_routes import strategy_router
 
 app=FastAPI()
@@ -20,18 +20,20 @@ store=PaperStore(Path(tmp.name)/'ledger.sqlite',market,clock)
 app.include_router(router_for(store))
 source=Source();source.publish(symbol='NVDA')
 engine=AutomaticStrategy(store,source);engine.tick()
-app.include_router(strategy_router(engine))
+engine_v2=AutomaticStrategy(store,source,rules=RULES_V2);engine_v2.tick()
+group=StrategyGroup(engine,engine_v2)
+app.include_router(strategy_router(engine,variants={'v1':engine,'v2':engine_v2}))
 
 @app.post('/test/signal')
 def new_signal():
-    source.publish([signal()],symbol='NVDA');engine.tick()
-    return {'orders':len(engine.report()['account']['orders'])}
+    source.publish([signal()],symbol='NVDA');group.tick()
+    return {'orders':len(engine_v2.report()['account']['orders'])}
 
 @app.post('/test/advance')
 def advance():
     market.bar('NVDA','2026-10-27T14:35:00Z',100)
     clock.now=timestamp('2026-10-27T14:41:00Z')
-    engine.tick()
+    group.tick()
     return {'ok':True}
 
 @app.post('/test/stop-advance')
@@ -40,7 +42,8 @@ def stop_advance():
     clock.now=timestamp('2026-10-27T14:51:00Z')
     store.sync_all()
     with store.db() as db:
-        count=db.execute("SELECT COUNT(*) FROM protective_stops WHERE status='filled'").fetchone()[0]
+        a=engine_v2.setup(db)
+        count=db.execute("SELECT COUNT(*) FROM protective_stops WHERE status='filled' AND account=?",(a['id'],)).fetchone()[0]
     return {'automatic_stops_filled':count}
 
 @app.get('/api/signals')
