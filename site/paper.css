@@ -18,3 +18,4 @@
 #paper-app .paper-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.85fr);align-items:start}
 #paper-app .paper-right{overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 #paper-app .paper-top>div{min-width:0;overflow-wrap:anywhere}
+.strategy-versions{display:flex;gap:8px;margin-bottom:16px}.strategy-versions .btn{flex:1;min-height:44px;white-space:normal}.strategy-versions [aria-pressed="true"]{background:var(--accent);color:#fff}
