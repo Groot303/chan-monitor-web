@@ -298,8 +298,11 @@ def health():
 def jobs():
     d = dict(job_status)
     d["ibkr"] = dict(ibkr_status)
+    d["paper_enabled"] = (os.environ.get("PAPER_TRADING_ENABLED") == "1" and
+                          bool(getattr(scheduler, "running", False)) and
+                          scheduler.get_job("paper_reconcile") is not None)
     if scheduler:
-        for jid, key in (("pipeline", "next_run"), ("ibkr", "ibkr_next_run")):
+        for jid, key in (("pipeline", "next_run"), ("ibkr", "ibkr_next_run"), ("paper_reconcile", "paper_next_run")):
             job = scheduler.get_job(jid)
             nxt = job.next_run_time if job else None
             d[key] = nxt.isoformat() if nxt else None
