@@ -408,6 +408,14 @@ def api_holdings(request: Request):
         raise HTTPException(status_code=500, detail=str(e)[:200])
 
 
+# 模拟练习盘独立账本；账户凭据仅适用于此命名空间，不连接任何券商。
+from paper_market import FileMarketData
+from paper_trading import PaperStore
+from paper_routes import router_for
+app.include_router(router_for(PaperStore(DATA_DIR / "paper" / "ledger.sqlite3", FileMarketData(DATA_DIR / "data")),
+                              enabled=lambda: os.environ.get("PAPER_TRADING_ENABLED") == "1"))
+
+
 # static: images and interactive chart data
 # Note: build_data.py writes charts to api_data/data/charts/ (not api_data/charts/)
 for _sub, _dirname in (("img", "img"), ("img_cn", "img_cn"),
