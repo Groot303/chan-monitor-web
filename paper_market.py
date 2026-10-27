@@ -87,7 +87,10 @@ class FileMarketData:
     def bars(self, market, symbol, now):
         if not isinstance(symbol,str) or '/' in symbol or '\\' in symbol or '..' in symbol: return []
         chart=self.read(('charts/' if market=='us' else 'charts_cn/')+symbol+'.json')
-        raw=chart.get('levels',{}).get('5m',{}).get('ohlc',[])
+        levels=chart.get('levels')
+        level=levels.get('5m') if isinstance(levels,dict) else None
+        raw=level.get('ohlc') if isinstance(level,dict) else None
+        if not isinstance(raw,list): return []
         result=[]
         for row in raw:
             try:

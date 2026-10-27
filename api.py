@@ -274,6 +274,10 @@ async def on_startup():
         if os.environ.get("PAPER_TRADING_ENABLED") == "1":
             scheduler.add_job(_paper_store.sync_all, "interval", seconds=60, id="paper_reconcile",
                               max_instances=1, coalesce=True)
+            if os.environ.get("US_STRATEGY_ENABLED", "1") == "1":
+                scheduler.add_job(_automatic_strategy.tick, "interval", seconds=60, id="us_strategy",
+                                  max_instances=1, coalesce=True,
+                                  next_run_time=datetime.now(timezone.utc) + timedelta(seconds=5))
         scheduler.start()
         log.info("APScheduler started (pipeline 15m, ibkr 6h); deploys via CI/CD")
         # Run once on startup (in background thread to not block)
@@ -301,8 +305,9 @@ def jobs():
     d["paper_enabled"] = (os.environ.get("PAPER_TRADING_ENABLED") == "1" and
                           bool(getattr(scheduler, "running", False)) and
                           scheduler.get_job("paper_reconcile") is not None)
+    d["strategy_enabled"] = d["paper_enabled"] and scheduler.get_job("us_strategy") is not None
     if scheduler:
-        for jid, key in (("pipeline", "next_run"), ("ibkr", "ibkr_next_run"), ("paper_reconcile", "paper_next_run")):
+        for jid, key in (("pipeline", "next_run"), ("ibkr", "ibkr_next_run"), ("paper_reconcile", "paper_next_run"), ("us_strategy", "strategy_next_run")):
             job = scheduler.get_job(jid)
             nxt = job.next_run_time if job else None
             d[key] = nxt.isoformat() if nxt else None
@@ -421,6 +426,13 @@ from paper_routes import router_for
 _paper_store = PaperStore(DATA_DIR / "paper" / "ledger.sqlite3", FileMarketData(DATA_DIR / "data"))
 app.include_router(router_for(_paper_store,
                               enabled=lambda: os.environ.get("PAPER_TRADING_ENABLED") == "1" and bool(getattr(scheduler, "running", False))))
+from automatic_strategy import AutomaticStrategy
+from strategy_source import FileStrategySource
+from strategy_routes import strategy_router
+_automatic_strategy = AutomaticStrategy(_paper_store, FileStrategySource(DATA_DIR / "data" / "strategy_source_us.json"))
+app.include_router(strategy_router(_automatic_strategy, enabled=lambda:
+    os.environ.get("PAPER_TRADING_ENABLED") == "1" and bool(getattr(scheduler,"running",False))
+    and scheduler.get_job("us_strategy") is not None))
 
 
 # static: images and interactive chart data

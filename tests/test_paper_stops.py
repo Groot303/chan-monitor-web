@@ -199,10 +199,11 @@ class StopTests(unittest.TestCase):
             def start(self):pass
         fake=ModuleType('apscheduler.schedulers.asyncio');fake.AsyncIOScheduler=Scheduler
         thread=ModuleType('threading');thread.Thread=lambda **kw:SimpleNamespace(start=lambda:None)
-        for enabled in ('','1'):
-            scope={'os':SimpleNamespace(environ={'PAPER_TRADING_ENABLED':enabled}),
+        for enabled,auto_enabled in (('','1'),('1','1'),('1','0')):
+            scope={'os':SimpleNamespace(environ={'PAPER_TRADING_ENABLED':enabled,'US_STRATEGY_ENABLED':auto_enabled}),
                    'CN_SYMS':[],'log':Mock(),'run_pipeline':Mock(),'fetch_ibkr_positions':Mock(),
-                   '_paper_store':self.store,'datetime':fixtures.datetime,'timezone':fixtures.timezone,'timedelta':timedelta}
+                   '_paper_store':self.store,'_automatic_strategy':SimpleNamespace(tick=Mock()),
+                   'datetime':fixtures.datetime,'timezone':fixtures.timezone,'timedelta':timedelta}
             exec(compile(ast.Module(body=[fn],type_ignores=[]),'api.py','exec'),scope)
             with patch.dict(sys.modules,{'apscheduler':ModuleType('apscheduler'),
                     'apscheduler.schedulers':ModuleType('apscheduler.schedulers'),
@@ -210,6 +211,12 @@ class StopTests(unittest.TestCase):
                 asyncio.run(scope['on_startup']())
             jobs=[(func,kw) for func,kw in scope['scheduler'].jobs if kw.get('id')=='paper_reconcile']
             self.assertEqual(len(jobs),int(bool(enabled)))
+            auto=[(func,kw) for func,kw in scope['scheduler'].jobs if kw.get('id')=='us_strategy']
+            self.assertEqual(len(auto),int(bool(enabled) and auto_enabled=='1'))
+            if auto:
+                self.assertEqual(auto[0][0],scope['_automatic_strategy'].tick)
+                self.assertEqual(auto[0][1]['seconds'],60)
+                self.assertEqual(auto[0][1]['max_instances'],1)
             if jobs:
                 self.assertEqual(jobs[0][0],self.store.sync_all)
                 self.assertEqual(jobs[0][1]['seconds'],60)

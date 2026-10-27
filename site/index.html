@@ -36,7 +36,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
       <p class="nav-caption">工作空间</p>
       <button class="tab" data-view="signals" aria-current="page">信号</button>
       <button class="tab" data-view="symbols">标的总览</button>
-      <button class="tab" data-view="paper">美股练习</button>
+      <button class="tab" data-view="paper">自动策略</button>
       <button class="tab" data-view="macro">大环境</button>
       <button class="tab" data-view="about">说明</button>
     </nav>
@@ -178,7 +178,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
   </section>
 
   <section class="view" id="view-paper" aria-labelledby="h-paper" hidden>
-    <div class="section-head"><h1 id="h-paper">美股练习盘</h1><span class="paper-badge">模拟资金</span></div>
+    <div class="section-head"><h1 id="h-paper">策略运行</h1><span class="paper-badge">自动模拟 · USD</span></div>
     <div id="paper-app" aria-live="polite"></div>
   </section>
 
@@ -285,7 +285,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 17l5-6 4 4 4-7 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>信号</span></button>
   <button class="tab" data-view="symbols">
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>标的</span></button>
-  <button class="tab" data-view="paper"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 4h16v16H4zM8 15l3-4 3 2 3-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>练习</span></button>
+  <button class="tab" data-view="paper"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 4h16v16H4zM8 15l3-4 3 2 3-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>策略</span></button>
   <button class="tab" data-view="macro">
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3z" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>大环境</span></button>
   <button class="tab" data-view="about">
@@ -344,6 +344,6 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
 <script src="indicator-glossary.js"></script>
 <script src="apple-ui.js"></script>
 <script src="app.js"></script>
-<script src="paper.js"></script>
+<script src="strategy.js"></script>
 </body>
 </html>

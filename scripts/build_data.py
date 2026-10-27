@@ -50,6 +50,13 @@ print(f"[{market}] wrote {len(signals)} signals, {len(symbols)} symbols -> data/
 
 # Macro snapshot (US pipeline only): out/macro.json -> site/data/macro.json
 if market == "us":
+    # 原子发布，避免定时模拟读取写到一半的数据；缺失则明确失效旧证据。
+    _strategy_path = os.path.join(site, "data", "strategy_source_us.json")
+    _strategy_source = os.path.join(src, "strategy_source_us.json")
+    _strategy_data = json.load(open(_strategy_source)) if os.path.exists(_strategy_source) else {"error": "source missing"}
+    with open(_strategy_path + ".tmp", "w") as _f:
+        json.dump(_strategy_data, _f)
+    os.replace(_strategy_path + ".tmp", _strategy_path)
     try:
         _mp = os.path.join(src, "macro.json")
         if os.path.exists(_mp):

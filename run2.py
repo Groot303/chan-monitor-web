@@ -115,6 +115,8 @@ def plot(sym, res, dfs):
         ax.set_title(f"{sym} {lv}  bars={n} segs={len(r['segs'])} pivots={len(r['pivots'])} state={st['direction']}  (? = unconfirmed, may repaint; not advice)",fontsize=10)
         ax.legend(loc="upper left",fontsize=8)
     fig.tight_layout(); fig.savefig(f"out/{sym}_chan2.png",dpi=80); plt.close(fig)
+# 独立自动模拟输入的真实采集下界；历史缓存不具备实时观察证据。
+SOURCE_OBSERVED_AT=None if CACHED else datetime.datetime.now(datetime.timezone.utc).isoformat()
 FRAMES={} if CACHED else fetch_alpaca_frames()
 NASDAQ_FRAMES, NASDAQ_FAILURES=({}, {}) if CACHED else fetch_nasdaq_frames()
 for lv, frame in NASDAQ_FRAMES.items():
@@ -138,11 +140,20 @@ def fetch_regime():
         try: sdf=df.xs("SPY", level=0)
         except (KeyError, TypeError): sdf=df
         closes=sdf["close"]
-        return measured_regime("SPY", closes)
+        result = measured_regime("SPY", closes)
+        try:
+            from strategy_source import frame_rows
+            benchmark_frame=sdf.rename(columns={"open":"Open","high":"High","low":"Low","close":"Close"}).sort_index()
+            result["strategy_source"]={"observed_at":now.isoformat(), "bars":frame_rows(benchmark_frame)}
+        except (ValueError, KeyError, TypeError):
+            # 独立输入失败不能改变旧页面原有的环境计算结果。
+            result["strategy_source"]=None
+        return result
     except Exception as e:
         return unknown_regime("SPY", e)
 
 REGIME=unknown_regime("SPY", "cached run has no benchmark evidence") if CACHED else fetch_regime()
+STRATEGY_BENCHMARK=REGIME.pop("strategy_source", None)
 out={"generated":datetime.datetime.utcnow().isoformat()+"Z","symbols":{},"failures":
      {f"{NASDAQ_SYMBOL}/{lv}": error for lv,error in NASDAQ_FAILURES.items()},"regime":REGIME}
 out["strategy_context"] = regime_decision(REGIME)
@@ -209,6 +220,10 @@ for s in SYMS:
     if res: plot(s,res,dfs)
     print(s,{lv:(len(r['segs']),len(r['pivots']),len(r['signals'])) for lv,r in res.items()})
 json.dump(out,open("out/signals.json","w"),indent=1,default=str)
+# 不改变旧信号或评分；策略使用独立原始数据，过滤未收盘K线后重新计算。
+from strategy_source import build_source
+with open("out/strategy_source_us.json", "w") as strategy_file:
+    json.dump(build_source(FRAMES, STRATEGY_BENCHMARK, SOURCE_OBSERVED_AT, out['generated']), strategy_file)
 # summary md
 L=["# Chan v2 signals summary (含中枢沿 ZG_S/ZD_B)","",f"Generated {out['generated']} (UTC). Prototype, read-only analysis. NOT investment advice.",
 "'?'/unconfirmed = last segment not yet confirmed, signal may repaint or vanish. Last-close data may include today's incomplete bar.",""]
