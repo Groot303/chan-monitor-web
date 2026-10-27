@@ -78,9 +78,55 @@ const positions = {generated, positions:[{symbol:'NVDA',currency:'USD',qty:10,co
     await page.keyboard.press('/');
     assert.equal(await page.locator('#filter-backdrop').isVisible(),true);
     await page.locator('#filter-apply').click();
+    await page.evaluate(() => {
+      const original = LightweightCharts.createChart;
+      window.chartInstances = [];
+      window.LightweightCharts = {...LightweightCharts,createChart:function (...args) {
+        const chart = original.apply(this,args);
+        window.chartInstances.push(chart);
+        return chart;
+      }};
+    });
     await page.locator('.signal-note').first().click();
     await page.locator('#ichart-root canvas').first().waitFor();
     assert.equal(await page.locator('#drawer').isVisible(),true);
+    const visibleBars = () => page.evaluate(() => {
+      const range = window.chartInstances.at(-1).timeScale().getVisibleLogicalRange();
+      return range && range.to - range.from;
+    });
+    await page.waitForFunction(() => {
+      const chart = window.chartInstances.at(-1);
+      return chart && chart.timeScale().getVisibleLogicalRange();
+    });
+    const recentBars = await visibleBars();
+    assert.ok(recentBars >= 78 && recentBars <= 85,`mobile recent view shows ${recentBars} bars`);
+    await page.locator('.ichart-range-btn[data-range="all"]').click();
+    await page.waitForFunction(minimum => {
+      const range = window.chartInstances.at(-1).timeScale().getVisibleLogicalRange();
+      return range && range.to - range.from > minimum;
+    },recentBars * 2);
+    await page.locator('.ichart-range-btn[data-range="recent"]').click();
+    await page.waitForFunction(target => {
+      const range = window.chartInstances.at(-1).timeScale().getVisibleLogicalRange();
+      return range && Math.abs(range.to - range.from - target) < 2;
+    },recentBars);
+    assert.ok(Math.abs((await visibleBars()) - recentBars) < 2,'recent view returns to latest bars');
+    const beforePan = await page.evaluate(() => window.chartInstances.at(-1).timeScale().getVisibleLogicalRange());
+    const chartBox = await page.locator('.ichart-host').boundingBox();
+    await page.mouse.move(chartBox.x + chartBox.width / 2,chartBox.y + chartBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(chartBox.x + chartBox.width / 2 + 90,chartBox.y + chartBox.height / 2,{steps:6});
+    await page.mouse.up();
+    await page.waitForFunction(to => window.chartInstances.at(-1).timeScale().getVisibleLogicalRange().to < to - 2,beforePan.to);
+    await page.locator('.ichart-range-btn[data-range="recent"]').click();
+    await page.locator('.ichart-levels [data-lv="daily"]').click();
+    await page.waitForFunction(() => {
+      const range = window.chartInstances.at(-1).timeScale().getVisibleLogicalRange();
+      return range && range.to - range.from <= 85;
+    });
+    const beforeOverlay = await visibleBars();
+    await page.locator('.ichart-tog').first().click();
+    assert.ok(Math.abs((await visibleBars()) - beforeOverlay) < 2,'overlay toggle preserves zoom');
     assert.equal(await page.locator('.research-details').getAttribute('open'),null);
     await page.keyboard.press('Escape');
     await page.locator('#drawer').waitFor({state:'hidden'});

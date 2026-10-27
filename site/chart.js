@@ -11,6 +11,7 @@
   }
   var LV_LABEL = { weekly: "周线", daily: "日线", "30m": "30分钟", "5m": "5分钟" };
   var LV_ORDER = ["weekly", "daily", "30m", "5m"];
+  var RECENT_BARS_MOBILE = 80, RECENT_BARS_DESKTOP = 140;
   var TYPE_NAME = { "1B": "一买", "2B": "二买", "3B": "三买", "1S": "一卖", "2S": "二卖", "3S": "三卖", "ZG_S": "上沿卖", "ZD_B": "下沿买",
     "PRE_1B": "预一买", "PRE_2B": "预二买", "PRE_3B": "预三买", "PRE_1S": "预一卖", "PRE_2S": "预二卖", "PRE_3S": "预三卖",
     "BC_B": "盘整背驰买", "BC_S": "盘整背驰卖" };
@@ -26,6 +27,7 @@
     data: null,
     symbol: null,
     level: "daily",
+    range: "recent",
     show: { strokes: true, segments: true, pivots: true, signals: true },
     ro: null,
     unsub: null,
@@ -68,6 +70,24 @@
     state.root = null; state.data = null; state.symbol = null; state.overlay = null; state.host = null;
   }
 
+  function applyRange(range) {
+    if (!state.chart || !state.data) return;
+    var lv = state.data.levels[state.level];
+    var bars = lv && lv.ohlc ? lv.ohlc.length : 0;
+    if (!bars) return;
+    state.range = range;
+    var scale = state.chart.timeScale();
+    if (range === "all") {
+      scale.fitContent();
+    } else {
+      var count = window.matchMedia("(max-width: 640px)").matches ? RECENT_BARS_MOBILE : RECENT_BARS_DESKTOP;
+      scale.setVisibleLogicalRange({ from: Math.max(0, bars - count), to: bars - 1 + 4 });
+    }
+    Array.prototype.forEach.call(state.root.querySelectorAll(".ichart-range-btn"), function (button) {
+      button.setAttribute("aria-pressed", button.dataset.range === range ? "true" : "false");
+    });
+  }
+
   function buildToolbar(root, levels) {
     var bar = document.createElement("div");
     bar.className = "ichart-toolbar";
@@ -99,6 +119,22 @@
     });
     bar.appendChild(lvWrap);
 
+    var ranges = document.createElement("div");
+    ranges.className = "ichart-ranges";
+    ranges.setAttribute("role", "group");
+    ranges.setAttribute("aria-label", "K线显示范围");
+    [["recent", "最近"], ["all", "全部"]].forEach(function (pair) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "ichart-range-btn";
+      button.dataset.range = pair[0];
+      button.textContent = pair[1];
+      button.setAttribute("aria-pressed", state.range === pair[0] ? "true" : "false");
+      button.addEventListener("click", function () { applyRange(pair[0]); });
+      ranges.appendChild(button);
+    });
+    bar.appendChild(ranges);
+
     var toggles = document.createElement("div");
     toggles.className = "ichart-toggles";
     [
@@ -116,7 +152,7 @@
       b.addEventListener("click", function () {
         state.show[key] = !state.show[key];
         b.setAttribute("aria-pressed", state.show[key] ? "true" : "false");
-        renderLevel();
+        renderLevel(true);
       });
       toggles.appendChild(b);
     });
@@ -167,10 +203,11 @@
     });
   }
 
-  function renderLevel() {
+  function renderLevel(keepRange) {
     if (!state.host || !state.data || !global.LightweightCharts) return;
     var lv = state.data.levels[state.level];
     if (!lv) return;
+    var previousRange = keepRange && state.chart ? state.chart.timeScale().getVisibleLogicalRange() : null;
     destroyChart();
     var th = theme();
     var LC = global.LightweightCharts;
@@ -277,7 +314,8 @@
       candle.setMarkers([]);
     }
 
-    chart.timeScale().fitContent();
+    if (previousRange) chart.timeScale().setVisibleLogicalRange(previousRange);
+    else applyRange(state.range);
     var sub = function () { drawPivots(); };
     chart.timeScale().subscribeVisibleLogicalRangeChange(sub);
     chart.subscribeCrosshairMove(sub);
@@ -306,6 +344,7 @@
     state.root = root;
     state.symbol = symbol;
     state.level = opts.level || "daily";
+    state.range = "recent";
     root.innerHTML = '<div class="ichart-loading muted small">加载交互图数据…</div>';
     return fetch(chartBase() + symbol + ".json", { cache: "no-cache" })
       .then(function (r) {
@@ -341,7 +380,7 @@
   }
 
   function refreshTheme() {
-    if (state.data && state.host) renderLevel();
+    if (state.data && state.host) renderLevel(true);
   }
 
   global.ChanInteractive = {
