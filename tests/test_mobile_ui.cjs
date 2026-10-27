@@ -49,6 +49,7 @@ const positions = {generated, positions:[{symbol:'NVDA',currency:'USD',qty:10,co
     await page.goto('http://chan.test/');
     await page.locator('.signal-note').first().waitFor();
     assert.match(await page.locator('#data-status').innerText(), /Alpaca/);
+    assert.ok(await page.locator('.signal-note[aria-label*="触及提示"]').count() > 0,'legacy edge signals must not imply entry confirmation');
     await page.locator('.tabs-bottom [data-view="symbols"]').click();
     assert.match(await page.locator('.sym-card[data-sym="纳指"]').innerText(),/纳指\s+\^IXIC/);
     assert.match(await page.locator('.sym-card[data-sym="纳指"]').innerText(),/23,204\.87/);
@@ -126,6 +127,10 @@ const positions = {generated, positions:[{symbol:'NVDA',currency:'USD',qty:10,co
     });
     const beforeOverlay = await visibleBars();
     await page.locator('.ichart-tog').first().click();
+    await page.waitForFunction(target => {
+      const range = window.chartInstances.at(-1).timeScale().getVisibleLogicalRange();
+      return range && Math.abs(range.to - range.from - target) < 2;
+    },beforeOverlay);
     assert.ok(Math.abs((await visibleBars()) - beforeOverlay) < 2,'overlay toggle preserves zoom');
     assert.equal(await page.locator('.research-details').getAttribute('open'),null);
     await page.keyboard.press('Escape');

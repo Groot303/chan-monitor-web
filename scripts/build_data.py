@@ -17,6 +17,8 @@ src = args.src
 market = args.market
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, root)
+from signal_safety import regime_decision
 # API_MODE: output to API_DATA_DIR instead of site/
 outbase = args.outdir or os.environ.get("API_DATA_DIR") or os.path.join(root, "site")
 site = outbase
@@ -40,7 +42,8 @@ for sym, ent in d["symbols"].items():
     symbols[sym] = {"image": f"{img_dirname}/{img}" if has else None, "levels": lv_info, "code": ent.get("code")}
 signals.sort(key=lambda g: -g.get("score", 0))
 out = {"generated": d["generated"], "market": d.get("market", market),
-       "failures": d.get("failures", {}), "symbols": symbols, "signals": signals}
+       "failures": d.get("failures", {}), "symbols": symbols, "signals": signals,
+       "regime": d.get("regime", {}), "strategy_context": regime_decision(d.get("regime", {}))}
 with open(os.path.join(site, "data", data_name), "w", encoding="utf-8") as f:
     json.dump(out, f, ensure_ascii=False, indent=1)
 print(f"[{market}] wrote {len(signals)} signals, {len(symbols)} symbols -> data/{data_name}")

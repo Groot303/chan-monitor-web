@@ -16,6 +16,7 @@ sys.path.insert(0, ROOT)
 
 import pandas as pd
 from chan2 import analyze_level, score_signal, resonance
+from signal_safety import snapshot_contract
 
 LEVELS = ("weekly", "daily", "30m", "5m")
 RECENT = {"weekly": 4, "daily": 10, "30m": 40, "5m": 120}
@@ -115,6 +116,7 @@ def export_level(df: pd.DataFrame, lv: str, sym: str, big_states: list | None = 
         score, bd = score_signal(sg, lv)
         sg["score"] = score
         sg["score_breakdown"] = bd
+        sg.update(snapshot_contract(raw, df.index))
         signals.append(sg)
     return {
         "bars": len(df),

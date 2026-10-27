@@ -60,3 +60,11 @@ Re-run with cached data (no download): `CACHED=1 .venv/bin/python run2.py` (the 
 - Uses high/low range intersection, not order-book / wick filters; incomplete last bar may trigger.
 - Does not require price to reverse after the edge; it is a proximity alert only.
 - Still approximate pivots from the simplified segment algorithm.
+
+## P0 时序与安全契约
+
+旧 `time` / `confirmed` 保留用于展示与评分，不能直接作为回测成交时间或入场许可。
+生产快照新增时序来源、确认范围和空的识别/确认/执行时间；不会用极值时间或生成时间回填。
+市场环境新增 `status=unknown|bear|non_bear` 与 `known`；失败时旧 `bear=False`
+只是兼容字段。新消费者必须读取三态决策，不能使用 `not bear` 放行。
+详见 [波段策略 P0 审计与 P1 设计](docs/swing-p0-audit.md)，包含重放命令和数据契约。

@@ -54,6 +54,8 @@
     var code = symbolCode(sym);
     return esc(sym) + (code ? '<small class="symbol-code">' + esc(code) + '</small>' : "");
   }
+  // confirmed 沿用旧契约；中枢沿只表示本次快照观察到触及，不表示入场确认。
+  function confirmationLabel(g) { return isEdge(g) ? "触及提示" : (g.confirmed ? "已确认" : "未确认"); }
   function isBuy(g) { return /B$/.test((g && g.type) || g || ""); }
   function isEdge(g) { return (g && g.kind === "pivot_edge") || g.type === "ZG_S" || g.type === "ZD_B"; }
   function tier(score) { for (var i = 0; i < TIER.length; i++) if (score >= TIER[i][0]) return { k: TIER[i][1], label: TIER[i][2] }; return { k: "lo", label: "低" }; }
@@ -109,7 +111,7 @@
     } else {
       out.push('<span class="chip ' + (buy ? "chip-buy" : "chip-sell") + '">' + esc(typeName(g.type)) + ' · ' + esc(g.type) + '</span>');
     }
-    out.push(g.confirmed
+    out.push(isEdge(g) ? '<span class="chip chip-lv">触及提示</span>' : g.confirmed
       ? '<span class="chip chip-ok">已确认</span>'
       : '<span class="chip chip-un" title="最后一段尚未被特征序列分型确认,信号可能重绘或消失">未确认 · 可能重绘</span>');
     if (!g.recent) out.push('<span class="chip chip-stale" title="超出近期窗口">已过期</span>');
@@ -1432,10 +1434,10 @@
   function cardsHTML(a) {
     return '<div class="cards">' + a.map(function(g){
       var buy = isBuy(g), side = isEdge(g) ? (buy ? "t-edge-buy" : "t-edge-sell") : (buy ? "t-buy" : "t-sell");
-      return '<button type="button" class="signal-note" data-sig="' + g._id + '" aria-label="' + esc(g.symbol + ' ' + typeName(g.type) + ' ' + (g.confirmed ? '已确认' : '未确认，可能重绘') + '，查看依据') + '">' +
+      return '<button type="button" class="signal-note" data-sig="' + g._id + '" aria-label="' + esc(g.symbol + ' ' + typeName(g.type) + ' ' + (isEdge(g) ? "触及提示，尚无入场确认" : (g.confirmed ? "已确认" : "未确认，可能重绘")) + '，查看依据') + '">' +
       '<span class="signal-glyph ' + (buy ? 'is-buy' : 'is-sell') + '" aria-hidden="true">' + (buy ? '↗' : '↘') + '</span>' +
       '<span class="note-identity"><span class="note-symbol">' + symbolHTML(g.symbol) + '</span></span>' +
-      '<span class="note-labels"><span class="note-type ' + side + '">' + esc(typeName(g.type)) + '</span><span>·</span><span>' + esc(LV[g.level] || g.level) + '</span><span class="' + (g.confirmed ? '' : 'note-unconfirmed') + '">' + (g.confirmed ? '已确认' : '未确认') + '</span></span>' +
+      '<span class="note-labels"><span class="note-type ' + side + '">' + esc(typeName(g.type)) + '</span><span>·</span><span>' + esc(LV[g.level] || g.level) + '</span><span class="' + (g.confirmed ? '' : 'note-unconfirmed') + '">' + confirmationLabel(g) + '</span></span>' +
       '<span class="note-quote"><small>信号价</small>' + fmtPrice(g.price) + '</span>' +
       '<span class="note-rating"><span class="note-score">' + g.score.toFixed(1) + '<small>/10</small></span><span class="note-score-label">启发式评分</span></span>' +
       '<span class="note-meta"><span>' + esc(fmtTime(g.time,g.level)) + '</span><span>距今 ' + esc(g.bars_ago) + ' 根 · ' + esc(RES[g.resonance] || '无共振数据') + '</span>' + (g.recent ? '' : '<span class="stale-label">已过期</span>') + (!g.confirmed ? '<span>可能重绘</span>' : '') + '</span>' +
@@ -1452,7 +1454,7 @@
     }
     var head = '<tr>' + th("分数", "score") + th("标的", "symbol") +
       '<th scope="col" class="plain">类型</th><th scope="col" class="plain">级别</th><th scope="col" class="plain">确认</th>' +
-      th("信号时间", "time") + th("距今", "bars_ago", "r") + '<th scope="col" class="plain r">价格</th>' + th("离中枢", "margin", "r") +
+      th("极值/触及时间", "time") + th("距今", "bars_ago", "r") + '<th scope="col" class="plain r">价格</th>' + th("离中枢", "margin", "r") +
       '<th scope="col" class="plain">共振</th></tr>';
     var rows = a.map(function (g) {
       var buy = isBuy(g);
@@ -1461,7 +1463,7 @@
         '<td class="t-sym">' + symbolHTML(g.symbol) + '</td>' +
         '<td><span class="chip ' + (isEdge(g) ? (buy ? "chip-edge-buy" : "chip-edge-sell") : (buy ? "chip-buy" : "chip-sell")) + '">' + esc(typeName(g.type)) + '</span>' + preBadge(g) + '</td>' +
         '<td><span class="chip chip-lv">' + esc(LV[g.level] || g.level) + '</span></td>' +
-        '<td>' + (g.confirmed ? '<span class="chip chip-ok">已确认</span>' : '<span class="chip chip-un" title="可能重绘">未确认</span>') + (g.recent ? "" : ' <span class="chip chip-stale">过期</span>') + '</td>' +
+        '<td>' + (isEdge(g) ? '<span class="chip chip-lv">触及提示</span>' : g.confirmed ? '<span class="chip chip-ok">已确认</span>' : '<span class="chip chip-un" title="可能重绘">未确认</span>') + (g.recent ? "" : ' <span class="chip chip-stale">过期</span>') + '</td>' +
         '<td class="num">' + esc(fmtTime(g.time, g.level)) + '</td>' +
         '<td class="r num">' + esc(g.bars_ago) + '</td>' +
         '<td class="r num">' + fmtPrice(g.price) + '</td>' +
@@ -1532,7 +1534,7 @@
     var vs = (g.resonance_vs || []).map(function (l) { return LV[l] || l; }).join("、");
     var resTxt = { strong: "与更大级别(" + vs + ")方向一致,强共振", partial: "与部分更大级别(" + vs + ")方向一致,部分共振", mixed: "更大级别方向不一,混合", neutral: "更大级别处于中枢内或方向不明,中性", conflict: "与更大级别(" + vs + ")方向相反,冲突" }[g.resonance];
     out.push(["resonance", (resTxt || (g.level === "weekly" ? "周线无更大级别可比较" : "无共振信息")) + ",共振项 " + fmtSigned(b.resonance) + "。"]);
-    out.push(["confirmed", g.confirmed ? "所在线段已被特征序列分型确认,确认项 " + fmtSigned(b.confirmed) + "。" : "最后一段尚未被特征序列分型确认,扣 " + fmtSigned(b.confirmed) + ";该信号可能重绘或消失。"]);
+    out.push(["confirmed", isEdge(g) ? "本次快照观察到中枢沿触及；旧 confirmed 字段不表示结构或交易入场已确认，历史触及仍可能被后续价格过滤。" : g.confirmed ? "所在线段按当前近似算法确认（可能由特征分型或破起点结束），不等于交易入场确认。确认项 " + fmtSigned(b.confirmed) + "。" : "最后一段尚未被特征序列分型确认,扣 " + fmtSigned(b.confirmed) + ";该信号可能重绘或消失。"]);
     var R = RECENT_WIN[g.level];
     out.push(["freshness", "距今 " + g.bars_ago + " 根K线(近期窗口 " + R + " 根)" + (g.bars_ago > R ? ",已过期,大幅扣分" : g.bars_ago <= R / 4 ? ",非常新鲜" : g.bars_ago <= R / 2 ? ",较新" : ",仍在窗口内") + ",新鲜度 " + fmtSigned(b.freshness) + "。"]);
     var qp = [];
@@ -1577,14 +1579,14 @@
     var s = D.symbols[sym] || {};
     current = { sym: sym, g: g };
     if (opener && !$("drawer").contains(opener)) lastFocus = opener;
-    var head = '<div class="detail-title-row"><h2 id="dr-title">' + symbolHTML(sym) + (g ? ' <span class="side-tag ' + (isEdge(g) ? (isBuy(g) ? "edge-buy" : "edge-sell") : (isBuy(g) ? "buy" : "sell")) + '">' + esc(typeName(g.type)) + '</span>' : ' <span class="chip">暂无信号</span>') + '</h2><button type="button" class="mini-btn" id="dr-profile" data-sym="' + esc(sym) + '">简介</button></div>' + (g ? '<p class="detail-subline">' + esc(LV[g.level] || g.level) + ' · <span class="' + (g.confirmed ? '' : 'note-unconfirmed') + '">' + (g.confirmed ? '已确认' : '未确认，可能重绘') + '</span> · ' + esc(RES[g.resonance] || '无共振数据') + '</p>' : '');
+    var head = '<div class="detail-title-row"><h2 id="dr-title">' + symbolHTML(sym) + (g ? ' <span class="side-tag ' + (isEdge(g) ? (isBuy(g) ? "edge-buy" : "edge-sell") : (isBuy(g) ? "buy" : "sell")) + '">' + esc(typeName(g.type)) + '</span>' : ' <span class="chip">暂无信号</span>') + '</h2><button type="button" class="mini-btn" id="dr-profile" data-sym="' + esc(sym) + '">简介</button></div>' + (g ? '<p class="detail-subline">' + esc(LV[g.level] || g.level) + ' · <span class="' + (g.confirmed ? '' : 'note-unconfirmed') + '">' + (isEdge(g) ? "触及提示，尚无入场确认" : (g.confirmed ? "已确认" : "未确认，可能重绘")) + '</span> · ' + esc(RES[g.resonance] || '无共振数据') + '</p>' : '');
     $("dr-headline").innerHTML = head;
     var pfb = $("dr-profile");
     if (pfb) pfb.addEventListener("click", function () { openProfile(sym, pfb); });
     var h = "";
     if (g) {
       h += '<div class="d-hero">' + ringHTML(g.score, true) + '<div class="d-hero-stats">' +
-        stat("信号价", fmtPrice(g.price), true) + (g.stop_price != null ? stat("止损价", fmtPrice(g.stop_price), true) : "") + stat("信号时间", fmtTime(g.time, g.level), true) + stat("距今", g.bars_ago + " 根K线") +
+        stat("信号价", fmtPrice(g.price), true) + (g.stop_price != null ? stat("止损价", fmtPrice(g.stop_price), true) : "") + stat(isEdge(g) ? "触及K线时间" : "极值时间", fmtTime(g.time, g.level), true) + stat("距今", g.bars_ago + " 根K线") +
         stat("中枢 ZG", fmtPrice(g.zg), true) + stat("中枢 ZD", fmtPrice(g.zd), true) +
         (g.ratio != null ? stat("MACD 面积比", num(g.ratio, 0).toFixed(2), true) : stat("离中枢", g.margin_pct != null ? fmtPct(g.margin_pct) : "—", true)) +
         '</div></div>';

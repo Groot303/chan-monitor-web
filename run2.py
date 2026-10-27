@@ -7,6 +7,7 @@ from matplotlib.patches import Rectangle
 import os
 from zoneinfo import ZoneInfo
 from chan2 import analyze_level, resonance, score_signal, RECENT_BARS
+from signal_safety import unknown_regime, measured_regime, regime_decision, snapshot_contract
 from scripts.fetch_nasdaq import fetch_nasdaq_frames
 CACHED=os.environ.get('CACHED')=='1'  # re-use data2_*.csv instead of re-downloading
 FORCE_RUN=os.environ.get('FORCE_RUN')=='true'  # bypass market-hours gate (workflow_dispatch)
@@ -122,7 +123,7 @@ for lv, frame in NASDAQ_FRAMES.items():
 def fetch_regime():
     """Bear-regime check (2026-10-13 opt, matches backtest REGIME=pause):
     SPY daily close < 200d SMA -> bear. Never raises; on failure returns
-    bear=False with an error note so the pipeline keeps flowing."""
+    status=unknown with a legacy bear=False flag; new decisions use status."""
     try:
         from alpaca.data.historical import StockHistoricalDataClient
         from alpaca.data.requests import StockBarsRequest
@@ -136,16 +137,15 @@ def fetch_regime():
         df=client.get_stock_bars(req).df
         try: sdf=df.xs("SPY", level=0)
         except (KeyError, TypeError): sdf=df
-        closes=sdf["close"].dropna()
-        if len(closes)<210: raise ValueError(f"too few SPY bars: {len(closes)}")
-        sma200=float(closes.iloc[-200:].mean()); last=float(closes.iloc[-1])
-        return {"benchmark":"SPY","bear":bool(last<sma200),"close":round(last,2),"sma200":round(sma200,2)}
+        closes=sdf["close"]
+        return measured_regime("SPY", closes)
     except Exception as e:
-        return {"benchmark":"SPY","bear":False,"error":str(e)[:120]}
+        return unknown_regime("SPY", e)
 
-REGIME={} if CACHED else fetch_regime()
+REGIME=unknown_regime("SPY", "cached run has no benchmark evidence") if CACHED else fetch_regime()
 out={"generated":datetime.datetime.utcnow().isoformat()+"Z","symbols":{},"failures":
      {f"{NASDAQ_SYMBOL}/{lv}": error for lv,error in NASDAQ_FAILURES.items()},"regime":REGIME}
+out["strategy_context"] = regime_decision(REGIME)
 for s in SYMS:
     res={}; dfs={}; ent={"levels":{}}
     if s==NASDAQ_SYMBOL: ent["code"]="^IXIC"
@@ -169,7 +169,7 @@ for s in SYMS:
         ent["levels"][lv]=dict(bars=len(df),first=fmt(df.index[0]),last=fmt(df.index[-1]),last_close=float(df.Close.iloc[-1]),
             n_segments=len(r['segs']),n_pivots=len(r['pivots']),state=r['state'],
             last_segment=dict(up=r['segs'][-1].up,start=fmt(df.index[r['segs'][-1].s_i]),end=fmt(df.index[r['segs'][-1].e_i]),end_price=r['segs'][-1].e_p,confirmed=r['segs'][-1].confirmed) if r['segs'] else None,
-            signals=[dict(symbol=s,level=lv,**{k:(float(v) if isinstance(v,(int,float)) and not isinstance(v,bool) else v) for k,v in sg.items() if k not in('idx','seg','confirmed')},time=fmt(df.index[sg['idx']]),bars_ago=len(df)-1-sg['idx'],recent=(len(df)-1-sg['idx'])<=RECENT_BARS[lv],
+            signals=[dict(symbol=s,level=lv,**{k:(float(v) if isinstance(v,(int,float)) and not isinstance(v,bool) else v) for k,v in sg.items() if k not in('idx','seg','confirmed')},**snapshot_contract(sg, df.index),time=fmt(df.index[sg['idx']]),bars_ago=len(df)-1-sg['idx'],recent=(len(df)-1-sg['idx'])<=RECENT_BARS[lv],
                           confirmed=bool(sg['confirmed']),repaint_warning=None if sg['confirmed'] else "unconfirmed: last segment not yet confirmed by feature-sequence fractal; may repaint") for sg in r['signals']])
     # resonance
     for lv,bigs in (("5m",["30m","daily","weekly"]),("30m",["daily","weekly"]),("daily",["weekly"])):
@@ -197,7 +197,7 @@ for s in SYMS:
         ent["levels"][lv]["signals"]=kept
     # regime pause (2026-10-13 opt, matches backtest REGIME=pause):
     # bear regime -> buy-type signals flagged regime_paused; sells unaffected.
-    if REGIME.get("bear"):
+    if REGIME.get("status") == "bear":
         for lv in ent["levels"]:
             for sg in ent["levels"][lv]["signals"]:
                 if sg["type"].endswith("B"):
