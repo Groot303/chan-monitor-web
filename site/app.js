@@ -185,13 +185,14 @@
   // ---------- 导航 ----------
   function setView(v, noHash) {
     // 持仓页已停用，旧链接和手动输入都返回信号页。
+    if (v === "paper" && MARKET !== "us") { v = "signals"; history.replaceState(null, "", "#signals"); }
     if (v === "holdings") { v = "signals"; history.replaceState(null, "", "#signals"); }
-    if (["signals", "symbols", "macro", "about"].indexOf(v) < 0) v = "signals";
+    if (["signals", "symbols", "paper", "macro", "about"].indexOf(v) < 0) v = "signals";
     VIEW = v;
     window.dispatchEvent(new CustomEvent("chan-view", {detail:{view:v}}));
     document.body.dataset.view = v;
     if (window.closeSignalFilters) closeSignalFilters(false);
-    ["signals", "symbols", "holdings", "macro", "about"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
+    ["signals", "symbols", "holdings", "paper", "macro", "about"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
     qsa(".tab[data-view]").forEach(function (b) {
       if (b.getAttribute("data-view") === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
@@ -215,6 +216,10 @@
     if (disc) disc.textContent = "数据源 " + MK[MARKET].src + ",可能延迟或缺失。";
   }
   function syncMarketUI() {
+    document.body.dataset.market = MARKET;
+    qsa('.tab[data-view="paper"]').forEach(function (button) { button.hidden = MARKET !== "us"; });
+    window.dispatchEvent(new CustomEvent("chan-market", {detail:{market:MARKET}}));
+    if (MARKET !== "us" && VIEW === "paper") setView("signals");
     qsa("[data-market]").forEach(function (b) {
       b.setAttribute("aria-pressed", b.getAttribute("data-market") === MARKET ? "true" : "false");
     });
@@ -1621,6 +1626,7 @@
           (x.confirmed ? "" : '<span class="chip chip-un">未确认</span>') + (x.recent ? "" : '<span class="chip chip-stale">过期</span>') + '</button>';
       }).join("") + '</div></section>';
     }
+    if (MARKET === "us") h += '<button type="button" class="btn primary" id="dr-paper">加入美股模拟练习</button>';
     h += '<button type="button" class="btn" id="dr-filter" style="align-self:flex-start">在信号列表中只看 ' + esc(sym) + '</button>';
     $("dr-body").innerHTML = h;
     // 标准4：先看信号价格与风险，再看图验证；图表不是首页主功能。
@@ -1641,6 +1647,10 @@
     }
     qsa("[data-other]", $("dr-body")).forEach(function (b) {
       b.addEventListener("click", function () { var x = SIGS[+b.getAttribute("data-other")]; openDrawer(x.symbol, x); var f = document.querySelector('[data-other="' + x._id + '"]'); if (f) f.focus(); });
+    });
+    if ($("dr-paper")) $("dr-paper").addEventListener("click", function () {
+      window.dispatchEvent(new CustomEvent("paper-order-intent", {detail:{market:MARKET,symbol:sym}}));
+      closeDrawer(); setView("paper");
     });
     $("dr-filter").addEventListener("click", function () {
       F.q = sym; F.recent = false; onFilter(); closeDrawer(); setView("signals");
@@ -1871,6 +1881,7 @@
   function renderStatus() {
     var section = activeView === "symbols" ? "signals" : activeView, status = statusBySection[section];
     var el = document.getElementById("data-status"), names = {signals:"信号",holdings:"持仓",macro:"宏观"};
+    if (section === "paper") { el.textContent = "独立模拟账户 · 行情撮合与估值在打开或刷新时更新"; return; }
     if (section === "about") { el.textContent = "评分为启发式规则，未经回测；未确认信号可能重绘。"; return; }
     if (!status) { el.textContent = "正在读取" + names[section] + "数据…"; return; }
     if (status.error) { el.textContent = names[section] + "数据暂不可用，请稍后重试；其他页面仍可查看。"; return; }
