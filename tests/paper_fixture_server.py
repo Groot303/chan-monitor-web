@@ -10,6 +10,10 @@ from tests.test_paper_trading import Clock, Market
 from tests.test_automatic_strategy import Source, signal
 from automatic_strategy import AutomaticStrategy, StrategyGroup, RULES_V2
 from strategy_routes import strategy_router
+from cn_research import CNResearch
+from cn_routes import research_router
+import tests.test_cn_research as cn_fixtures
+from datetime import timedelta
 
 app=FastAPI()
 clock=Clock()
@@ -23,6 +27,34 @@ engine=AutomaticStrategy(store,source);engine.tick()
 engine_v2=AutomaticStrategy(store,source,rules=RULES_V2);engine_v2.tick()
 group=StrategyGroup(engine,engine_v2)
 app.include_router(strategy_router(engine,variants={'v1':engine,'v2':engine_v2}))
+cn_clock=cn_fixtures.Clock();cn_clock.now-=timedelta(days=1)
+class CNCalendar:
+    def context(self,now):return {**cn_fixtures.Calendar().context(now),'trade_date':now.date().isoformat()}
+cn_source=cn_fixtures.Source(cn_clock)
+for item in cn_source.rows[:4]:item['payload']['data']['qdate']=20261028
+cn_research=CNResearch(Path(tmp.name)/'research.sqlite',cn_source,CNCalendar(),cn_clock);cn_research.collect()
+cn_clock.now+=timedelta(days=1);cn_source.rows=cn_fixtures.fixtures(cn_clock);cn_research.collect()
+app.include_router(research_router(cn_research))
+
+@app.post('/test/cn-open')
+def cn_open():
+    cn_clock.now+=timedelta(minutes=1)
+    moved=cn_source.rows[0]['payload']['data']['pool'].pop(0);cn_source.rows[0]['payload']['data']['tc']=1
+    cn_source.rows[1]['payload']['data']['pool'].append(moved);cn_source.rows[1]['payload']['data']['tc']=2
+    cn_research.collect();return {'ok':True}
+
+@app.post('/test/cn-reseal')
+def cn_reseal():
+    cn_clock.now+=timedelta(minutes=1)
+    moved=cn_source.rows[1]['payload']['data']['pool'].pop();cn_source.rows[1]['payload']['data']['tc']=1
+    cn_source.rows[0]['payload']['data']['pool'].append(moved);cn_source.rows[0]['payload']['data']['tc']=2
+    cn_research.collect();return {'ok':True}
+
+@app.post('/test/cn-offline')
+def cn_offline():
+    cn_clock.now+=timedelta(minutes=1)
+    cn_source.rows=[dict(key=e['key'],received_at=cn_clock().isoformat(),error='test offline') for e in cn_source.rows]
+    cn_research.collect();return {'ok':True}
 
 @app.post('/test/signal')
 def new_signal():

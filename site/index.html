@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>缠论信号看板 · Chan Signal Monitor</title>
-<meta name="description" content="缠论周线/日线/30分钟信号的静态看板。启发式规则,未回测,不构成投资建议。">
+<title>研究手记 · 美股策略与A股连板研究</title>
+<meta name="description" content="美股自动模拟与A股连板研究：题材归因、涨停梯队、炸板观察和昨日涨停表现。">
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#f2f2f7">
 <script>
@@ -17,6 +17,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
 <link rel="stylesheet" href="indicator-glossary.css">
 <link rel="stylesheet" href="apple-design.css">
 <link rel="stylesheet" href="paper.css">
+<link rel="stylesheet" href="cn-research.css">
 </head>
 <body>
 <a class="skip" href="#main">跳到主要内容</a>
@@ -60,6 +61,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
 
 <!-- Apple：保留清晰的功能标题，打开即进入任务；不使用口号式大标题。 -->
 <p class="data-status" id="data-status" role="status">正在连接数据…</p>
+<section class="view" id="view-research" aria-label="A股连板研究" hidden><div id="cn-research-app" aria-live="polite"></div></section>
 
   <!-- 概览卡片 -->
   <section class="kpis" id="kpis" aria-label="当前市场信号概览">
@@ -264,7 +266,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
     <div class="ios-row">
       <div class="ios-row-main">
         <span class="ios-label">配色</span>
-        <span class="ios-sub">绿 = 买，红 = 卖（美股习惯）</span>
+        <span class="ios-sub" id="settings-colors">绿 = 买，红 = 卖（美股习惯）</span>
       </div>
     </div>
   </div>
@@ -274,7 +276,7 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
 <footer class="footer">
   <div class="footer-inner">
     <p class="muted small" id="foot-syms">21 个标的均为可缩放交互 K 线(Lightweight Charts,叠加笔/线段/中枢)。箭头=缠论一二三类买卖点;青绿/琥珀圆点=中枢下沿买/上沿卖。静态 PNG 可在详情中展开对照。</p>
-    <p class="disclaimer"><b>免责声明:</b>本页信号基于启发式规则,<b>未回测</b>,<b>不构成投资建议</b>;<b>未确认信号可能重绘</b>。<span id="foot-disc-src">数据源 Alpaca / Yahoo Finance，可能延迟或缺失。</span></p>
+    <p class="disclaimer" id="foot-disclaimer"><b>免责声明:</b>本页信号基于启发式规则,<b>未回测</b>,<b>不构成投资建议</b>;<b>未确认信号可能重绘</b>。<span id="foot-disc-src">数据源 Alpaca / Yahoo Finance，可能延迟或缺失。</span></p>
     <p class="muted small" id="foot-meta"></p>
   </div>
 </footer>
@@ -291,6 +293,10 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
   <button class="tab" data-view="about">
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span>说明</span></button>
 </nav>
+<nav class="cn-bottom" aria-label="连板研究导航" hidden>
+  <button type="button" data-cn-tab="themes">题材</button><button type="button" data-cn-tab="ladder">梯队</button><button type="button" data-cn-tab="broken">炸板</button><button type="button" data-cn-tab="previous">昨日</button><button type="button" data-cn-tab="watch">关注</button>
+</nav>
+<dialog id="cn-stock-dialog" aria-labelledby="cn-stock-title"><button type="button" class="cn-close" id="cn-stock-close" aria-label="关闭标的详情">关闭</button><div id="cn-stock-body"></div></dialog>
 
 <!-- 详情抽屉 -->
 <div class="scrim" id="scrim" hidden></div>
@@ -345,5 +351,6 @@ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);r.setAttribute("data-c
 <script src="apple-ui.js"></script>
 <script src="app.js"></script>
 <script src="strategy.js"></script>
+<script src="cn-research.js"></script>
 </body>
 </html>
