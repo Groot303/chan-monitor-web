@@ -1,5 +1,6 @@
 #!/bin/bash
-# VPS pipeline for chan-monitor-web: pull latest code, run US+CN analysis,
+# VPS pipeline for chan-monitor-web: US strategy analysis only.
+# A股由独立cn_research后台任务采集，不再运行旧缠论或生成旧通知。
 # rebuild site data, commit & push. Runs every 15 min via cron.
 # Server-side copy lives at /opt/chan-monitor/run_pipeline.sh (synced by git pull).
 set -u
@@ -28,15 +29,13 @@ else
   chmod +x /opt/chan-monitor/run_pipeline.sh 2>/dev/null
 fi
 VENV="$REPO/venv/bin/python"
-mkdir -p out out_cn
+mkdir -p out
 if [ -n "${ALPACA_API_KEY:-}" ]; then
   $VENV run2.py 2>&1 | tail -2
   if [ -f out/signals.json ]; then $VENV scripts/build_data.py out 2>&1 | tail -1; fi
 else
   echo "US skipped: ALPACA_API_KEY not set"
 fi
-$VENV run_cn.py 2>&1 | tail -2
-if [ -f out_cn/signals.json ]; then $VENV scripts/build_data.py out_cn --market cn 2>&1 | tail -1; fi
 if [ "${API_MODE:-}" = "1" ]; then
   echo "API_MODE: data written to $API_DATA_DIR, skip git"
 else

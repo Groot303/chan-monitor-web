@@ -202,7 +202,7 @@ class StopTests(unittest.TestCase):
         for enabled,auto_enabled in (('','1'),('1','1'),('1','0')):
             scope={'os':SimpleNamespace(environ={'PAPER_TRADING_ENABLED':enabled,'US_STRATEGY_ENABLED':auto_enabled}),
                    'CN_SYMS':[],'log':Mock(),'run_pipeline':Mock(),'fetch_ibkr_positions':Mock(),
-                   '_paper_store':self.store,'_automatic_strategy':SimpleNamespace(tick=Mock()),
+                   '_paper_store':self.store,'_automatic_strategy':SimpleNamespace(tick=Mock()),'_cn_research':SimpleNamespace(collect=Mock()),
                    'datetime':fixtures.datetime,'timezone':fixtures.timezone,'timedelta':timedelta}
             exec(compile(ast.Module(body=[fn],type_ignores=[]),'api.py','exec'),scope)
             with patch.dict(sys.modules,{'apscheduler':ModuleType('apscheduler'),
@@ -213,6 +213,10 @@ class StopTests(unittest.TestCase):
             self.assertEqual(len(jobs),int(bool(enabled)))
             auto=[(func,kw) for func,kw in scope['scheduler'].jobs if kw.get('id')=='us_strategy']
             self.assertEqual(len(auto),int(bool(enabled) and auto_enabled=='1'))
+            cn=[(func,kw) for func,kw in scope['scheduler'].jobs if kw.get('id')=='cn_research']
+            self.assertEqual(len(cn),1,'A股采集独立于美股模拟开关')
+            self.assertEqual(cn[0][0],scope['_cn_research'].collect)
+            self.assertEqual(cn[0][1]['seconds'],60)
             if auto:
                 self.assertEqual(auto[0][0],scope['_automatic_strategy'].tick)
                 self.assertEqual(auto[0][1]['seconds'],60)

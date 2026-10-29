@@ -48,14 +48,12 @@ const path=require('node:path');
     assert.match(await page.locator('#paper-app').innerText(),/完整交易胜率/);
     // 两个市场分别建设：A股保留原页面，不展示/创建美股练习入口。
     await page.locator('[data-market="cn"]').click();
-    await page.waitForFunction(()=>document.getElementById('data-status').textContent.includes('东方财富'));
+    await page.locator('#cn-research-app h1').waitFor();
     assert.equal(await page.locator('.tab[data-view="paper"]:visible').count(),0);
     await page.evaluate(()=>{location.hash='paper';});
-    await page.waitForFunction(()=>location.hash==='#signals');
-    await page.locator('.signal-note').first().click();
-    assert.equal(await page.locator('#dr-paper').count(),0);
-    await page.keyboard.press('Escape');
-    await page.locator('#drawer').waitFor({state:'hidden'});
+    await page.waitForFunction(()=>location.hash==='#research');
+    assert.equal(await page.locator('#view-paper').isVisible(),false);
+    assert.equal(await page.locator('#cn-research-app').isVisible(),true);
     await page.locator('[data-market="us"]').click();
     await page.waitForFunction(()=>document.body.dataset.market==='us');
     await page.locator('.tabs-bottom [data-view="paper"]').click();

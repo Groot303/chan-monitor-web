@@ -9,7 +9,6 @@ import secrets
 import sys
 import logging
 from scripts.notification_state import notification_state_path
-from cn_symbols import CN_SYMS
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -84,9 +83,9 @@ ibkr_status = {
 
 
 def notify_telegram():
-    """Send Telegram notifications for new signals (US + CN) after a pipeline run.
+    """Send existing US notifications after a pipeline run.
 
-    Runs scripts/notify_telegram.py twice (US signals.json, CN signals_cn.json),
+    A-share legacy signal notifications are retired; research does not emit orders or alerts.
     sharing a runtime state file under api_data/state for dedup. Token/chat come from env (VPS .env).
     Also delivers the one-off announcement file (state/announcement.txt) if
     present. Never raises; failures are logged only.
@@ -96,7 +95,7 @@ def notify_telegram():
         return
     state_file = notification_state_path(REPO, DATA_DIR)
     announce_file = REPO / "state" / "announcement.txt"
-    for name in ("signals.json", "signals_cn.json"):
+    for name in ("signals.json",):
         try:
             env = {
                 **os.environ,
@@ -130,7 +129,7 @@ def run_pipeline():
     try:
         env = {**os.environ, "API_MODE": "1", "API_DATA_DIR": str(DATA_DIR)}
         r = subprocess.run(
-            [str(BASE / "run_pipeline.sh")],
+            ["/bin/bash", str(REPO / "scripts" / "vps_pipeline.sh")],
             capture_output=True, text=True, timeout=900,
             cwd=str(REPO), env=env,
         )
@@ -262,7 +261,7 @@ scheduler = None
 @app.on_event("startup")
 async def on_startup():
     global scheduler
-    log.info("A-share universe configured: %s", ", ".join(name for name, _ in CN_SYMS))
+    log.info("A-share mode: limit-up research; legacy signal pipeline retired")
     try:
         from apscheduler.schedulers.asyncio import AsyncIOScheduler
         scheduler = AsyncIOScheduler(timezone="UTC")
@@ -271,6 +270,8 @@ async def on_startup():
         scheduler.add_job(fetch_ibkr_positions, "interval", hours=6, id="ibkr",
                           max_instances=1, coalesce=True,
                           next_run_time=datetime.now(timezone.utc) + timedelta(minutes=2))
+        scheduler.add_job(_cn_research.collect,"interval",seconds=60,id="cn_research",max_instances=1,coalesce=True,
+                          next_run_time=datetime.now(timezone.utc)+timedelta(seconds=8))
         if os.environ.get("PAPER_TRADING_ENABLED") == "1":
             scheduler.add_job(_paper_store.sync_all, "interval", seconds=60, id="paper_reconcile",
                               max_instances=1, coalesce=True)
@@ -306,8 +307,9 @@ def jobs():
                           bool(getattr(scheduler, "running", False)) and
                           scheduler.get_job("paper_reconcile") is not None)
     d["strategy_enabled"] = d["paper_enabled"] and scheduler.get_job("us_strategy") is not None
+    d["cn_research_enabled"] = bool(getattr(scheduler,"running",False)) and scheduler.get_job("cn_research") is not None
     if scheduler:
-        for jid, key in (("pipeline", "next_run"), ("ibkr", "ibkr_next_run"), ("paper_reconcile", "paper_next_run"), ("us_strategy", "strategy_next_run")):
+        for jid, key in (("pipeline", "next_run"), ("ibkr", "ibkr_next_run"), ("paper_reconcile", "paper_next_run"), ("us_strategy", "strategy_next_run"), ("cn_research","cn_research_next_run")):
             job = scheduler.get_job(jid)
             nxt = job.next_run_time if job else None
             d[key] = nxt.isoformat() if nxt else None
@@ -373,8 +375,13 @@ def api_signals():
 
 
 @app.get("/api/signals_cn")
-def api_signals_cn():
-    return _read_json("signals_cn.json")
+@app.get("/data/signals_cn.json")
+@app.get("/api/charts_cn/{path:path}")
+@app.get("/api/img_cn/{path:path}")
+@app.get("/data/charts_cn/{path:path}")
+@app.get("/img_cn/{path:path}")
+def api_signals_cn(path:str=''):
+    raise HTTPException(410,"A股旧信号已停用，请使用连板研究 /api/cn/research")
 
 
 @app.get("/api/macro")
@@ -436,12 +443,15 @@ _automatic_strategy = StrategyGroup(_strategy_v1,_strategy_v2)
 app.include_router(strategy_router(_strategy_v1, variants={'v1':_strategy_v1,'v2':_strategy_v2}, enabled=lambda:
     os.environ.get("PAPER_TRADING_ENABLED") == "1" and bool(getattr(scheduler,"running",False))
     and scheduler.get_job("us_strategy") is not None))
+from cn_research import CNResearch
+from cn_routes import research_router
+_cn_research=CNResearch(DATA_DIR / "research" / "cn.sqlite3")
+app.include_router(research_router(_cn_research))
 
 
 # static: images and interactive chart data
 # Note: build_data.py writes charts to api_data/data/charts/ (not api_data/charts/)
-for _sub, _dirname in (("img", "img"), ("img_cn", "img_cn"),
-                       ("charts", "data/charts"), ("charts_cn", "data/charts_cn")):
+for _sub, _dirname in (("img", "img"), ("charts", "data/charts")):
     _d = DATA_DIR / _dirname
     _d.mkdir(parents=True, exist_ok=True)
     app.mount(f"/api/{_sub}", StaticFiles(directory=str(_d)), name=_sub)

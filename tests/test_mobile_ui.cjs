@@ -12,13 +12,6 @@ const generated = '2026-10-17T03:00:00+00:00';
 const usSnapshot = JSON.parse(fs.readFileSync(path.join(site,'data/signals.json'),'utf8'));
 usSnapshot.symbols['纳指'] = {code:'^IXIC',levels:{daily:{last_close:23204.87,bars:500,state:{direction:'up',pivot_pos:'above'}}}};
 usSnapshot.signals.push({...usSnapshot.signals[0],symbol:'纳指',level:'daily',score:4.5,recent:true});
-// 测试数据：验证名称/代码搜索和新增A股详情，不访问真实持仓。
-const cnSnapshot = JSON.parse(fs.readFileSync(path.join(site,'data/signals_cn.json'),'utf8'));
-const addedCN = [['万向钱潮','000559'],['三花智控','002050'],['三孚股份','603938'],['诺德股份','600110']];
-for (const [symbol,code] of addedCN) {
-  cnSnapshot.symbols[symbol] = {code,levels:{daily:{last_close:10,bars:100,state:{direction:'up',pivot_pos:'above'}}}};
-  cnSnapshot.signals.push({symbol,code,level:'daily',type:'3B',time:'2026-10-21',price:10,score:6,recent:true,confirmed:true,bars_ago:0,resonance:'strong'});
-}
 
 const macro = { generated, source: 'UI test fixture', indicators: {vix:{name:'VIX',value:19.99,unit:'',kind:'index',status:'ok',asof:'2026-10-16',change:1,change_pct:1,change_label:'+1%',read:'测试指标',range:[18,22],series:[['2026-10-15',19],['2026-10-16',19.99]]}}, regime:{}, failures:{} };
 const positions = {generated, positions:[{symbol:'NVDA',currency:'USD',qty:10,cost:200,mark:225.92,unrealized:259.2,value:2259.2,asset:'STK'}]};
@@ -34,10 +27,9 @@ const positions = {generated, positions:[{symbol:'NVDA',currency:'USD',qty:10,co
       if (name === '/api/macro') return route.fulfill({json:macro});
       let file = name === '/' ? 'index.html' : name.slice(1);
       if (name === '/api/signals') return route.fulfill({json:usSnapshot});
-      else if (name === '/api/signals_cn') return route.fulfill({json:cnSnapshot});
+      else if (name === '/api/cn/research') return route.fulfill({json:{schema:'cn-limitup-research-v1',market:'cn',mode:'research_only',status:'unavailable',trade_date:'2026-10-29',error:'测试环境暂无行情',sources:{},pools:{},themes:[],progression:[],events:[],available_dates:[]}});
       else if (name.startsWith('/api/charts')) file = 'data/' + name.slice('/api/'.length);
       if (slowNvda && name === '/api/charts/NVDA.json') await new Promise(resolve=>setTimeout(resolve,150));
-      if (name.startsWith('/api/charts_cn/') && addedCN.some(([symbol])=>name.endsWith('/'+symbol+'.json'))) file='data/charts/NVDA.json';
       const resolved = path.resolve(site,file);
       if (!resolved.startsWith(site + path.sep) || !fs.existsSync(resolved)) return route.fulfill({status:404,body:'not found'});
       return route.fulfill({path:resolved});
@@ -167,20 +159,10 @@ const positions = {generated, positions:[{symbol:'NVDA',currency:'USD',qty:10,co
     await page.locator('#f-reset').click();
     await page.locator('#filter-apply').click();
     await page.locator('[data-market="cn"]').click();
-    await page.waitForFunction(()=>document.getElementById('data-status').textContent.includes('东方财富'));
-    for (const [symbol,code] of addedCN) {
-      await page.locator('#btn-filters').click();
-      await page.locator('#f-q').fill(code);
-      await page.locator('#filter-apply').click();
-      assert.equal(await page.locator('.signal-note').count(),1);
-      assert.match(await page.locator('.note-symbol').innerText(),new RegExp(symbol));
-      assert.equal(await page.locator('.note-symbol .symbol-code').innerText(),code);
-      await page.locator('.signal-note').click();
-      await page.locator('#ichart-root canvas').first().waitFor();
-      assert.match(await page.locator('#dr-title').innerText(),new RegExp(code));
-      await page.keyboard.press('Escape');
-      await page.locator('#drawer').waitFor({state:'hidden'});
-    }
+    await page.locator('#cn-research-app h1').waitFor();
+    assert.match(await page.locator('#data-status').innerText(),/连板研究/);
+    assert.equal(await page.locator('#view-signals').isVisible(),false);
+    assert.equal(await page.locator('#cn-search').isVisible(),true);
     await page.locator('[data-market="us"]').click();
     await page.waitForFunction(()=>document.getElementById('data-status').textContent.includes('Alpaca'));
     // 手机到桌面时不能遗留遮罩或滚动锁。

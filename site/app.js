@@ -26,9 +26,8 @@
     us: { label: "美股", api: "/api/signals", tz: "ET", src: "Alpaca(IEX) / Yahoo Finance(纳指)", delay: "行情可能延迟",
           watch: ["AAOI","AAPL","AMD","AVGO","GOOG","INTC","LITE","META","MRNA","MRVL","MU","NOK","NVDA","ORCL","PLTR","SKHY","SNDK","SPCX","TSLA","TSM","纳指"],
           searchPh: "搜索代码,如 NVDA" },
-    cn: { label: "A股", api: "/api/signals_cn", tz: "北京时间", src: "东方财富", delay: "东财数据可能延迟",
-          watch: ["上证指数","科创50","银行指数","平均股价","万向钱潮","三花智控","三孚股份","诺德股份"],
-          searchPh: "搜索名称或代码，如 000559" }
+    cn: { label: "A股", api: "/api/cn/research", tz: "北京时间", src: "连板研究", delay: "来源延迟尚未验证",
+          watch: [], searchPh: "搜索名称、代码或题材" }
   };
   function apiURL() { var m = MK[MARKET]; return (API_BASE || "") + m.api; }
   function signalsURL() { return apiURL(); }
@@ -184,15 +183,16 @@
   window.addEventListener("apple-dismiss-settings", closeSettings);
   // ---------- 导航 ----------
   function setView(v, noHash) {
+    if (MARKET === "cn") { v = "research"; history.replaceState(null,"","#research"); }
     // 持仓页已停用，旧链接和手动输入都返回信号页。
     if (v === "paper" && MARKET !== "us") { v = "signals"; history.replaceState(null, "", "#signals"); }
     if (v === "holdings") { v = "signals"; history.replaceState(null, "", "#signals"); }
-    if (["signals", "symbols", "paper", "macro", "about"].indexOf(v) < 0) v = "signals";
+    if (["signals", "symbols", "paper", "macro", "about", "research"].indexOf(v) < 0 || (MARKET === "us" && v === "research")) v = "signals";
     VIEW = v;
     window.dispatchEvent(new CustomEvent("chan-view", {detail:{view:v}}));
     document.body.dataset.view = v;
     if (window.closeSignalFilters) closeSignalFilters(false);
-    ["signals", "symbols", "holdings", "paper", "macro", "about"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
+    ["signals", "symbols", "holdings", "paper", "macro", "about", "research"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
     qsa(".tab[data-view]").forEach(function (b) {
       if (b.getAttribute("data-view") === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
@@ -208,6 +208,14 @@
 
   // ---------- 市场切换(美股 / A股) ----------
   function updateMarketTexts() {
+    if (MARKET === "cn") {
+      $("foot-syms").textContent="A股专门研究连板：题材归因、涨停梯队、炸板观察和昨日涨停表现。";
+      $("foot-disclaimer").innerHTML='仅供研究，不构成交易建议。快照可能遗漏盘中开合，不能证明涨停排队成交；数据缺失不会显示为零。<span id="foot-disc-src">东财观察池 / 开盘啦题材归因，来源延迟尚未验证。</span>';
+      $("settings-colors").textContent="红 = 上涨，绿 = 下跌（A股）";
+      return;
+    }
+    $("foot-disclaimer").innerHTML='<b>免责声明:</b>本页信号基于启发式规则,<b>未回测</b>,<b>不构成投资建议</b>;<b>未确认信号可能重绘</b>。<span id="foot-disc-src"></span>';
+    $("settings-colors").textContent="绿 = 买，红 = 卖（美股习惯）";
     var about = $("about-src");
     if (about) about.textContent = "行情来自 " + MK[MARKET].src + "。信号时间为极值K线时间(" + MK[MARKET].tz + "),确认会滞后若干根K线。周线最后一根为当周未完成K线。";
     var ff = $("foot-syms");
@@ -219,7 +227,8 @@
     document.body.dataset.market = MARKET;
     qsa('.tab[data-view="paper"]').forEach(function (button) { button.hidden = MARKET !== "us"; });
     window.dispatchEvent(new CustomEvent("chan-market", {detail:{market:MARKET}}));
-    if (MARKET !== "us" && VIEW === "paper") setView("signals");
+    if (MARKET === "cn") setView("research");
+    else if (VIEW === "research") setView("signals");
     qsa("[data-market]").forEach(function (b) {
       b.setAttribute("aria-pressed", b.getAttribute("data-market") === MARKET ? "true" : "false");
     });
@@ -321,7 +330,10 @@
     $("sig-results").innerHTML = stateHTML("err", "数据加载失败", "后端接口不可用（" + esc(e.message || e) + "）—— 已不再回落到本地静态数据，以免展示过期行情。请检查后端 chan-api 与 /api 状态（请求地址：" + esc(url) + "）。", '<button type="button" class="btn primary" id="retry">重试</button>');
     var r = $("retry"); if (r) r.addEventListener("click", load);
   }
+  var loadSequence=0;
   function load() {
+    var sequence=++loadSequence, requestMarket=MARKET;
+    if (MARKET === "cn") { setView("research"); $("meta-short").textContent="连板研究"; return; }
     showLoading();
     $("meta-short").textContent = "加载中…";
     var apiU = apiURL() + "?t=" + Date.now();
@@ -330,7 +342,7 @@
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
     }
     // 只请求后端 API；失败直接报错，不再回落到本地静态 JSON，以免展示过期行情
-    getJSON(apiU).then(handleData).catch(function (e) { showLoadErr(e, apiU); });
+    getJSON(apiU).then(function(data){if(sequence===loadSequence && requestMarket===MARKET)handleData(data);}).catch(function (e) { if(sequence===loadSequence && requestMarket===MARKET)showLoadErr(e, apiU); });
   }
 
   function stateHTML(kind, title, text, action) {
@@ -1798,8 +1810,8 @@
     var lbOpen = !$("lightbox").hidden, drOpen = !$("drawer").hidden;
     if (e.key === "Escape") { if (!$("profile-modal").hidden) closeProfile(); else if (lbOpen) closeLightbox(); else if (drOpen) closeDrawer(); }
     else if (e.key === "Tab") { if (lbOpen) trap($("lightbox"), e); else if (drOpen) trap($("drawer"), e); }
-    else if (e.key === "/" && !lbOpen && !drOpen && $("settings-sheet").hidden && $("profile-modal").hidden && document.activeElement.tagName !== "INPUT") {
-      e.preventDefault(); setView("signals"); if (window.openSignalFilters) openSignalFilters();
+    else if (e.key === "/" && !lbOpen && !drOpen && !$("cn-stock-dialog").open && $("settings-sheet").hidden && $("profile-modal").hidden && document.activeElement.tagName !== "INPUT") {
+      e.preventDefault(); if(MARKET === "cn") { if($("cn-search"))$("cn-search").focus(); } else {setView("signals"); if (window.openSignalFilters) openSignalFilters();}
     }
   });
 
@@ -1810,7 +1822,7 @@
   setView(location.hash.slice(1) || "signals", true);
   load();
   // 每分钟刷新相对时间
-  setInterval(function () { if (D) { var g = new Date(D.generated); if (!isNaN(g)) $("meta-short").textContent = "更新于 " + relTime(g); } }, 60000);
+  setInterval(function () { if (D && MARKET === "us") { var g = new Date(D.generated); if (!isNaN(g)) $("meta-short").textContent = "更新于 " + relTime(g); } }, 60000);
 })();
 
 
@@ -1881,6 +1893,7 @@
   function renderStatus() {
     var section = activeView === "symbols" ? "signals" : activeView, status = statusBySection[section];
     var el = document.getElementById("data-status"), names = {signals:"信号",holdings:"持仓",macro:"宏观"};
+    if(section === "research") { el.textContent="连板研究 · 盘中快照与题材归因"; return; }
     if (section === "paper") { el.textContent = "服务器自动执行 · 只读观察持仓、收益与每次决策"; return; }
     if (section === "about") { el.textContent = "评分为启发式规则，未经回测；未确认信号可能重绘。"; return; }
     if (!status) { el.textContent = "正在读取" + names[section] + "数据…"; return; }

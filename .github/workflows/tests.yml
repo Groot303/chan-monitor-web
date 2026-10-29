@@ -29,3 +29,4 @@ jobs:
           node tests/test_mobile_ui.cjs
           node tests/test_apple_interactions.cjs
           node tests/test_paper_ui.cjs
+          node tests/test_cn_research_ui.cjs
