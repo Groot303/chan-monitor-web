@@ -308,6 +308,7 @@ def jobs():
                           scheduler.get_job("paper_reconcile") is not None)
     d["strategy_enabled"] = d["paper_enabled"] and scheduler.get_job("us_strategy") is not None
     d["cn_research_enabled"] = bool(getattr(scheduler,"running",False)) and scheduler.get_job("cn_research") is not None
+    d["cn_research_attribution_version"] = 2  # 同日归因证据保留；题材炸板缺失不再显示为零。
     if scheduler:
         for jid, key in (("pipeline", "next_run"), ("ibkr", "ibkr_next_run"), ("paper_reconcile", "paper_next_run"), ("us_strategy", "strategy_next_run"), ("cn_research","cn_research_next_run")):
             job = scheduler.get_job(jid)

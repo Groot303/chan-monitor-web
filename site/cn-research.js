@@ -15,6 +15,12 @@
   let watch=[];try{watch=JSON.parse(localStorage.getItem('cn.research.watch.v1')||'[]').filter(c=>/^\d{6}$/.test(c));}catch(_){}
   const active=()=>document.body.dataset.market==='cn';
   function pool(key){return data?.pools?.[key] || [];}
+  function brokenText(group){
+    const known=group.known_broken_count ?? group.broken_count;
+    if(group.id==='unclassified')return fmt(known)+' 炸板待归因';
+    if(group.broken_count_complete===true)return fmt(group.broken_count)+' 炸板';
+    return known>0?'≥'+fmt(known)+' 炸板 · 待补全':'炸板待补全';
+  }
   function matches(stock){return !query || [stock.code,stock.name,stock.industry,stock.theme?.name,...(stock.concepts || [])].join(' ').toLowerCase().includes(query.toLowerCase());}
   function stock(code){return ['up','broken','previous','down'].flatMap(pool).find(s=>s.code===code) || {code,name:'未在当前观察池',state:'unknown',theme:null};}
   function watchButton(code){return '<button type="button" class="cn-star" data-cn-watch="'+esc(code)+'" aria-label="'+(watch.includes(code)?'取消关注':'关注')+' '+esc(code)+'" aria-pressed="'+watch.includes(code)+'">'+(watch.includes(code)?'★':'☆')+'</button>';}
@@ -58,11 +64,11 @@
         '<p class="cn-subtitle">当日供应商涨停归因；股票其他概念与行业在详情中分别显示。</p>'+list([...pool('up'),...pool('broken')].filter(s=>(s.theme?.id || 'unclassified')===theme)));
     } else if(tab==='themes'){
       const groups=(data.themes || []).filter(g=>!query || g.name.toLowerCase().includes(query.toLowerCase()) || g.stocks.some(c=>matches(stock(c))));
-      html=panel('按题材看涨停表现','<p class="cn-subtitle">今日封板归因覆盖 '+fmt(data.summary?.attributed_sealed)+' / '+fmt(data.summary?.attribution_total)+' 只。未核验题材单列，不用行业代替。</p>'+(groups.length?groups.map(g=>'<button class="cn-theme" type="button" data-cn-theme="'+esc(g.id)+'"><div class="cn-theme-head"><strong>'+esc(g.name)+'</strong><span class="cn-theme-count">'+fmt(g.sealed_count)+' 涨停 · '+fmt(g.broken_count)+' 炸板 ›</span></div><small>板内已观察最高 '+fmt(g.highest_boards)+'板 · '+esc(g.stocks.slice(0,4).map(c=>stock(c).name).join('、'))+'</small></button>').join(''):empty('暂无可核验题材归因。')));
+      html=panel('按题材看涨停表现','<p class="cn-subtitle">封板归因 '+fmt(data.summary?.attributed_sealed)+' / '+fmt(data.summary?.attribution_total)+' 只 · 炸板归因 '+fmt(data.summary?.attributed_broken)+' / '+fmt(data.summary?.broken_attribution_total)+' 只。'+(data.summary?.broken_attribution_complete===true?'当前炸板池归因已完整匹配。':'仍有炸板归因或池状态待核验，题材数只展示已匹配下限；待补全不表示零。')+'未核验题材单列，不用行业代替。</p>'+(groups.length?groups.map(g=>'<button class="cn-theme" type="button" data-cn-theme="'+esc(g.id)+'"><div class="cn-theme-head"><strong>'+esc(g.name)+'</strong><span class="cn-theme-count">'+fmt(g.sealed_count)+' 涨停 · '+esc(brokenText(g))+' ›</span></div><small>板内已观察最高 '+fmt(g.highest_boards)+'板 · '+esc(g.stocks.slice(0,4).map(c=>stock(c).name).join('、'))+'</small></button>').join(''):empty('暂无可核验题材归因。')));
     } else if(tab==='ladder'){
       html=panel('连板梯队','<div class="cn-height" role="group" aria-label="筛选连板高度">'+[[0,'全部'],[1,'首板'],[2,'二板'],[3,'三板'],[4,'四板'],[5,'五板+']].map(([key,name])=>'<button type="button" data-cn-height="'+key+'" aria-pressed="'+(key===height)+'">'+name+'</button>').join('')+'</div>'+list(pool('up').filter(s=>!height || (height===5?s.boards>=5:s.boards===height)).sort((a,b)=>b.boards-a.boards || (a.first_seal || '').localeCompare(b.first_seal || ''))));
     } else if(tab==='broken'){
-      html=panel('炸板观察','<p class="cn-subtitle">快照开板占比 '+fmt(data.summary?.snapshot_open_ratio_pct,1)+'%：当前炸板池 ÷ 当前涨停与炸板池。仅在两池完整且采样一致时计算，不等同于全日炸板率。</p>'+list(pool('broken').slice().sort((a,b)=>(b.open_count || 0)-(a.open_count || 0))));
+      html=panel('炸板观察','<p class="cn-subtitle">名单来自东财当前炸板池，不等同于开盘啦全站统计；盘中炸板后已回封的股票仍在涨停池，开板次数在详情中保留。题材归因已匹配 '+fmt(data.summary?.attributed_broken)+' / '+fmt(data.summary?.broken_attribution_total)+' 只。</p><p class="cn-subtitle">快照开板占比 '+fmt(data.summary?.snapshot_open_ratio_pct,1)+'%：当前炸板池 ÷ 当前涨停与炸板池。仅在两池完整且采样一致时计算，不等同于全日炸板率。</p>'+list(pool('broken').slice().sort((a,b)=>(b.open_count || 0)-(a.open_count || 0))));
       const events=(data.events || []).filter(e=>e.kind==='observed_open' || e.kind==='observed_reseal').slice(0,15);
       html+=panel('网站观察到的开合',events.length?events.map(e=>'<div class="cn-log">'+esc(e.name)+' · '+(e.kind==='observed_open'?'观察到开板':'观察到回封')+'<br>'+esc(time(e.observed_at))+'<br>两次采样间的状态变化，实际发生时刻未知。</div>').join(''):empty('暂无已记录的开板/回封变化；不会由首封时间补造网站观察记录。'));
     } else if(tab==='previous'){
@@ -82,7 +88,7 @@
     const s=stock(code);focusBefore=opener;overflowBefore=document.body.style.overflow;
     body.innerHTML='<div class="cn-eyebrow">'+esc(s.code)+' · '+esc(data.trade_date)+'</div><h2 id="cn-stock-title">'+esc(s.name)+'</h2>'+watchButton(s.code)+'<dl class="cn-facts">'+
       [['最新价','¥'+fmt(s.price,2)],['涨跌幅',pct(s.change_pct)],['连板高度',s.boards?fmt(s.boards)+'板':'—'],['封板资金',money(s.seal_amount)],['来源首封',s.first_seal || '—'],['来源末封',s.last_seal || '—'],['来源炸板次数',fmt(s.open_count)],['成交额',money(s.amount)]].map(([k,v])=>'<div><dt>'+k+'</dt><dd>'+esc(v)+'</dd></div>').join('')+'</dl>'+
-      '<section class="cn-detail-section"><h3>当日涨停归因</h3><p>'+esc(s.theme?.name || '暂无本交易日可核验归因')+'<br>来源：'+esc(s.theme?'开盘啦供应商归因，非事实认定':'待核验')+'</p></section><section class="cn-detail-section"><h3>行业 / 其他概念</h3><p>行业：'+esc(s.industry || '—')+'<br>概念：'+esc((s.concepts || []).join('、') || '—')+'</p></section><section class="cn-detail-section"><h3>时间与状态证据</h3><p>网站首次观察：'+esc(time(s.first_observed_at))+'<br>本快照接收：'+esc(time(data.observed_at))+'<br>来源事件：'+esc(time(s.source_event_time))+'<br>来源事件不等于网站首次发现；本页不判定可成交性。'+(s.state==='unknown'?'<br>此标的未在当前观察池，暂无可核验行情。':'')+'</p></section>';
+      '<section class="cn-detail-section"><h3>当日涨停归因</h3><p>'+esc(s.theme?.name || '暂无本交易日可核验归因')+'<br>来源：'+esc(s.theme?'开盘啦供应商归因，非事实认定':'待核验')+(s.attribution_basis==='earlier_today'?'<br>沿用本交易日早先已核验归因，可能发生变化。':'')+(s.attribution_observed_at?'<br>归因证据接收：'+esc(time(s.attribution_observed_at)):'')+'</p></section><section class="cn-detail-section"><h3>行业 / 其他概念</h3><p>行业：'+esc(s.industry || '—')+'<br>概念：'+esc((s.concepts || []).join('、') || '—')+'</p></section><section class="cn-detail-section"><h3>时间与状态证据</h3><p>网站首次观察：'+esc(time(s.first_observed_at))+'<br>本快照接收：'+esc(time(data.observed_at))+'<br>来源事件：'+esc(time(s.source_event_time))+'<br>来源事件不等于网站首次发现；本页不判定可成交性。'+(s.state==='unknown'?'<br>此标的未在当前观察池，暂无可核验行情。':'')+'</p></section>';
     document.body.style.overflow='hidden';dialog.showModal();document.getElementById('cn-stock-close').focus();
   }
   document.getElementById('cn-stock-close').addEventListener('click',()=>dialog.close());
