@@ -162,3 +162,12 @@ class CNResearch:
                     seen=db.execute('SELECT first_seen FROM observations WHERE date=? AND code=?',(result['trade_date'],stock['code'])).fetchone()
                     stock['first_observed_at']=seen['first_seen'] if seen else None
             return result
+
+    def relay_report(self,date=None):
+        # 仅读取已保存的分钟证据，离开数据库事务后计算，不触发上游或交易。
+        from cn_relay import analyze
+        now=self.clock();day=date or self.calendar.context(now).get('trade_date')
+        session=self.calendar.session(day) if day and hasattr(self.calendar,'session') else None
+        with self.db() as db:
+            rows=list(db.execute('SELECT payload FROM snapshots WHERE date=? ORDER BY id',(day,)))
+        return analyze((json.loads(row['payload']) for row in rows),day,now,session)

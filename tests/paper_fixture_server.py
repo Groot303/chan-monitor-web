@@ -13,6 +13,7 @@ from strategy_routes import strategy_router
 from cn_research import CNResearch
 from cn_routes import research_router
 import tests.test_cn_research as cn_fixtures
+import tests.test_cn_relay as relay_fixtures
 from datetime import timedelta
 
 app=FastAPI()
@@ -32,9 +33,31 @@ class CNCalendar:
     def context(self,now):return {**cn_fixtures.Calendar().context(now),'trade_date':now.date().isoformat()}
 cn_source=cn_fixtures.Source(cn_clock)
 for item in cn_source.rows[:4]:item['payload']['data']['qdate']=20261028
-cn_research=CNResearch(Path(tmp.name)/'research.sqlite',cn_source,CNCalendar(),cn_clock);cn_research.collect()
+relay_clock=type('RelayClock',(),{'now':relay_fixtures.ANCHOR+timedelta(minutes=30)})()
+class RelayCalendar:
+    def context(self,now):return {'trade_date':relay_fixtures.DAY}
+    def session(self,day):return relay_fixtures.SESSION
+relay_store=CNResearch(Path(tmp.name)/'relay.sqlite',calendar=RelayCalendar(),clock=lambda:relay_clock.now)
+def reset_relay(kind='complete'):
+    frames=relay_fixtures.timeline()
+    if kind=='gap':frames[32]['coherent']=False
+    if kind=='unknown':
+        for f in frames:f['pools']['up'].append(relay_fixtures.stock('300001','未核验样本',None))
+    with relay_store.db() as db:
+        db.execute('DELETE FROM snapshots')
+        for f in frames:db.execute('INSERT INTO snapshots(date,observed_at,payload) VALUES(?,?,?)',
+            (relay_fixtures.DAY,f['observed_at'],json.dumps(f)))
+    relay_clock.now=relay_fixtures.ANCHOR+timedelta(minutes=4 if kind=='pending' else 30)
+reset_relay()
+class UIResearch(CNResearch):
+    def relay_report(self,date=None):return relay_store.relay_report(date)
+cn_research=UIResearch(Path(tmp.name)/'research.sqlite',cn_source,CNCalendar(),cn_clock);cn_research.collect()
 cn_clock.now+=timedelta(days=1);cn_source.rows=cn_fixtures.fixtures(cn_clock);cn_research.collect()
 app.include_router(research_router(cn_research))
+
+@app.post('/test/relay/{kind}')
+def relay_fixture(kind:str):
+    reset_relay(kind);return {'ok':True}
 
 @app.post('/test/cn-open')
 def cn_open():
