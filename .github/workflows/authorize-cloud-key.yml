@@ -1,0 +1,46 @@
+name: Authorize cloud SSH key
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/authorize-cloud-key.yml']
+permissions:
+  contents: read
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+jobs:
+  authorize:
+    if: github.event.head_commit.message == 'Authorize dedicated cloud SSH public key'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Append authorized public key
+        env:
+          KEY_B64: ${{ secrets.VPS_SSH_KEY_B64 }}
+          HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$HOST" = "47.251.20.175"
+          test "$VPS_USER" = "root"
+          umask 077
+          mkdir -p ~/.ssh
+          trap 'rm -f ~/.ssh/cloud_authorize_key' EXIT
+          printf '%s' "$KEY_B64" | tr -d '\r\n\t ' | base64 -d > ~/.ssh/cloud_authorize_key
+          ssh-keygen -y -f ~/.ssh/cloud_authorize_key > /dev/null
+          ssh -i ~/.ssh/cloud_authorize_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 "$VPS_USER@$HOST" 'bash -se' <<'REMOTE'
+          set -euo pipefail
+          test "$(id -u)" = 0
+          umask 077
+          mkdir -p /root/.ssh
+          chmod 700 /root/.ssh
+          touch /root/.ssh/authorized_keys
+          key='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBhLkJvo+POgUs+W1/Pn2YzeGYnTf56GasO7hG7/jeYc chatgpt-aliyun-ubuntu-ewxc'
+          if ! grep -qF 'AAAAC3NzaC1lZDI1NTE5AAAAIBhLkJvo+POgUs+W1/Pn2YzeGYnTf56GasO7hG7/jeYc' /root/.ssh/authorized_keys; then
+            printf '\n%s\n' "$key" >> /root/.ssh/authorized_keys
+          fi
+          chmod 600 /root/.ssh/authorized_keys
+          grep -qF "$key" /root/.ssh/authorized_keys
+          echo 'Dedicated cloud public key installed and verified'
+          REMOTE
