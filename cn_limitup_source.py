@@ -52,6 +52,9 @@ class ResearchClock:
             sessions=ExchangeSessions()
         self.sessions=sessions
 
+    def session(self,day):
+        return self.sessions.session('cn',day)
+
     def context(self,now):
         local=now.astimezone(SH)
         for offset in range(24):

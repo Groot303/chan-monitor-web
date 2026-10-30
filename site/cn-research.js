@@ -3,7 +3,7 @@
   'use strict';
   const root=document.getElementById('cn-research-app');if(!root)return;
   const dialog=document.getElementById('cn-stock-dialog'),body=document.getElementById('cn-stock-body');
-  const tabs={themes:'题材',ladder:'连板梯队',broken:'炸板观察',previous:'昨日表现',watch:'我的关注'};
+  const tabs={themes:'题材',ladder:'连板梯队',broken:'炸板观察',relay:'接力观察',previous:'昨日表现',watch:'我的关注'};
   const esc=value=>String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt=(value,d=0)=>value==null || !Number.isFinite(Number(value))?'—':Number(value).toLocaleString('zh-CN',{minimumFractionDigits:d,maximumFractionDigits:d});
   const pct=value=>value==null?'—':(value>0?'+':'')+fmt(value,2)+'%';
@@ -90,12 +90,16 @@
       html=panel('炸板观察','<p class="cn-subtitle">名单来自东财当前炸板池，不等同于开盘啦全站统计；盘中炸板后已回封的股票仍在涨停池，开板次数在详情中保留。题材归因已匹配 '+fmt(data.summary?.attributed_broken)+' / '+fmt(data.summary?.broken_attribution_total)+' 只。</p><p class="cn-subtitle">快照开板占比 '+fmt(data.summary?.snapshot_open_ratio_pct,1)+'%：当前炸板池 ÷ 当前涨停与炸板池。仅在两池完整且采样一致时计算，不等同于全日炸板率。</p>'+list(pool('broken').slice().sort((a,b)=>(b.open_count || 0)-(a.open_count || 0))));
       const events=(data.events || []).filter(e=>e.kind==='observed_open' || e.kind==='observed_reseal').slice(0,15);
       html+=panel('网站观察到的开合',events.length?events.map(e=>'<div class="cn-log">'+esc(e.name)+' · '+(e.kind==='observed_open'?'观察到开板':'观察到回封')+'<br>'+esc(time(e.observed_at))+'<br>两次采样间的状态变化，实际发生时刻未知。</div>').join(''):empty('暂无已记录的开板/回封变化；不会由首封时间补造网站观察记录。'));
+    } else if(tab==='relay'){
+      html='<div id="cn-relay-app" aria-live="polite"></div>';
     } else if(tab==='previous'){
       html=panel('昨日涨停，今日表现','<p class="cn-subtitle">盘中晋级为观察值。未在当前涨停池不等于已经确认收盘断板。</p>'+(data.progression || []).map(p=>'<div class="cn-progression"><div>昨日 '+p.from_boards+'板 → 今日 '+(p.from_boards+1)+'板<small>'+p.candidates+' 只候选 · 当前仍封板 '+fmt(p.currently_advanced)+' 只</small></div><strong>'+fmt(p.rate_pct,1)+'%</strong></div>').join('')+list(pool('previous').slice().sort((a,b)=>(b.change_pct || 0)-(a.change_pct || 0))));
     } else if(tab==='watch'){
       html=panel('我的关注','<p class="cn-subtitle">关注清单仅保存在这台设备。未出现在来源观察池的股票不补造行情。</p>'+list(watch.map(stock),'点击标的旁的星号，加入你的研究清单。'));
     }
     target.innerHTML=html;
+    if(tab==='relay')window.CNRelay?.mount(document.getElementById('cn-relay-app'),{date:data.trade_date,key:data.observed_at,query});
+    else window.CNRelay?.deactivate();
   }
   function renderMethod(){
     const open=document.getElementById('cn-source-details')?.open;
