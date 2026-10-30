@@ -11,7 +11,7 @@
   const time=value=>value?new Date(value).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false}):'尚未采集';
   const empty=text=>'<div class="cn-empty">'+esc(text)+'</div>';
   const panel=(title,html)=>'<section class="cn-panel"><h2>'+esc(title)+'</h2>'+html+'</section>';
-  let data=null,tab='themes',query='',date='',height=0,theme=null,busy=false,serial=0,focusBefore=null,overflowBefore='';
+  let data=null,tab='themes',query='',date='',height=0,theme=null,ladderTheme='',busy=false,serial=0,focusBefore=null,overflowBefore='';
   let watch=[];try{watch=JSON.parse(localStorage.getItem('cn.research.watch.v1')||'[]').filter(c=>/^\d{6}$/.test(c));}catch(_){}
   const active=()=>document.body.dataset.market==='cn';
   function pool(key){return data?.pools?.[key] || [];}
@@ -30,6 +30,25 @@
       esc(s.state==='previous'?(s.currently_sealed===true?'仍在涨停池 · 当前'+fmt(s.current_boards)+'板':s.currently_sealed===false?'当前未在涨停池':'今日状态待核验'):'首封 '+(s.first_seal || '—')+' · 开板 '+fmt(s.open_count)+'次')+'</small></button><div class="cn-stock-quote '+(s.change_pct>=0?'cn-up':'cn-down')+'">'+esc(pct(s.change_pct))+'<small>¥'+esc(fmt(s.price,2))+'</small><small>'+(s.seal_amount!=null?'封单 '+esc(money(s.seal_amount)):s.state==='broken'?'现价低于封板状态':'')+'</small></div>'+watchButton(s.code)+'</div>';
   }
   function list(rows,message='当前条件下没有已采集的标的。'){const selected=rows.filter(matches);return selected.length?'<div class="cn-list">'+selected.map(row).join('')+'</div>':empty(message);}
+  function themeLadder(){
+    // 按当前封板股的主要题材分组，再展示真实板数；不把其他概念重复计入梯队。
+    const groups=new Map();
+    for(const s of pool('up')){
+      if(s.state!=='sealed')continue;
+      const id=s.theme?.id || 'unclassified';
+      if(!groups.has(id))groups.set(id,{id,name:s.theme?.name || '题材待核验',stocks:[],highest:0});
+      const group=groups.get(id);group.stocks.push(s);group.highest=Math.max(group.highest,s.boards);
+    }
+    const ordered=[...groups.values()].sort((a,b)=>(a.id==='unclassified')-(b.id==='unclassified') || b.highest-a.highest || b.stocks.length-a.stocks.length || a.name.localeCompare(b.name,'zh-CN'));
+    const selector='<label class="cn-ladder-select">题材<select id="cn-ladder-theme" aria-label="筛选梯队题材"><option value="">全部题材</option>'+ordered.map(g=>'<option value="'+esc(g.id)+'"'+(g.id===ladderTheme?' selected':'')+'>'+esc(g.name)+'</option>').join('')+(ladderTheme && !groups.has(ladderTheme)?'<option value="'+esc(ladderTheme)+'" selected>所选题材暂无已采集封板股</option>':'')+'</select></label>';
+    const sections=ordered.filter(g=>!ladderTheme || g.id===ladderTheme).map(g=>{
+      const selected=g.stocks.filter(s=>matches(s) && (!height || (height===5?s.boards>=5:s.boards===height)));
+      if(!selected.length)return '';
+      const levels=[...new Set(selected.map(s=>s.boards))].sort((a,b)=>b-a);
+      return '<section class="cn-ladder-theme" data-cn-ladder-theme="'+esc(g.id)+'"><header class="cn-ladder-head"><h3>'+esc(g.name)+'</h3><span>已观察最高 '+fmt(g.highest)+'板 · 当前条件 '+selected.length+'只</span></header>'+levels.map(n=>'<section class="cn-ladder-level" data-cn-ladder-height="'+n+'"><h4>'+esc(n===1?'首板':n===2?'二板':n===3?'三板':n+'板')+'<small>'+selected.filter(s=>s.boards===n).length+'只</small></h4>'+list(selected.filter(s=>s.boards===n).sort((a,b)=>(a.first_seal || '99').localeCompare(b.first_seal || '99') || a.code.localeCompare(b.code)))+'</section>').join('')+'</section>';
+    }).join('');
+    return selector+'<p class="cn-subtitle">先看题材，再看各板数有哪些股票；仅展示当前已采集封板股，点击股票查看详情。未核验题材单列，数据缺失不代表没有标的。</p>'+(sections || empty('当前题材、板数和搜索条件下暂无已采集封板股。'));
+  }
   function shell(){
     root.innerHTML='<header class="cn-head"><div><div class="cn-eyebrow">A股 · 专注连板研究</div><h1>连板研究</h1><p class="cn-muted" id="cn-date-note">正在读取交易日…</p></div><button class="btn cn-refresh" type="button" id="cn-refresh">刷新</button></header><div class="cn-status" id="cn-status" role="status">正在读取连板研究快照…</div><div class="cn-metrics" id="cn-metrics"></div>'+
       '<div class="cn-controls"><input id="cn-search" type="search" placeholder="搜索名称、代码或题材" aria-label="搜索连板研究标的"><select id="cn-date" aria-label="选择已采集交易日"><option value="">最近交易日</option></select></div><nav class="cn-tabs" aria-label="连板研究栏目">'+Object.entries(tabs).map(([key,label])=>'<button type="button" data-cn-tab="'+key+'">'+label+'</button>').join('')+'</nav><div id="cn-content"></div><div id="cn-method"></div>';
@@ -66,7 +85,7 @@
       const groups=(data.themes || []).filter(g=>!query || g.name.toLowerCase().includes(query.toLowerCase()) || g.stocks.some(c=>matches(stock(c))));
       html=panel('按题材看涨停表现','<p class="cn-subtitle">封板归因 '+fmt(data.summary?.attributed_sealed)+' / '+fmt(data.summary?.attribution_total)+' 只 · 炸板归因 '+fmt(data.summary?.attributed_broken)+' / '+fmt(data.summary?.broken_attribution_total)+' 只。'+(data.summary?.broken_attribution_complete===true?'当前炸板池归因已完整匹配。':'仍有炸板归因或池状态待核验，题材数只展示已匹配下限；待补全不表示零。')+'未核验题材单列，不用行业代替。</p>'+(groups.length?groups.map(g=>'<button class="cn-theme" type="button" data-cn-theme="'+esc(g.id)+'"><div class="cn-theme-head"><strong>'+esc(g.name)+'</strong><span class="cn-theme-count">'+fmt(g.sealed_count)+' 涨停 · '+esc(brokenText(g))+' ›</span></div><small>板内已观察最高 '+fmt(g.highest_boards)+'板 · '+esc(g.stocks.slice(0,4).map(c=>stock(c).name).join('、'))+'</small></button>').join(''):empty('暂无可核验题材归因。')));
     } else if(tab==='ladder'){
-      html=panel('连板梯队','<div class="cn-height" role="group" aria-label="筛选连板高度">'+[[0,'全部'],[1,'首板'],[2,'二板'],[3,'三板'],[4,'四板'],[5,'五板+']].map(([key,name])=>'<button type="button" data-cn-height="'+key+'" aria-pressed="'+(key===height)+'">'+name+'</button>').join('')+'</div>'+list(pool('up').filter(s=>!height || (height===5?s.boards>=5:s.boards===height)).sort((a,b)=>b.boards-a.boards || (a.first_seal || '').localeCompare(b.first_seal || ''))));
+      html=panel('题材连板梯队','<div class="cn-height" role="group" aria-label="筛选连板高度">'+[[0,'全部'],[1,'首板'],[2,'二板'],[3,'三板'],[4,'四板'],[5,'五板+']].map(([key,name])=>'<button type="button" data-cn-height="'+key+'" aria-pressed="'+(key===height)+'">'+name+'</button>').join('')+'</div>'+themeLadder());
     } else if(tab==='broken'){
       html=panel('炸板观察','<p class="cn-subtitle">名单来自东财当前炸板池，不等同于开盘啦全站统计；盘中炸板后已回封的股票仍在涨停池，开板次数在详情中保留。题材归因已匹配 '+fmt(data.summary?.attributed_broken)+' / '+fmt(data.summary?.broken_attribution_total)+' 只。</p><p class="cn-subtitle">快照开板占比 '+fmt(data.summary?.snapshot_open_ratio_pct,1)+'%：当前炸板池 ÷ 当前涨停与炸板池。仅在两池完整且采样一致时计算，不等同于全日炸板率。</p>'+list(pool('broken').slice().sort((a,b)=>(b.open_count || 0)-(a.open_count || 0))));
       const events=(data.events || []).filter(e=>e.kind==='observed_open' || e.kind==='observed_reseal').slice(0,15);
@@ -92,6 +111,7 @@
     document.body.style.overflow='hidden';dialog.showModal();document.getElementById('cn-stock-close').focus();
   }
   document.getElementById('cn-stock-close').addEventListener('click',()=>dialog.close());
+  root.addEventListener('change',event=>{if(event.target.id==='cn-ladder-theme'){ladderTheme=event.target.value;renderContent();document.getElementById('cn-ladder-theme')?.focus();}});
   dialog.addEventListener('close',()=>{document.body.style.overflow=overflowBefore;const target=focusBefore?.isConnected?focusBefore:root.querySelector('[data-cn-stock="'+focusBefore?.dataset.cnStock+'"]');target?.focus();});
   document.addEventListener('click',event=>{
     if(!active())return;

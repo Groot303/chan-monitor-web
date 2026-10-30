@@ -45,6 +45,37 @@ const path=require('node:path');
     assert.equal(await page.locator('#cn-content [data-cn-stock]').count(),0);
     await page.locator('[data-cn-height="0"]').click();assert.equal(await page.locator('#cn-content [data-cn-stock]').count(),1);
     await page.locator('#cn-search').fill('');
+    // 专用显示夹具：同题材的首/二/三板，另一题材的六板，以及归因未知。
+    const ladderPage=await context.newPage();ladderPage.on('pageerror',e=>errors.push(e.message));
+    await ladderPage.route('**/api/cn/research*',async route=>{
+      const snapshot=await (await route.fetch()).json(),baseStock=snapshot.pools.up[0];
+      snapshot.pools.up=[
+        [1,'000101','机器人首板','robot','机器人'],[2,'000102','机器人二板','robot','机器人'],[3,'000103','机器人三板','robot','机器人'],
+        [6,'000106','航天六板','space','商业航天'],[1,'000107','归因待核验',null,null]
+      ].map(([boards,code,name,id,theme])=>({...baseStock,boards,code,name,theme:id?{id,name:theme}:null,concepts:[],state:'sealed'}));
+      await route.fulfill({json:snapshot});
+    });
+    await ladderPage.goto(base);await ladderPage.locator('[data-cn-theme]').first().waitFor();
+    await ladderPage.locator('.cn-bottom [data-cn-tab="ladder"]').click();
+    const robot=ladderPage.locator('[data-cn-ladder-theme="robot"]');
+    for(const [n,code] of [[1,'000101'],[2,'000102'],[3,'000103']]){
+      assert.equal(await robot.locator('[data-cn-ladder-height="'+n+'"] [data-cn-stock="'+code+'"]').count(),1,'stock appears in its theme and actual board level');
+    }
+    assert.equal(await ladderPage.locator('[data-cn-ladder-theme]').last().getAttribute('data-cn-ladder-theme'),'unclassified');
+    await ladderPage.locator('#cn-ladder-theme').selectOption('robot');assert.equal(await ladderPage.locator('[data-cn-ladder-theme]').count(),1);
+    await ladderPage.locator('[data-cn-height="2"]').click();assert.equal(await robot.locator('[data-cn-stock]').count(),1);
+    assert.match(await robot.innerText(),/机器人二板/);
+    await ladderPage.locator('#cn-search').fill('航天');assert.equal(await ladderPage.locator('[data-cn-stock]').count(),0);
+    await ladderPage.locator('#cn-search').fill('');await ladderPage.locator('#cn-ladder-theme').selectOption('');
+    await ladderPage.locator('[data-cn-height="5"]').click();
+    assert.match(await ladderPage.locator('[data-cn-ladder-height="6"]').innerText(),/6板[\s\S]*航天六板/);
+    await ladderPage.locator('[data-cn-height="0"]').click();
+    for(const width of [320,390,768,1440]){
+      await ladderPage.setViewportSize({width,height:844});
+      assert.equal(await ladderPage.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'theme ladder fits '+width);
+    }
+    if(process.env.SCREENSHOT_DIR){const fs=require('fs');fs.mkdirSync(process.env.SCREENSHOT_DIR,{recursive:true});await ladderPage.setViewportSize({width:390,height:844});await ladderPage.screenshot({path:path.join(process.env.SCREENSHOT_DIR,'cn-theme-ladder-mobile.png'),fullPage:true});}
+    await ladderPage.close();
     await page.locator('.cn-bottom [data-cn-tab="previous"]').click();
     assert.match(await page.locator('#cn-content').innerText(),/昨日 1板/);
     assert.match(await page.locator('#cn-content').innerText(),/50.0%/);
