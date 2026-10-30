@@ -58,6 +58,16 @@ const path=require('node:path');
     await page.waitForFunction(()=>document.getElementById('cn-content').textContent.includes('观察到开板'));
     await fetch(base+'/test/cn-reseal',{method:'POST'});await page.locator('#cn-refresh').click();
     await page.waitForFunction(()=>document.getElementById('cn-content').textContent.includes('观察到回封'));
+    await fetch(base+'/test/cn-attribution-gap',{method:'POST'});await page.locator('#cn-refresh').click();
+    await page.locator('.cn-bottom [data-cn-tab="themes"]').click();
+    await page.waitForFunction(()=>document.getElementById('cn-content').textContent.includes('≥1 炸板'));
+    assert.match(await page.locator('#cn-content').innerText(),/待补全不表示零/);
+    assert.match(await page.locator('[data-cn-theme="unclassified"]').innerText(),/1 炸板待归因/);
+    await fetch(base+'/test/cn-attribution-gap?known=false',{method:'POST'});await page.locator('#cn-refresh').click();
+    await page.waitForFunction(()=>document.getElementById('cn-content').textContent.includes('炸板归因 0 / 1'));
+    const classified=page.locator('[data-cn-theme]:not([data-cn-theme="unclassified"])');
+    assert.match(await classified.innerText(),/炸板待补全/);
+    assert.doesNotMatch(await classified.innerText(),/0 炸板/,'unclassified broken stock must not imply every theme has zero failures');
     for(const theme of ['light','dark']){
       await page.evaluate(value=>document.documentElement.dataset.theme=value,theme);
       for(const width of [320,390,768,1440]){
@@ -72,7 +82,7 @@ const path=require('node:path');
     await page.setViewportSize({width:390,height:844});
     await fetch(base+'/test/cn-offline',{method:'POST'});await page.locator('#cn-refresh').click();
     await page.waitForFunction(()=>document.getElementById('cn-status').textContent.includes('数据过期'));
-    await page.locator('.cn-bottom [data-cn-tab="themes"]').click();assert.equal(await page.locator('[data-cn-theme]').count(),1,'last snapshot stays explicitly stale');
+    await page.locator('.cn-bottom [data-cn-tab="themes"]').click();assert.equal(await page.locator('[data-cn-theme]').count(),2,'last snapshot stays explicitly stale');
     if(process.env.SCREENSHOT_DIR){const fs=require('fs');fs.mkdirSync(process.env.SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.SCREENSHOT_DIR,'cn-research-mobile.png'),fullPage:true});}
     await page.locator('[data-market="us"]').click();await page.locator('.signal-note').first().waitFor();
     assert.equal(await page.locator('#view-research').isVisible(),false);

@@ -68,6 +68,90 @@ class CNResearchTests(unittest.TestCase):
         self.assertEqual(data['summary']['down_count'],0)
         self.assertEqual(data['summary']['sealed_count'],2)
 
+    def test_only_sealed_attribution_cannot_imply_zero_broken_in_every_theme(self):
+        # 复现线上：归因接口只返回封板股；炸板池有数据，但全被归到待核验。
+        self.source.rows[-1]['payload']['info'][0].pop()
+        self.research.collect();data=self.research.report()
+        group=next(g for g in data['themes'] if g['id']!='unclassified')
+        self.assertEqual(data['summary']['broken_count'],1)
+        self.assertEqual(data['summary']['attributed_broken'],0)
+        self.assertEqual(data['summary']['unattributed_broken'],1)
+        self.assertIsNone(group['broken_count']);self.assertEqual(group['known_broken_count'],0)
+        self.assertFalse(group['broken_count_complete']);self.assertEqual(data['status'],'partial')
+
+    def test_same_day_attribution_survives_opening_and_preserves_evidence_time(self):
+        self.research.collect();first=self.clock().isoformat();self.advance()
+        moved=self.source.rows[0]['payload']['data']['pool'].pop(0);self.source.rows[0]['payload']['data']['tc']=1
+        self.source.rows[1]['payload']['data']['pool'].append(moved);self.source.rows[1]['payload']['data']['tc']=2
+        self.source.rows[-1]['payload']['info'][0]=[r for r in self.source.rows[-1]['payload']['info'][0] if r[0]!=moved['c']]
+        self.research.collect();data=self.research.report()
+        stock=next(s for s in data['pools']['broken'] if s['code']==moved['c'])
+        self.assertEqual(stock['theme']['name'],'机器人');self.assertEqual(stock['attribution_basis'],'earlier_today')
+        self.assertEqual(stock['attribution_observed_at'],first)
+        self.assertEqual(data['summary']['attributed_broken'],2)
+        self.assertEqual(data['themes'][0]['broken_count'],2)
+
+    def test_upgrade_recovers_only_retained_evidence_and_does_not_rewrite_history(self):
+        self.research.collect()
+        with self.research.db() as db:
+            db.execute('DELETE FROM theme_memory')
+            before=db.execute('SELECT payload FROM snapshots ORDER BY id LIMIT 1').fetchone()['payload']
+        self.advance();self.source.rows[-1]['payload']['info'][0]=[]
+        self.research.collect();data=self.research.report()
+        self.assertEqual(data['summary']['attributed_broken'],1)
+        self.assertEqual(data['pools']['broken'][0]['attribution_basis'],'earlier_today')
+        with self.research.db() as db:
+            self.assertEqual(db.execute('SELECT payload FROM snapshots ORDER BY id LIMIT 1').fetchone()['payload'],before)
+
+    def test_old_snapshot_zero_is_exposed_as_unknown_without_backfilling_theme(self):
+        self.source.rows[-1]['payload']['info'][0].pop();self.research.collect()
+        with self.research.db() as db:
+            raw=json.loads(db.execute('SELECT payload FROM daily').fetchone()['payload'])
+            for group in raw['themes']:group.update(broken_count=0)
+            raw['summary'].pop('attributed_broken')
+            db.execute('UPDATE daily SET payload=?',(json.dumps(raw),))
+        data=self.research.report('2026-10-29')
+        self.assertIsNone(data['themes'][0]['broken_count'])
+        self.assertIsNone(data['pools']['broken'][0]['theme'])
+
+    def test_upgrade_refreshes_legacy_snapshot_once_during_lunch(self):
+        self.research.collect();self.advance()
+        class Pause:
+            def context(self,now):return {**Calendar().context(now),'active':False}
+        self.research.calendar=Pause();self.research.collect()
+        self.assertEqual(self.source.calls,1,'已升级快照在午休不重复采集')
+        with self.research.db() as db:
+            raw=json.loads(db.execute('SELECT payload FROM snapshots ORDER BY id DESC LIMIT 1').fetchone()['payload'])
+            raw.pop('attribution_contract')
+            db.execute('UPDATE snapshots SET payload=?',(json.dumps(raw),))
+        self.research.collect()
+        self.assertEqual(self.source.calls,2,'旧版本升级需要一次真实刷新，而非修改旧快照')
+        self.advance();self.research.collect();self.assertEqual(self.source.calls,2)
+
+    def test_prior_attribution_rejects_other_day_future_evidence_and_name_mismatch(self):
+        self.research.collect()
+        with self.research.db() as db:prior=self.research.attributions(db,'2026-10-29',self.clock())
+        self.source.rows[-1]['payload']['info'][0]=[]
+        for kind in ('day','future','name'):
+            notes=copy.deepcopy(prior)
+            for note in notes.values():
+                if kind=='day':note['theme']['trade_date']='2026-10-28'
+                if kind=='future':note['attribution_observed_at']=(self.clock()+timedelta(minutes=5)).isoformat()
+                if kind=='name':note['name']='同代码错误名称'
+            data=build_snapshot(self.source.fetch('2026-10-29'),Calendar().context(self.clock()),self.clock(),notes)
+            self.assertTrue(all(s['theme'] is None for rows in data['pools'].values() for s in rows))
+
+    def test_placeholder_reason_and_conflicting_current_attribution_are_unknown(self):
+        for label in ('无','--','暂无'):
+            p=copy.deepcopy(self.source.rows[-1]['payload'])
+            for row in p['info'][0]:row[5]=label
+            self.assertEqual(normalize_attributions(p,'2026-10-29'),{})
+        conflict=copy.deepcopy(self.source.rows[-1]);conflict['key']='attribution2'
+        for row in conflict['payload']['info'][0]:row[5]='相互冲突';row[19]='conflict'
+        repeat=copy.deepcopy(self.source.rows[-1]);repeat['key']='attribution3'
+        self.source.rows.extend([conflict,repeat])
+        self.assertEqual(self.snapshot()['summary']['attributed_sealed'],0,'后续相同记录不能冲掉冲突标记')
+
     def test_yesterday_attribution_is_never_mixed_into_today(self):
         for row in self.source.rows[-1]['payload']['info'][0]:row[4]-=86400
         data=self.snapshot()

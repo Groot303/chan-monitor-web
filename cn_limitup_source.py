@@ -13,6 +13,19 @@ SH=ZoneInfo('Asia/Shanghai')
 EM='https://push2ex.eastmoney.com/'
 KPL='https://apphq.longhuvip.com/w1/api/index.php'
 POOL_PATHS=dict(up='getTopicZTPool',broken='getTopicZBPool',previous='getYesterdayZTPool',down='getTopicDTPool')
+UNKNOWN_THEMES={'无','暂无','无题材','未知','--','-','none','null'}
+
+
+def valid_attribution(note,day,observed):
+    """同日真实归因可沿用；不将昨日或未来才采到的归因带入当前快照。"""
+    try:
+        theme=note['theme'];event=datetime.fromisoformat(note['source_event_time'])
+        seen=datetime.fromisoformat(note['attribution_observed_at'])
+        return (isinstance(note['name'],str) and theme['trade_date']==day and theme['source']=='kaipanla'
+            and isinstance(theme['name'],str) and theme['name'].strip().lower() not in UNKNOWN_THEMES
+            and bool(theme['name'].strip()) and event.astimezone(SH).date().isoformat()==day
+            and seen.astimezone(SH).date().isoformat()==day and seen<=observed and not note.get('conflict'))
+    except (KeyError,TypeError,ValueError):return False
 
 
 def number(value, *, minimum=0):
@@ -106,6 +119,7 @@ def normalize_attributions(payload,day):
         if event_time.date().isoformat()!=day:continue
         if not isinstance(name,str) or not isinstance(reason,str) or not reason.strip():continue
         label=reason.strip()[:120]
+        if label.lower() in UNKNOWN_THEMES:continue
         theme_id=str(theme) if isinstance(theme,(str,int)) and str(theme) else hashlib.sha256(label.encode()).hexdigest()[:12]
         result[code]=dict(name=name,theme=dict(id='kpl:'+theme_id,name=label,source='kaipanla',trade_date=day),
             concepts=[s.strip()[:80] for s in re.split('[、,，;；]',concepts) if s.strip()][:20] if isinstance(concepts,str) else [],
@@ -140,7 +154,7 @@ class PublicLimitupSource:
         with ThreadPoolExecutor(max_workers=4) as executor:return list(executor.map(fetch_one,keys))
 
 
-def build_snapshot(envelopes,context,now):
+def build_snapshot(envelopes,context,now,prior_attributions=None):
     day=context['trade_date'];sources={};pools={};notes={}
     for envelope in envelopes:
         key=envelope['key'];meta=dict(source='eastmoney' if key in POOL_PATHS else 'kaipanla',
@@ -154,18 +168,23 @@ def build_snapshot(envelopes,context,now):
             else:
                 normalized=normalize_attributions(envelope['payload'],day)
                 for code,note in normalized.items():
+                    note.update(attribution_observed_at=envelope['received_at'],attribution_basis='current_snapshot')
                     if code in notes and notes[code]['theme']!=note['theme']:
                         notes[code]['conflict']=True
-                    else:notes[code]=note
+                    elif code not in notes or not notes[code].get('conflict'):notes[code]=note
                 meta.update(status='ok' if normalized else 'empty',returned_count=len(normalized),event_date=day if normalized else None)
         except (ValueError,TypeError,KeyError) as exc:meta['error']=str(exc)[:140]
         sources[key]=meta
     up=pools.get('up');broken=pools.get('broken');previous=pools.get('previous');down=pools.get('down')
+    for code,note in (prior_attributions or {}).items():
+        if code not in notes and valid_attribution(note,day,now):
+            notes[code]={**note,'attribution_basis':'earlier_today'}
     for rows in pools.values():
         for stock in rows:
             note=notes.get(stock['code'])
-            if note and note['name']==stock['name'] and not note.get('conflict'):
-                stock.update(theme=note['theme'],concepts=note['concepts'],source_event_time=note['source_event_time'],attribution_status='supplier_attribution')
+            if note and note['name']==stock['name'] and valid_attribution(note,day,now):
+                stock.update(theme=note['theme'],concepts=note['concepts'],source_event_time=note['source_event_time'],
+                    attribution_observed_at=note['attribution_observed_at'],attribution_basis=note['attribution_basis'],attribution_status='supplier_attribution')
     up_codes={s['code'] for s in up or []};broken_codes={s['code'] for s in broken or []}
     overlap=up_codes & broken_codes
     coherent=(sources.get('up',{}).get('status')=='ok' and sources.get('broken',{}).get('status')=='ok' and not overlap)
@@ -187,8 +206,25 @@ def build_snapshot(envelopes,context,now):
             current=next((s for s in up or [] if s['code']==stock['code']),None)
             stock['current_boards']=current['boards'] if current else None
             stock['currently_sealed']=(stock['code'] in up_codes) if complete('up') else None
-    themes={}
-    for stock in (up or [])+(broken or []):
+    themes,coverage=attribution_summary(pools,sources,coherent)
+    total=(len(up or [])+len(broken or []))
+    return dict(schema='cn-limitup-research-v1',attribution_contract=2,market='cn',mode='research_only',trade_date=day,
+        observed_at=now.isoformat(),market_context=context,sources=sources,pools=pools,coherent=coherent,
+        summary=dict(sealed_count=len(up) if up is not None and complete('up') else None,
+            broken_count=len(broken) if broken is not None and complete('broken') else None,
+            down_count=len(down) if down is not None and complete('down') else None,
+            observed_height=max((s['boards'] for s in up or []),default=None),
+            snapshot_open_ratio_pct=len(broken)/total*100 if coherent and total else None,**coverage),
+        themes=themes,
+        progression=progression,coverage_note='涨跌停池使用东财来源统计范围，不等同于开盘啦全站统计；题材为开盘啦供应商当日归因，行业和其他概念另列。',
+        limitations=['快照可能遗漏采样间的开合，不代表逐笔成交或排队证据。','网站首次观察时间与供应商首封、回封时间分别保存。'])
+
+
+def attribution_summary(pools,sources,coherent):
+    """覆盖率不足时只给已匹配下限，不能把未分类误报为某题材零炸板。旧快照亦适用。"""
+    up=pools.get('up',[]);broken=pools.get('broken',[]);themes={}
+    complete=lambda key:sources.get(key,{}).get('status')=='ok'
+    for stock in up+broken:
         theme=stock['theme'];key=theme['id'] if theme else 'unclassified'
         group=themes.setdefault(key,dict(id=key,name=theme['name'] if theme else '题材待核验',
             source='kaipanla' if theme else None,stocks=[],sealed_count=0,broken_count=0,highest_boards=None))
@@ -196,19 +232,14 @@ def build_snapshot(envelopes,context,now):
         if stock['state']=='sealed':group['sealed_count']+=1
         if stock['state']=='broken':group['broken_count']+=1
         if stock['boards'] is not None:group['highest_boards']=max(group['highest_boards'] or 0,stock['boards'])
-    covered=sum(s['theme'] is not None for s in up or [])
+    covered=sum(s['theme'] is not None for s in up)
+    broken_covered=sum(s['theme'] is not None for s in broken)
+    broken_complete=coherent and complete('broken') and broken_covered==len(broken)
     for group in themes.values():
+        group['known_broken_count']=group['broken_count']
+        group['broken_count_complete']=broken_complete
         if not complete('up'):group['sealed_count']=None
-        if not complete('broken'):group['broken_count']=None
-    total=(len(up or [])+len(broken or []))
-    return dict(schema='cn-limitup-research-v1',market='cn',mode='research_only',trade_date=day,
-        observed_at=now.isoformat(),market_context=context,sources=sources,pools=pools,coherent=coherent,
-        summary=dict(sealed_count=len(up) if up is not None and complete('up') else None,
-            broken_count=len(broken) if broken is not None and complete('broken') else None,
-            down_count=len(down) if down is not None and complete('down') else None,
-            observed_height=max((s['boards'] for s in up or []),default=None),
-            snapshot_open_ratio_pct=len(broken)/total*100 if coherent and total else None,
-            attributed_sealed=covered,attribution_total=len(up or [])),
-        themes=sorted(themes.values(),key=lambda t:(-(t['sealed_count'] or 0),-(t['highest_boards'] or 0),t['name'])),
-        progression=progression,coverage_note='涨跌停池使用来源统计范围，不代表全市场完备覆盖；题材为供应商当日归因，行业和其他概念另列。',
-        limitations=['快照可能遗漏采样间的开合，不代表逐笔成交或排队证据。','网站首次观察时间与供应商首封、回封时间分别保存。'])
+        if not broken_complete:group['broken_count']=None
+    coverage=dict(attributed_sealed=covered,attribution_total=len(up),attributed_broken=broken_covered,
+        broken_attribution_total=len(broken),unattributed_broken=len(broken)-broken_covered,broken_attribution_complete=broken_complete)
+    return sorted(themes.values(),key=lambda t:(-(t['sealed_count'] or 0),-(t['highest_boards'] or 0),t['name'])),coverage

@@ -56,6 +56,15 @@ def cn_offline():
     cn_source.rows=[dict(key=e['key'],received_at=cn_clock().isoformat(),error='test offline') for e in cn_source.rows]
     cn_research.collect();return {'ok':True}
 
+@app.post('/test/cn-attribution-gap')
+def cn_attribution_gap(known:bool=True):
+    cn_clock.now+=timedelta(minutes=1)
+    rows=cn_source.rows[1]['payload']['data']
+    sample=cn_fixtures.raw_stock('000777','待核验样本')
+    rows['pool']=([s for s in rows['pool'] if s['c']!='000777'] if known else [])+[sample]
+    rows['tc']=len(rows['pool'])
+    cn_research.collect();return {'ok':True}
+
 @app.post('/test/signal')
 def new_signal():
     source.publish([signal()],symbol='NVDA');group.tick()
