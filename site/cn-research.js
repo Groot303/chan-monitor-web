@@ -131,9 +131,8 @@
     busy=true;const version=++serial,requestedDate=date;
     if(!document.getElementById('cn-content'))shell();
     try{
-      const response=await fetch('/api/cn/research'+(requestedDate?'?date='+encodeURIComponent(requestedDate):''),{cache:'no-store'});
-      if(!response.ok)throw new Error('研究数据暂时无法读取，请刷新重试。');
-      const snapshot=await response.json();if(snapshot.schema!=='cn-limitup-research-v1')throw new Error('研究数据格式暂不可用。');
+      const snapshot=await window.ChanData.getJSON('/api/cn/research'+(requestedDate?'?date='+encodeURIComponent(requestedDate):''),{httpError:()=> '研究数据暂时无法读取，请刷新重试。'});
+      if(snapshot.schema!=='cn-limitup-research-v1')throw new Error('研究数据格式暂不可用。');
       if(version===serial && requestedDate===date && active()){data=snapshot;render();}
     }catch(error){if(version===serial && active()){const status=document.getElementById('cn-status');status.dataset.state='stale';status.textContent=error.message+(data?' 下方保留上次快照：'+time(data.observed_at):' 暂无行情，不使用示例填充。');}}
     finally{busy=false;if((version!==serial || requestedDate!==date) && active())queueMicrotask(load);}
@@ -141,5 +140,6 @@
   window.addEventListener('chan-market',()=>{serial++;document.querySelector('.cn-bottom').hidden=!active();if(!active()){if(dialog.open)dialog.close();}else queueMicrotask(load);});
   window.addEventListener('chan-view',e=>{if(e.detail?.view==='research')queueMicrotask(load);});
   document.addEventListener('visibilitychange',load);setInterval(load,30000);
+  window.addEventListener('online',load);
   document.querySelector('.cn-bottom').hidden=!active();if(active())load();
 }());

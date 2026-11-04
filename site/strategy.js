@@ -77,15 +77,17 @@
     const version=++generation;
     if (!lastReport) root.innerHTML=empty('正在读取服务器自动策略…');
     try {
-      const response=await fetch('/api/strategy/us?version='+encodeURIComponent(activeVersion),{cache:'no-store'});
-      if (!response.ok) throw new Error(response.status===503?'自动模拟调度尚未运行，请稍后刷新。':'暂时无法读取自动策略，保留最后一次显示的数据。');
-      const report=await response.json();
+      const report=await window.ChanData.getJSON('/api/strategy/us?version='+encodeURIComponent(activeVersion),{httpError:status=>status===503?'自动模拟调度尚未运行，请稍后刷新。':'暂时无法读取自动策略，保留最后一次显示的数据。'});
       if (version===generation && visible()) render(report);
     } catch(error) {
       if (version===generation && visible()) {
+        if (!lastReport) root.innerHTML='';
         root.querySelector('.strategy-error')?.remove();
         const message=document.createElement('p');message.className='paper-error strategy-error';message.setAttribute('role','alert');message.textContent=error.message;
         root.prepend(message);
+        if (!lastReport && !root.querySelector('#strategy-retry')) {
+          const retry=document.createElement('button');retry.type='button';retry.className='btn';retry.id='strategy-retry';retry.textContent='重试';retry.addEventListener('click',load);root.prepend(retry);
+        }
         if (lastReport && root.querySelector('#strategy-status')) root.querySelector('#strategy-status').textContent='连接中断 · 显示上次数据';
       }
     } finally {busy=false;if(version!==generation && visible())queueMicrotask(load);}
@@ -95,6 +97,7 @@
   window.addEventListener('chan-market',()=>{generation++;lastReport=null;if(document.body.dataset.market==='cn')root.innerHTML='';else load();});
   window.addEventListener('hashchange',load);
   document.addEventListener('visibilitychange',load);
+  window.addEventListener('online',load);
   setInterval(load,30000);
   load();
 }());

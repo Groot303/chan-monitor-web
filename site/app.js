@@ -1,3 +1,30 @@
+/* 只读数据请求：15秒内包含响应体读取；超时退出，即使底层请求未响应取消也不再阻塞页面。 */
+(function () {
+  "use strict";
+  window.ChanData = {
+    getJSON: function (url, options) {
+      options = options || {};
+      var timeout = options.timeoutMs || 15000;
+      var controller = typeof AbortController === "function" ? new AbortController() : null;
+      return new Promise(function (resolve, reject) {
+        var done = false;
+        function finish(callback, value) { if (done) return; done = true; clearTimeout(timer); callback(value); }
+        var timer = setTimeout(function () {
+          var error = new Error("请求超时，请检查网络后重试。"); error.name = "TimeoutError";
+          finish(reject, error);
+          if (controller) controller.abort();
+        }, timeout);
+        Promise.resolve().then(function () {
+          return fetch(url, {cache:"no-store", signal:controller ? controller.signal : undefined});
+        }).then(function (response) {
+          if (!response.ok) throw new Error(options.httpError ? options.httpError(response.status) : "HTTP " + response.status);
+          return response.json();
+        }).then(function (value) { finish(resolve, value); }, function (error) { finish(reject, error); });
+      });
+    }
+  };
+}());
+
 /* 缠论信号看板 — 纯原生 JS。数据: data/signals.json, 图片: img/*_chan2.png, 交互图: data/charts/*.json + Lightweight Charts(本地) */
 (function () {
   "use strict";
@@ -327,7 +354,7 @@
     $("meta-short").textContent = "数据加载失败";
     qsa("#meta-sub .dot").forEach(function (x) { x.className = "dot err"; });
     $("kpis").innerHTML = "";
-    $("sig-results").innerHTML = stateHTML("err", "数据加载失败", "后端接口不可用（" + esc(e.message || e) + "）—— 已不再回落到本地静态数据，以免展示过期行情。请检查后端 chan-api 与 /api 状态（请求地址：" + esc(url) + "）。", '<button type="button" class="btn primary" id="retry">重试</button>');
+    $("sig-results").innerHTML = stateHTML("err", "数据加载失败", esc(e.message || e) + " 本轮读取未完成，请检查连接后重试。不会用本地旧数据或示例行情代替。", '<button type="button" class="btn primary" id="retry">重试</button>');
     var r = $("retry"); if (r) r.addEventListener("click", load);
   }
   var loadSequence=0;
@@ -338,8 +365,7 @@
     $("meta-short").textContent = "加载中…";
     var apiU = apiURL() + "?t=" + Date.now();
     function getJSON(u) {
-      return fetch(u, { cache: "no-store" })
-        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
+      return window.ChanData.getJSON(u);
     }
     // 只请求后端 API；失败直接报错，不再回落到本地静态 JSON，以免展示过期行情
     getJSON(apiU).then(function(data){if(sequence===loadSequence && requestMarket===MARKET)handleData(data);}).catch(function (e) { if(sequence===loadSequence && requestMarket===MARKET)showLoadErr(e, apiU); });
@@ -392,7 +418,7 @@
     return s.length === 8 ? s.slice(0, 4) + "-" + s.slice(4, 6) + "-" + s.slice(6, 8) : s;
   }
   // ---------- 大环境 ----------
-  var MACRO = null, EVENTS = null, macroLoading = false;
+  var MACRO = null, EVENTS = null, macroLoading = false, macroError = "";
   var TX_SEL = { node: null, edge: -1, theme: "all" };
   var TX_THEMES = [
     { id: "rate", label: "利率" }, { id: "infl", label: "通胀" }, { id: "jobs", label: "就业" },
@@ -626,9 +652,9 @@
   ];
 
   function loadMacro() {
-    if (macroLoading) return; macroLoading = true;
-    function gj(u) { return fetch(u, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }); }
-    Promise.all([gj("/api/macro").catch(function () { return null; }),
+    if (macroLoading) return; macroLoading = true; macroError = "";
+    function gj(u) { return window.ChanData.getJSON(u); }
+    Promise.all([gj("/api/macro").catch(function (error) { macroError = error.message; return null; }),
                  gj("data/events.json").catch(function () { return null; })])
       .then(function (res) { MACRO = res[0]; EVENTS = res[1]; window.dispatchEvent(new CustomEvent("chan-data", {detail:{section:"macro",generated:MACRO && MACRO.generated,error:!MACRO || !!MACRO.error}})); renderMacro(); })
       .catch(function () { renderMacro(); })
@@ -1137,6 +1163,7 @@
   function renderMacro() {
     var body = $("macro-body"); if (!body) return;
     if (!MACRO && !macroLoading) { loadMacro(); return; }
+    if (!MACRO && macroError) { body.innerHTML = '<p class="muted" role="alert">' + esc(macroError) + '</p><button class="btn" id="macro-retry" type="button">重试</button>'; $("macro-retry").addEventListener("click", loadMacro); return; }
     if (!MACRO) { body.innerHTML = '<p class="muted">宏观数据未就绪（后端 pipeline 正在拉取或数据源暂不可用）。</p>'; return; }
     if (MACRO.error) { body.innerHTML = '<div class="msec"><h3 class="msec-title">宏观抓取失败</h3><p class="muted">后端 pipeline 已运行，但抓取宏观数据时出错（信号不受影响）：</p><p style="word-break:break-all">' + esc(MACRO.error) + '</p><p class="muted small">更新于 ' + esc((MACRO.generated || "").slice(0, 16).replace("T", " ")) + '</p></div>'; return; }
     var upd = $("macro-updated");
@@ -1821,6 +1848,10 @@
   syncMarketUI();
   setView(location.hash.slice(1) || "signals", true);
   load();
+  // 从后台恢复或网络重新连通时重新读取，不让已打开的美股页面一直停留在旧响应。
+  function resumeSignals() { if (MARKET === "us" && !document.hidden) load(); }
+  document.addEventListener("visibilitychange", resumeSignals);
+  window.addEventListener("online", resumeSignals);
   // 每分钟刷新相对时间
   setInterval(function () { if (D && MARKET === "us") { var g = new Date(D.generated); if (!isNaN(g)) $("meta-short").textContent = "更新于 " + relTime(g); } }, 60000);
 })();
