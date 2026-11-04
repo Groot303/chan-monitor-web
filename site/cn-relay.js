@@ -43,9 +43,8 @@
     if(!alive()||busy||(!force&&payload&&Date.now()-lastRead<25000))return;
     busy=true;lastRead=Date.now();const token=++serial,requestedDay=day;
     try{
-      const response=await fetch('/api/cn/relay?date='+encodeURIComponent(requestedDay),{cache:'no-store'});
-      if(!response.ok)throw new Error('接力快照读取失败。');
-      const result=await response.json();if(result.schema!=='cn-theme-relay-v1'||result.trade_date!==requestedDay)throw new Error('接力数据格式或交易日不匹配。');
+      const result=await window.ChanData.getJSON('/api/cn/relay?date='+encodeURIComponent(requestedDay),{httpError:()=> '接力快照读取失败。'});
+      if(result.schema!=='cn-theme-relay-v1'||result.trade_date!==requestedDay)throw new Error('接力数据格式或交易日不匹配。');
       if(token===serial&&alive()){payload=result;error='';render();}
     }catch(ex){if(token===serial&&alive()){error=ex.message;render();}}
     finally{if(token===serial)busy=false;}
@@ -66,4 +65,5 @@
   });
   document.addEventListener('change',e=>{if(alive()&&e.target.id==='cn-relay-event'){selection=e.target.value;render();document.getElementById('cn-relay-event')?.focus();}});
   window.addEventListener('chan-market',e=>{if(e.detail?.market!=='cn')window.CNRelay.deactivate();});
+  window.addEventListener('online',()=>load(true));
 })();

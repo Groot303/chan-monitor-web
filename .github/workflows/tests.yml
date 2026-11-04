@@ -31,3 +31,4 @@ jobs:
           node tests/test_paper_ui.cjs
           node tests/test_cn_research_ui.cjs
           node tests/test_cn_relay_ui.cjs
+          node tests/test_data_loading_ui.cjs
